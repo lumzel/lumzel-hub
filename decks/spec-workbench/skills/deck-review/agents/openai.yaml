@@ -1,0 +1,5 @@
+interface:
+  display_name: "Visual Review"
+  short_description: "Review the diff grouped by Node"
+policy:
+  allow_implicit_invocation: false

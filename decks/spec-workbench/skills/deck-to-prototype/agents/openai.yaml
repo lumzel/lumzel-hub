@@ -1,0 +1,5 @@
+interface:
+  display_name: "To Prototype"
+  short_description: "Optional: clickable HTML prototype of a confirmed design"
+policy:
+  allow_implicit_invocation: false

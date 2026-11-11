@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh" data-doc-id="sample-01" data-doc-type="ticket" data-doc-status="confirmed" data-doc-date="2026-11-11">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01-first-slice</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">ticket</span><span class="pill s-confirmed">confirmed</span><span class="pill">2026-11-11</span><code class="docid">sample-01</code></div>
+<h1>01-first-slice</h1></div>
+<header class="summary" data-doc-summary>这张工单交付什么；依赖：无。</header>
+<section class="lumzel-block" id="slice" data-doc-block="slice" data-doc-kind="architecture">
+<h2>切片结构</h2>
+<p class="lead" data-doc-lead>这张工单碰到的模块与文件，比设计文档细一层。</p>
+<div class="card arch"><div class="layer" data-doc-layer="UI"><div class="layer-label">UI</div><div class="nodes"><div class="card node st" data-doc-node="m-ui"><div class="t"><span data-doc-label>组件</span> </div><div class="s">做什么</div></div></div></div><div class="layer" data-doc-layer="Core"><div class="layer-label">Core</div><div class="nodes"><div class="card node st" data-doc-node="m-core"><div class="t"><span data-doc-label>模块</span> </div><div class="s">做什么</div></div></div></div><ul class="edges"><li data-doc-from="m-ui" data-doc-to="m-core"><span>组件</span> <i>→</i> <span>模块</span> <em data-doc-label>调用</em></li></ul></div>
+</section>
+<section class="lumzel-block" id="seq" data-doc-block="seq" data-doc-kind="sequence">
+<h2>关键交互</h2>
+<div class="card seq"><svg viewBox="0 0 640 156" preserveAspectRatio="xMinYMin meet" role="img"><defs><marker id="sq-seq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker></defs><line class="life" x1="160" y1="46" x2="160" y2="148"/><g class="actor" data-doc-actor data-doc-id="a"><rect x="90" y="8" width="140" height="30" rx="7"/><text x="160" y="28" text-anchor="middle">A</text></g><line class="life" x1="480" y1="46" x2="480" y2="148"/><g class="actor" data-doc-actor data-doc-id="b"><rect x="410" y="8" width="140" height="30" rx="7"/><text x="480" y="28" text-anchor="middle">B</text></g><g class="msg" data-doc-node="seq-1" data-doc-from="a" data-doc-to="b"><line x1="160" y1="70" x2="478" y2="70" marker-end="url(#sq-seq)"/><text x="320" y="64" text-anchor="middle"><tspan class="idx">1. </tspan><tspan data-doc-label>请求</tspan></text></g><g class="msg reply" data-doc-node="seq-2" data-doc-from="b" data-doc-to="a" data-doc-reply><line x1="480" y1="110" x2="162" y2="110" marker-end="url(#sq-seq)"/><text x="320" y="104" text-anchor="middle"><tspan class="idx">2. </tspan><tspan data-doc-label>响应</tspan></text></g></svg></div>
+</section>
+<section class="lumzel-block" id="contracts" data-doc-block="contracts" data-doc-kind="api-table">
+<h2>接口</h2>
+<table class="grid"><thead><tr><th>接口</th><th>说明</th><th>鉴权</th><th>状态</th></tr></thead><tbody><tr class="st" data-doc-node="a-1"><td data-doc-label><span class="method">IPC</span> <code>name(args) → Result</code></td><td>契约与错误</td><td></td><td></td></tr></tbody></table>
+</section>
+<section class="lumzel-block" id="choices" data-doc-block="choices" data-doc-kind="decisions">
+<h2>本工单的设计决策</h2>
+<p class="lead" data-doc-lead>开工前由 Builder 与人确认；有 answer 的已定。</p>
+<div class="dec"><div class="card d open st" data-doc-node="d-1" data-doc-recommend="A" style="margin-left:0px"><div class="q">❓ <span data-doc-label>要决定什么？</span></div><div class="opts"><span class="opt rec">A</span><span class="opt">B</span></div><div class="a">推荐：A</div><div class="why">取舍。</div></div></div>
+</section>
+<section class="lumzel-block" id="tests" data-doc-block="tests" data-doc-kind="table">
+<h2>测试计划</h2>
+<table class="grid"><thead><tr><th>层</th><th>测什么</th><th>怎么测</th></tr></thead><tbody><tr><td>单元</td><td>行为</td><td>工具与 fixture</td></tr></tbody></table>
+</section>
+<section class="lumzel-block" id="done-when" data-doc-block="done-when" data-doc-kind="checklist">
+<h2>验收</h2>
+<p class="lead" data-doc-lead>全部 done，工单即 done。</p>
+<div class="check"><div class="card item st" data-doc-node="dw-1"><span class="box"></span><div><span data-doc-label>可观察的行为</span></div></div></div>
+</section>
+<section class="lumzel-block" id="delivers" data-doc-block="delivers" data-doc-kind="checklist">
+<h2>交付的 Node</h2>
+<p class="lead" data-doc-lead>状态跟随设计文档里的 Node。</p>
+<div class="check"><div class="card item st" data-doc-node="n-node" data-doc-links="docs/features/sample/design.html#node"><span class="box"></span><div><span data-doc-label>node</span><div class="meta"><a class="lk" href="../../../../docs/features/sample/design.html#node">docs/features/sample/design.html#node</a></div></div></div></div>
+</section>
+</main>
+</body>
+</html>

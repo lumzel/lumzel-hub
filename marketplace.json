@@ -105,6 +105,15 @@
   ],
   "decks": [
     {
+      "id": "spec-workbench",
+      "title": "方案工作台",
+      "icon": "dia",
+      "description": "从想法到技术方案、工单、可点击原型，再到按工单实现与评审的研发工作台：在任意项目里用可视化文档推进一个功能的交付。自带 9 个技能与 4 个子代理，不依赖项目脚手架。",
+      "category": "Engineering",
+      "author": "Lumzel",
+      "source": "./decks/spec-workbench"
+    },
+    {
       "id": "release-readiness",
       "title": "发版就绪看板",
       "icon": "rocket",
