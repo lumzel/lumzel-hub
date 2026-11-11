@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
+    <title>代码审查面板</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="board">
+      <header class="head">
+        <div>
+          <h1>代码审查面板</h1>
+          <p class="sub">按编码规范（Standards）与功能规格（Spec）双轴审查当前分支变更</p>
+        </div>
+        <button id="review-btn" class="primary">启动双轴审查</button>
+      </header>
+      <section class="grid">
+        <article class="card">
+          <b>Standards（工程规范）</b>
+          <p>检查命名清晰度、重复逻辑、边界异常处理与项目约定遵循情况。</p>
+        </article>
+        <article class="card">
+          <b>Spec（需求契合度）</b>
+          <p>核对功能实现完整性、边界条件覆盖率与非预期范围蔓延（Scope Creep）。</p>
+        </article>
+      </section>
+    </main>
+    <script src="/sdk.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,20 @@
+id: superpowers
+name: Obra Superpowers
+icon: "🦸"
+description: 开源热门 Superpowers 工程工作流（obra/superpowers）：以苏格拉底设计风暴、微粒度计划、子代理两阶段审查与三大铁律（TDD / 根因调试 / 实证交付）保障工程质量。
+skills:
+  - brainstorming
+  - writing-plans
+  - subagent-driven-development
+  - systematic-debugging
+  - verification-before-completion
+agents:
+  task-implementer: {}
+  spec-compliance-reviewer: {}
+  code-quality-reviewer: {}
+mcp: []
+hooks: []
+rules:
+  - superpowers-iron-laws
+plugins: []
+env: {}

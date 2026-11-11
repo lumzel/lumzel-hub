@@ -1,0 +1,18 @@
+id: compound-engineering
+name: Compound Engineering
+icon: "🔄"
+description: EveryInc 开源复利工程套件（EveryInc/compound-engineering-plugin）：遵循 Plan → Work → Review → Compound 闭环，内置极简性、数据一致性与性能多维子代理审查。
+skills:
+  - compound-plan
+  - compound-review
+  - compound-codify
+agents:
+  simplicity-reviewer: {}
+  data-integrity-reviewer: {}
+  performance-oracle: {}
+mcp: []
+hooks: []
+rules:
+  - compound-knowledge
+plugins: []
+env: {}

@@ -1,0 +1,16 @@
+id: gstack
+name: Garry Tan gstack
+icon: "🚀"
+description: 开源热门 gstack 虚拟工程团队套件（garrytan/gstack）：串联 CEO 产品审视、Eng Manager 状态机与异常矩阵规划、偏执级 Staff 代码审查与 Ship 交付门禁。
+skills:
+  - gstack-ceo-plan
+  - gstack-eng-plan
+  - gstack-paranoid-review
+agents:
+  staff-paranoid-reviewer: {}
+  release-ship-captain: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

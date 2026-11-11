@@ -1,0 +1,8 @@
+{
+  "id": "pr-review-board",
+  "title": "代码审查面板",
+  "icon": "check",
+  "description": "围绕编码规范与需求规格双轴展开的结构化 Code Review 交互面板。",
+  "entry": "index.html",
+  "permissions": ["agent", "files"]
+}

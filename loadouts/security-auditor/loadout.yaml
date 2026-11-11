@@ -1,0 +1,12 @@
+id: security-auditor
+name: Security & Reliability Auditor
+icon: "🛡️"
+description: 安全与可靠性审计专家：专注权限边界、注入防护、密钥泄漏排查与并发竞态分析。
+skills:
+  - security-review
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

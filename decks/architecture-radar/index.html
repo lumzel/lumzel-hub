@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
+    <title>架构与模块雷达</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="board">
+      <header class="head">
+        <div>
+          <h1>架构与模块雷达</h1>
+          <p class="sub">可视化追踪核心模块职责、调用链路与循环依赖风险</p>
+        </div>
+        <button id="scan-btn" class="primary">扫描模块架构</button>
+      </header>
+      <section class="grid">
+        <article class="card">
+          <b>核心领域边界</b>
+          <p>梳理各子包与目录职责，定位跨层耦合点。</p>
+        </article>
+        <article class="card">
+          <b>关键数据流转</b>
+          <p>追踪从输入入口到持久化存储的完整调用路径。</p>
+        </article>
+        <article class="card">
+          <b>演进与重构建议</b>
+          <p>识别高复杂度热点文件并生成可落地的拆分方案。</p>
+        </article>
+      </section>
+    </main>
+    <script src="/sdk.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+id: everything-claude-code
+name: Everything Claude Code (ECC)
+icon: "⚡"
+description: 开源热门 ECC 全能研发套件（affaan-m/everything-claude-code）：集成架构规划、TDD 循环、AgentShield 安全扫描、分级代码审查与 6 阶交付验证门禁。
+skills:
+  - ecc-plan
+  - ecc-tdd-workflow
+  - ecc-security-shield
+  - ecc-code-review
+  - ecc-verification-loop
+agents:
+  ecc-planner: {}
+  ecc-architect: {}
+  ecc-tdd-guide: {}
+  ecc-code-reviewer: {}
+  ecc-security-reviewer: {}
+  ecc-build-fixer: {}
+mcp: []
+hooks: []
+rules:
+  - ecc-coding-standards
+  - ecc-security-policy
+plugins: []
+env: {}

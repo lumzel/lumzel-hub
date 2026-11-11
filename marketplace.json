@@ -1,0 +1,135 @@
+{
+  "name": "Lumzel Hub",
+  "owner": {
+    "name": "Lumzel Official",
+    "url": "https://github.com/lumzel/lumzel-hub"
+  },
+  "description": "Official & Curated Open-Source Loadouts and Decks for Lumzel Agent Workbench",
+  "loadouts": [
+    {
+      "id": "everything-claude-code",
+      "name": "Everything Claude Code (ECC)",
+      "icon": "⚡",
+      "description": "开源热门 ECC 全能研发套件（affaan-m/everything-claude-code）：集成架构规划、TDD 循环、AgentShield 安全扫描、分级代码审查与 6 阶交付验证门禁。",
+      "category": "Engineering",
+      "author": "affaan-m",
+      "homepage": "https://github.com/affaan-m/everything-claude-code",
+      "source": "./loadouts/everything-claude-code"
+    },
+    {
+      "id": "matt-pocock",
+      "name": "Matt Pocock Workflow",
+      "icon": "🎯",
+      "description": "Matt Pocock 开源研发工作流（mattpocock/skills）：涵盖 grill-me 深度澄清、深模块设计、曳光弹垂直切片、公共边界 TDD 与 Standards/Spec 双轴代码审查。",
+      "category": "Engineering",
+      "author": "Matt Pocock",
+      "homepage": "https://github.com/mattpocock/skills",
+      "source": "./loadouts/matt-pocock"
+    },
+    {
+      "id": "superpowers",
+      "name": "Obra Superpowers",
+      "icon": "🦸",
+      "description": "开源热门 Superpowers 工程工作流（obra/superpowers）：以苏格拉底设计风暴、微粒度计划、子代理两阶段审查与三大铁律（TDD / 根因调试 / 实证交付）保障工程质量。",
+      "category": "Workflow",
+      "author": "Jesse Vincent (obra)",
+      "homepage": "https://github.com/obra/superpowers",
+      "source": "./loadouts/superpowers"
+    },
+    {
+      "id": "spec-kit",
+      "name": "GitHub Spec-Kit (SDD)",
+      "icon": "📐",
+      "description": "GitHub 官方开源规格驱动开发套件（github/spec-kit）：沿着 Constitution → Specify → Plan → Tasks → Implement 完整链路推进高确定性工程交付。",
+      "category": "Architecture",
+      "author": "GitHub",
+      "homepage": "https://github.com/github/spec-kit",
+      "source": "./loadouts/spec-kit"
+    },
+    {
+      "id": "compound-engineering",
+      "name": "Compound Engineering",
+      "icon": "🔄",
+      "description": "EveryInc 开源复利工程套件（EveryInc/compound-engineering-plugin）：遵循 Plan → Work → Review → Compound 闭环，内置极简性、数据一致性与性能多维子代理审查。",
+      "category": "Workflow",
+      "author": "EveryInc",
+      "homepage": "https://github.com/EveryInc/compound-engineering-plugin",
+      "source": "./loadouts/compound-engineering"
+    },
+    {
+      "id": "gstack",
+      "name": "Garry Tan gstack",
+      "icon": "🚀",
+      "description": "开源热门 gstack 虚拟工程团队套件（garrytan/gstack）：串联 CEO 产品审视、Eng Manager 状态机与异常矩阵规划、偏执级 Staff 代码审查与 Ship 交付门禁。",
+      "category": "Engineering",
+      "author": "Garry Tan",
+      "homepage": "https://github.com/garrytan/gstack",
+      "source": "./loadouts/gstack"
+    },
+    {
+      "id": "fullstack-architect",
+      "name": "Fullstack Architect",
+      "icon": "🏛️",
+      "description": "端到端系统架构师：擅长领域建模、ADR 决策推演、接口契约设计与复杂跨层重构。",
+      "category": "Architecture",
+      "author": "Lumzel",
+      "source": "./loadouts/fullstack-architect"
+    },
+    {
+      "id": "tdd-engineer",
+      "name": "TDD Craft Engineer",
+      "icon": "🧪",
+      "description": "测试驱动研发专家：严格遵循 Red-Green-Refactor 循环，在公共边界（Seam）编写高信噪比测试。",
+      "category": "Engineering",
+      "author": "Lumzel",
+      "source": "./loadouts/tdd-engineer"
+    },
+    {
+      "id": "security-auditor",
+      "name": "Security & Reliability Auditor",
+      "icon": "🛡️",
+      "description": "安全与可靠性审计专家：专注权限边界、注入防护、密钥泄漏排查与并发竞态分析。",
+      "category": "Security",
+      "author": "Lumzel",
+      "source": "./loadouts/security-auditor"
+    },
+    {
+      "id": "frontend-craftsman",
+      "name": "Frontend UI Craftsman",
+      "icon": "✨",
+      "description": "桌面级与 Web 界面工匠：打磨设计 Token、微交互动效、键盘可访问性与高性能渲染体验。",
+      "category": "Frontend",
+      "author": "Lumzel",
+      "source": "./loadouts/frontend-craftsman"
+    }
+  ],
+  "decks": [
+    {
+      "id": "release-readiness",
+      "title": "发版就绪看板",
+      "icon": "rocket",
+      "description": "版本发布检查清单、变更摘要与风险门禁可视化工作台，支持一键唤起 Agent 核验。",
+      "category": "DevOps",
+      "author": "Lumzel",
+      "source": "./decks/release-readiness"
+    },
+    {
+      "id": "architecture-radar",
+      "title": "架构与模块雷达",
+      "icon": "dia",
+      "description": "模块边界、核心依赖与技术债健康度面板，配合 Agent 实时梳理项目结构演进。",
+      "category": "Architecture",
+      "author": "Lumzel",
+      "source": "./decks/architecture-radar"
+    },
+    {
+      "id": "pr-review-board",
+      "title": "代码审查面板",
+      "icon": "check",
+      "description": "围绕编码规范与需求规格双轴展开的结构化 Code Review 交互面板。",
+      "category": "Engineering",
+      "author": "Lumzel",
+      "source": "./decks/pr-review-board"
+    }
+  ]
+}
