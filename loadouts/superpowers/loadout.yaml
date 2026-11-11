@@ -1,7 +1,9 @@
 id: superpowers
 name: Obra Superpowers
 icon: "🦸"
-description: 开源热门 Superpowers 工程工作流（obra/superpowers）：以苏格拉底设计风暴、微粒度计划、子代理两阶段审查与三大铁律（TDD / 根因调试 / 实证交付）保障工程质量。
+description: "基于 Jesse Vincent (obra) 开源项目改编（https://github.com/obra/superpowers）：以苏格拉底设计风暴、微粒度计划、子代理两阶段审查与三大铁律（TDD / 根因调试 / 实证交付）保障工程质量。"
+author: "Jesse Vincent (obra)"
+homepage: "https://github.com/obra/superpowers"
 skills:
   - brainstorming
   - writing-plans

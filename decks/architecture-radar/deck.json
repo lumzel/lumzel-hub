@@ -3,6 +3,7 @@
   "title": "架构与模块雷达",
   "icon": "dia",
   "description": "模块边界、核心依赖与技术债健康度面板，配合 Agent 实时梳理项目结构演进。",
+  "author": "Lumzel",
   "entry": "index.html",
   "permissions": ["agent", "files"]
 }

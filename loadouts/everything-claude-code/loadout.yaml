@@ -1,7 +1,9 @@
 id: everything-claude-code
 name: Everything Claude Code (ECC)
 icon: "⚡"
-description: 开源热门 ECC 全能研发套件（affaan-m/everything-claude-code）：集成架构规划、TDD 循环、AgentShield 安全扫描、分级代码审查与 6 阶交付验证门禁。
+description: "基于 Affaan Mustafa (affaan-m) 开源项目改编（https://github.com/affaan-m/everything-claude-code）：集成架构规划、TDD 循环、AgentShield 安全扫描、分级代码审查与 6 阶交付验证门禁。"
+author: "Affaan Mustafa (affaan-m)"
+homepage: "https://github.com/affaan-m/everything-claude-code"
 skills:
   - ecc-plan
   - ecc-tdd-workflow

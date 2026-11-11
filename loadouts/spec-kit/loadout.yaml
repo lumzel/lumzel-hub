@@ -1,7 +1,9 @@
 id: spec-kit
 name: GitHub Spec-Kit (SDD)
 icon: "📐"
-description: GitHub 官方开源规格驱动开发套件（github/spec-kit）：沿着 Constitution → Specify → Plan → Tasks → Implement 完整链路推进高确定性工程交付。
+description: "基于 GitHub 官方开源项目改编（https://github.com/github/spec-kit）：沿着 Constitution → Specify → Plan → Tasks → Implement 完整链路推进规格驱动开发（SDD）。"
+author: "GitHub"
+homepage: "https://github.com/github/spec-kit"
 skills:
   - speckit-constitution
   - speckit-specify

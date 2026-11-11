@@ -1,7 +1,9 @@
 id: matt-pocock
 name: Matt Pocock Workflow
 icon: "🎯"
-description: Matt Pocock 开源研发工作流（mattpocock/skills）：涵盖 grill-me 深度澄清、深模块设计、曳光弹垂直切片、公共边界 TDD 与 Standards/Spec 双轴代码审查。
+description: "基于 Matt Pocock 开源项目改编（https://github.com/mattpocock/skills）：涵盖 grill-me 深度澄清、深模块设计、曳光弹垂直切片、公共边界 TDD 与 Standards/Spec 双轴代码审查。"
+author: "Matt Pocock"
+homepage: "https://github.com/mattpocock/skills"
 skills:
   - grill-me
   - grill-with-docs

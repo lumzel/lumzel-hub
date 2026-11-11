@@ -3,6 +3,7 @@
   "title": "发版就绪看板",
   "icon": "rocket",
   "description": "版本发布检查清单、变更摘要与风险门禁可视化工作台，支持一键唤起 Agent 核验。",
+  "author": "Lumzel",
   "entry": "index.html",
   "permissions": ["agent", "files"]
 }

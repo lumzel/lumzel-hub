@@ -2,6 +2,7 @@ id: fullstack-architect
 name: Fullstack Architect
 icon: "🏛️"
 description: 端到端系统架构师：擅长领域建模、ADR 决策推演、接口契约设计与复杂跨层重构。
+author: Lumzel
 skills:
   - architecture-adr
 agents: {}
