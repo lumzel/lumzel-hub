@@ -1,0 +1,34 @@
+id: daily-driver
+name: Daily Driver
+icon: 🧠
+category: Workflow
+description: 'A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing.'
+i18n:
+  en:
+    name: Daily Driver
+    description: 'A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing.'
+  zh-CN:
+    name: 日常主力研发工作流
+    description: 轻量顺手的日常主力研发伴侣：开箱即用的可视化单页与架构图、方案规划、边界 TDD、双轴代码审查、Graphify 图谱持久记忆与去 AI 腔自然表达。
+author: Lumzel
+skills:
+- answer-me-with-html
+- visual-plan
+- show-me
+- excalidraw-diagram-generator
+- git-commit
+- humanizer
+- humanizer-zh
+- eli5
+- code-review
+- tdd
+- graphify
+- skill-creator
+agents: {}
+mcp:
+- graphify
+hooks: []
+rules:
+- graphify-memory
+plugins: []
+env: {}

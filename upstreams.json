@@ -2,7 +2,7 @@
   "version": 1,
   "loadouts": [
     {
-      "id": "daily-workflow",
+      "id": "daily-driver",
       "mode": "curated",
       "keepSkillOrder": true,
       "skills": [

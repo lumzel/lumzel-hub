@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       only:
-        description: 'Optional comma-separated Loadout IDs to sync (e.g. daily-workflow,matt-pocock)'
+        description: 'Optional comma-separated Loadout IDs to sync (e.g. daily-driver,matt-pocock)'
         required: false
         type: string
       force:

@@ -17,18 +17,18 @@
   },
   "loadouts": [
     {
-      "id": "daily-workflow",
-      "name": "Daily Engineering Workflow",
+      "id": "daily-driver",
+      "name": "Daily Driver",
       "icon": "🧠",
-      "description": "All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing.",
+      "description": "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing.",
       "i18n": {
         "en": {
-          "name": "Daily Engineering Workflow",
-          "description": "All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing."
+          "name": "Daily Driver",
+          "description": "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing."
         },
         "zh-CN": {
-          "name": "日常全能研发工作流",
-          "description": "面向日常开发与架构演进的通用全能套件：集成可视化单页解读与架构制图、交互式方案规划、公共边界 TDD、双轴代码审查、Graphify 知识图谱持久记忆与去 AI 腔自然表达。"
+          "name": "日常主力研发工作流",
+          "description": "轻量顺手的日常主力研发伴侣：开箱即用的可视化单页与架构图、方案规划、边界 TDD、双轴代码审查、Graphify 图谱持久记忆与去 AI 腔自然表达。"
         }
       },
       "category": "Workflow",
@@ -38,7 +38,7 @@
         "rules": 1,
         "mcp": 1
       },
-      "source": "./loadouts/daily-workflow"
+      "source": "./loadouts/daily-driver"
     },
     {
       "id": "everything-claude-code",

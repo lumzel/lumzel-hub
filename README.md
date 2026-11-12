@@ -12,7 +12,7 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 
 | ID | Category | Name (`en` / `zh-CN`) | Upstream | Bundled Capabilities |
 | :--- | :--- | :--- | :--- | :--- |
-| `daily-workflow` | `Workflow` | 🧠 Daily Engineering Workflow / 日常全能研发工作流 | Curated Multi-Repo (`upstreams.json`) | Curated Skills (`answer-me-with-html`, `visual-plan`, `show-me`, `excalidraw-diagram-generator`, `git-commit`, `humanizer`, `humanizer-zh`, `eli5`, `code-review`, `tdd`, `graphify`, `skill-creator`), `graphify` MCP (`uvx`), `graphify-memory` Rule |
+| `daily-driver` | `Workflow` | 🧠 Daily Driver / 日常主力研发工作流 | Curated Multi-Repo (`upstreams.json`) | Curated Skills (`answer-me-with-html`, `visual-plan`, `show-me`, `excalidraw-diagram-generator`, `git-commit`, `humanizer`, `humanizer-zh`, `eli5`, `code-review`, `tdd`, `graphify`, `skill-creator`), `graphify` MCP (`uvx`), `graphify-memory` Rule |
 | `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | Full-stack & domain Skills, Specialist Subagents, Common & Multi-Language Rules, Hooks, MCP Configs |
 | `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow / 研发工作流 | [`mattpocock/skills`](https://github.com/mattpocock/skills) | Upstream Skills (with companion testing/architecture docs), Review/Explorer Subagents, Rule |
 | `superpowers` | `Workflow` | 🦸 Obra Superpowers / 工程纪律套件 | [`obra/superpowers`](https://github.com/obra/superpowers) | Upstream Skills (with prompts, references & templates), Subagents, SessionStart Hook, Iron Laws Rule |
@@ -44,12 +44,12 @@ Every repository catalog (`marketplace.json`), Loadout (`loadout.yaml`), and Dec
 ### `loadout.yaml` Example
 
 ```yaml
-id: daily-workflow
-name: Daily Engineering Workflow
+id: daily-driver
+name: Daily Driver
 description: "All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing."
 i18n:
   en:
-    name: Daily Engineering Workflow
+    name: Daily Driver
     description: "All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing."
   zh-CN:
     name: "日常全能研发工作流"
@@ -117,10 +117,10 @@ Lumzel supports browsing repositories directly in the **Loadout** and **Deck** p
    - `lumzel/lumzel-hub`
 
 2. **Import a Specific Loadout or Deck**
-   - **GitHub Tree URL**: `https://github.com/lumzel/lumzel-hub/tree/main/loadouts/daily-workflow`
-   - **Shorthand (`owner/repo/id`)**: `lumzel/lumzel-hub/daily-workflow` or `lumzel/lumzel-hub/matt-pocock`
+   - **GitHub Tree URL**: `https://github.com/lumzel/lumzel-hub/tree/main/loadouts/daily-driver`
+   - **Shorthand (`owner/repo/id`)**: `lumzel/lumzel-hub/daily-driver` or `lumzel/lumzel-hub/matt-pocock`
    - **Lumzel URI Schema**:
-     - `lumzel://loadout/lumzel/lumzel-hub/daily-workflow`
+     - `lumzel://loadout/lumzel/lumzel-hub/daily-driver`
      - `lumzel://loadout/lumzel/lumzel-hub/everything-claude-code`
      - `lumzel://deck/lumzel/lumzel-hub/spec-workbench`
      - `lumzel://repo/lumzel/lumzel-hub`
@@ -157,7 +157,7 @@ A Deck that needs a project to show anything ships a sample one. `spec-workbench
 
 Loadouts stay self-contained in `loadouts/<id>/` (enabling single-folder sparse checkout and instant in-app Market Previews) while tracking upstream GitHub repositories through `upstreams.json` and `tools/sync-upstreams.mjs`:
 
-- **`curated` mode** (e.g. `daily-workflow`): Composes individual Skills from multiple upstream repositories (`repo` + `path` or `skillFile` + `extraDirs`) alongside Hub-maintained `AGENTS.md`, `rules/`, and portable `mcp/` configs.
+- **`curated` mode** (e.g. `daily-driver`): Composes individual Skills from multiple upstream repositories (`repo` + `path` or `skillFile` + `extraDirs`) alongside Hub-maintained `AGENTS.md`, `rules/`, and portable `mcp/` configs.
 - **`suite` mode** (e.g. `everything-claude-code`, `matt-pocock`, `superpowers`, `spec-kit`, `compound-engineering`, `gstack`): Mirrors complete upstream suites and adapts skills, subagents, rules, and MCP configs into Lumzel's standard Loadout layout while preserving Hub-specific hooks/rules listed in `preserve`.
 
 ```bash
@@ -168,7 +168,7 @@ node tools/sync-upstreams.mjs --check
 node tools/sync-upstreams.mjs
 
 # Sync specific Loadout(s) or force full re-sync
-node tools/sync-upstreams.mjs --only daily-workflow,matt-pocock --force
+node tools/sync-upstreams.mjs --only daily-driver,matt-pocock --force
 
 # Regenerate structured component counts in marketplace.json without network fetches
 node tools/sync-upstreams.mjs --counts

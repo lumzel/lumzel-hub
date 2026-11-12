@@ -11,7 +11,7 @@
  *   node tools/sync-upstreams.mjs                         # Incremental sync (clones only changed upstreams)
  *   node tools/sync-upstreams.mjs --check                 # Dry-run check against remote HEAD SHAs
  *   node tools/sync-upstreams.mjs --verify                # Validate catalog, manifests & preview size limits
- *   node tools/sync-upstreams.mjs --only daily-workflow   # Sync specific Loadout ID(s), comma-separated
+ *   node tools/sync-upstreams.mjs --only daily-driver   # Sync specific Loadout ID(s), comma-separated
  *   node tools/sync-upstreams.mjs --force                 # Force re-clone & re-sync even when SHA matches
  *   node tools/sync-upstreams.mjs --report /tmp/pr.md     # Write Markdown change report for CI Pull Requests
  */
