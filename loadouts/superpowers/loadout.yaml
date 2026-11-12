@@ -2,16 +2,14 @@ id: superpowers
 name: Obra Superpowers
 icon: 🦸
 category: Workflow
-description: 'Complete Obra Superpowers v7 suite (obra/superpowers): all 15 upstream skills with companion prompts & references,
-  3 review/implementation subagents, SessionStart hook, and the three Iron Laws.'
+description: 'Complete Obra Superpowers suite (obra/superpowers): upstream workflow skills with companion prompts & references, review/implementation subagents, SessionStart hook, and the three Iron Laws.'
 i18n:
   en:
     name: Obra Superpowers
-    description: 'Complete Obra Superpowers v7 suite (obra/superpowers): all 15 upstream skills with companion prompts & references,
-      3 review/implementation subagents, SessionStart hook, and the three Iron Laws.'
+    description: 'Complete Obra Superpowers suite (obra/superpowers): upstream workflow skills with companion prompts & references, review/implementation subagents, SessionStart hook, and the three Iron Laws.'
   zh-CN:
     name: Obra Superpowers 工程纪律套件
-    description: 完整同步 Jesse Vincent 开源项目（obra/superpowers）：内置全部 15 个官方 Skill 与配套提示词模板、3 个实现与审查子代理、SessionStart 启动 Hook 及三大工程铁律。
+    description: 完整同步 Jesse Vincent 开源项目（obra/superpowers）：包含全套官方工作流 Skill 与配套提示词模板、实现与审查子代理、SessionStart 启动 Hook 及三大工程铁律。
 author: Jesse Vincent (obra)
 homepage: https://github.com/obra/superpowers
 skills:

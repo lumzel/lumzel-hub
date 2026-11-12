@@ -2,19 +2,14 @@ id: gstack
 name: Garry Tan gstack
 icon: 🚀
 category: Workflow
-description: 'Complete Garry Tan gstack software factory (garrytan/gstack): all 62 upstream skills (office-hours, plan-ceo-review,
-  plan-eng-review, design-review, autoplan, review, cso, qa, ship, land-and-deploy, canary, retro, and more), 3 specialist
-  subagents, and Boil-the-Lake ethos.'
+description: 'Complete Garry Tan gstack software factory (garrytan/gstack): full-lifecycle skills (office-hours, plan-ceo-review, plan-eng-review, design-review, autoplan, review, cso, qa, ship, land-and-deploy, canary, retro, and more), specialist subagents, and Boil-the-Lake ethos.'
 i18n:
   en:
     name: Garry Tan gstack
-    description: 'Complete Garry Tan gstack software factory (garrytan/gstack): all 62 upstream skills (office-hours, plan-ceo-review,
-      plan-eng-review, design-review, autoplan, review, cso, qa, ship, land-and-deploy, canary, retro, and more), 3 specialist
-      subagents, and Boil-the-Lake ethos.'
+    description: 'Complete Garry Tan gstack software factory (garrytan/gstack): full-lifecycle skills (office-hours, plan-ceo-review, plan-eng-review, design-review, autoplan, review, cso, qa, ship, land-and-deploy, canary, retro, and more), specialist subagents, and Boil-the-Lake ethos.'
   zh-CN:
     name: Garry Tan gstack 交付工作流
-    description: 完整同步 Garry Tan 开源项目（garrytan/gstack）：内置全部 62 个官方 Skill（office-hours、CEO/研发/设计评审、autoplan、严苛代码与安全审查、QA、ship
-      发版、canary、retro 等）、3 个专家子代理与工程准则。
+    description: 完整同步 Garry Tan 开源项目（garrytan/gstack）：涵盖全周期交付 Skill（office-hours、CEO/研发/设计评审、autoplan、严苛代码与安全审查、QA、ship 发版、canary、retro 等）、专家子代理与工程准则。
 author: Garry Tan
 homepage: https://github.com/garrytan/gstack
 skills:

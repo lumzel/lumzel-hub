@@ -1,0 +1,268 @@
+{
+  "version": 1,
+  "loadouts": [
+    {
+      "id": "daily-workflow",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "answer-me-with-html",
+          "repo": "qingyuna/answer-me-with-html",
+          "path": "skills/answer-me-with-html"
+        },
+        {
+          "name": "visual-plan",
+          "repo": "builderio/skills",
+          "path": "skills/visual-plan"
+        },
+        {
+          "name": "show-me",
+          "repo": "humanlayer/skills",
+          "path": "plugins/show-me/skills/show-me"
+        },
+        {
+          "name": "excalidraw-diagram-generator",
+          "repo": "github/awesome-copilot",
+          "path": "skills/excalidraw-diagram-generator"
+        },
+        {
+          "name": "git-commit",
+          "repo": "github/awesome-copilot",
+          "path": "skills/git-commit"
+        },
+        {
+          "name": "humanizer",
+          "repo": "blader/humanizer",
+          "path": "."
+        },
+        {
+          "name": "humanizer-zh",
+          "repo": "op7418/humanizer-zh",
+          "path": "."
+        },
+        {
+          "name": "eli5",
+          "repo": "dreambigou/eli5",
+          "path": "skills/eli5"
+        },
+        {
+          "name": "code-review",
+          "repo": "mattpocock/skills",
+          "path": "skills/engineering/code-review"
+        },
+        {
+          "name": "tdd",
+          "repo": "mattpocock/skills",
+          "path": "skills/engineering/tdd"
+        },
+        {
+          "name": "graphify",
+          "repo": "safishamsi/graphify",
+          "skillFile": "graphify/skill.md",
+          "extraDirs": {
+            "references": "graphify/skills/claude/references"
+          }
+        },
+        {
+          "name": "skill-creator",
+          "repo": "anthropics/skills",
+          "path": "skills/skill-creator"
+        }
+      ]
+    },
+    {
+      "id": "everything-claude-code",
+      "mode": "suite",
+      "repo": "affaan-m/everything-claude-code",
+      "skills": {
+        "mode": "dir",
+        "path": "skills"
+      },
+      "agents": {
+        "mode": "dir",
+        "path": "agents"
+      },
+      "rules": {
+        "mode": "lang-dirs",
+        "path": "rules",
+        "prefix": "ecc-",
+        "excludeDirs": [
+          "zh"
+        ]
+      },
+      "mcp": {
+        "mode": "mcp-servers-json",
+        "source": "mcp-configs/mcp-servers.json"
+      },
+      "instructions": {
+        "source": "AGENTS.md"
+      },
+      "preserve": [
+        "hooks"
+      ]
+    },
+    {
+      "id": "matt-pocock",
+      "mode": "suite",
+      "repo": "mattpocock/skills",
+      "skills": {
+        "mode": "buckets",
+        "path": "skills",
+        "buckets": [
+          "engineering",
+          "productivity",
+          "misc",
+          "in-progress"
+        ]
+      },
+      "instructions": {
+        "source": "AGENTS.md",
+        "header": "# Matt Pocock Engineering & Planning Workflow\n\nUse `grill-me` / `grill-with-docs` to stress-test requirements before design, `domain-modeling` and `codebase-design` to shape deep modules, `to-spec` and `to-tickets` to slice tracer-bullet deliverables, `tdd` to test at public seams, and `code-review` to audit changes along Standards + Spec axes.\n\n"
+      },
+      "preserve": [
+        "agents",
+        "rules"
+      ]
+    },
+    {
+      "id": "superpowers",
+      "mode": "suite",
+      "repo": "obra/superpowers",
+      "skills": {
+        "mode": "dir",
+        "path": "skills"
+      },
+      "preserve": [
+        "agents",
+        "hooks",
+        "rules",
+        "AGENTS.md"
+      ]
+    },
+    {
+      "id": "spec-kit",
+      "mode": "suite",
+      "repo": "github/spec-kit",
+      "skills": {
+        "mode": "commands-to-skills",
+        "commandsDir": "templates/commands",
+        "prefix": "speckit-",
+        "templatesDir": "templates"
+      },
+      "rules": {
+        "mode": "single-file",
+        "source": "spec-driven.md",
+        "target": "speckit-sdd-principles",
+        "description": "GitHub Spec-Kit Specification-Driven Development (SDD) principles and phase gates."
+      },
+      "preserve": [
+        "agents",
+        "AGENTS.md"
+      ]
+    },
+    {
+      "id": "compound-engineering",
+      "mode": "suite",
+      "repo": "EveryInc/compound-engineering-plugin",
+      "skills": {
+        "mode": "dir",
+        "path": "skills"
+      },
+      "agents": {
+        "mode": "nested-skill-agents",
+        "skillsDir": "skills",
+        "prefix": "ce-"
+      },
+      "rules": {
+        "mode": "single-file",
+        "source": "CODING_STANDARDS.md",
+        "target": "ce-coding-standards",
+        "description": "EveryInc Compound Engineering coding standards and maintainability guidelines."
+      },
+      "instructions": {
+        "source": "AGENTS.md"
+      }
+    },
+    {
+      "id": "gstack",
+      "mode": "suite",
+      "repo": "garrytan/gstack",
+      "skills": {
+        "mode": "root-scan"
+      },
+      "rules": {
+        "mode": "single-file",
+        "source": "ETHOS.md",
+        "target": "gstack-ethos",
+        "description": "Garry Tan gstack Boil-the-Lake engineering ethos and shipping principles."
+      },
+      "preserve": [
+        "agents",
+        "AGENTS.md"
+      ]
+    }
+  ],
+  "repos": {
+    "affaan-m/everything-claude-code": {
+      "branch": "main",
+      "sha": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b"
+    },
+    "mattpocock/skills": {
+      "branch": "main",
+      "sha": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d"
+    },
+    "obra/superpowers": {
+      "branch": "main",
+      "sha": "22f0b463e7a5e579904dd6211a520321035526f7"
+    },
+    "github/spec-kit": {
+      "branch": "main",
+      "sha": "979b0a3c1277283371c9901ad0eed04b64a99997"
+    },
+    "EveryInc/compound-engineering-plugin": {
+      "branch": "main",
+      "sha": "d8f8e03237bded06e77bcb3930b43ef841e7eeda"
+    },
+    "garrytan/gstack": {
+      "branch": "main",
+      "sha": "b9bbc31c5c9b36ff4fe8e85493fd86491602b846"
+    },
+    "qingyuna/answer-me-with-html": {
+      "branch": "main",
+      "sha": "edccab07c012e2141585f8ddb18a62e01664fa2b"
+    },
+    "builderio/skills": {
+      "branch": "main",
+      "sha": "a489f1a85dab83fee4b4425aa08a18ef898b62f6"
+    },
+    "humanlayer/skills": {
+      "branch": "main",
+      "sha": "4d69d20f6e9b57b4fcf0d501ccfb1be961f0f329"
+    },
+    "github/awesome-copilot": {
+      "branch": "main",
+      "sha": "30a0d7465b14b05e05949d6588b99f7af0c537b4"
+    },
+    "blader/humanizer": {
+      "branch": "main",
+      "sha": "b48c832f0f809c1b5658edbb838c2521b72f2413"
+    },
+    "op7418/humanizer-zh": {
+      "branch": "main",
+      "sha": "f4518a8eab97b8bfebc66a89d34320a89bef6930"
+    },
+    "dreambigou/eli5": {
+      "branch": "main",
+      "sha": "a766623b062331fdde53467001379b4ddf3acc2f"
+    },
+    "safishamsi/graphify": {
+      "branch": "v8",
+      "sha": "06aa51be050170675912781ad8a2be2b20439d39"
+    },
+    "anthropics/skills": {
+      "branch": "main",
+      "sha": "2c5958ecac7cee2b583967a2c4981d0f4a75c579"
+    }
+  }
+}

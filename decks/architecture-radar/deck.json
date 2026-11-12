@@ -3,15 +3,15 @@
   "title": "Architecture Radar",
   "icon": "dia",
   "category": "Architecture",
-  "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by 3 bundled architecture skills.",
+  "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by bundled architecture skills.",
   "i18n": {
     "en": {
       "title": "Architecture Radar",
-      "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by 3 bundled architecture skills."
+      "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by bundled architecture skills."
     },
     "zh-CN": {
       "title": "架构与模块雷达",
-      "description": "梳理模块边界、端到端数据流转与重构热点的架构工作台，自带 3 个架构分析技能。"
+      "description": "梳理模块边界、端到端数据流转与重构热点的架构工作台，自带配套架构分析技能。"
     }
   },
   "author": "Lumzel",

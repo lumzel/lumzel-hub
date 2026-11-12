@@ -2,17 +2,14 @@ id: everything-claude-code
 name: Everything Claude Code (ECC)
 icon: ⚡
 category: Engineering
-description: 'Complete Everything Claude Code suite (affaan-m/everything-claude-code): 271 skills, 67 specialist subagents,
-  113 common & language rules, 3 quality hooks, and 32 MCP server configs.'
+description: 'Complete Everything Claude Code suite (affaan-m/everything-claude-code): full-stack & domain skills, specialist subagents, common & multi-language coding rules, quality gate hooks, and MCP server configs.'
 i18n:
   en:
     name: Everything Claude Code (ECC)
-    description: 'Complete Everything Claude Code suite (affaan-m/everything-claude-code): 271 skills, 67 specialist subagents,
-      113 common & language rules, 3 quality hooks, and 32 MCP server configs.'
+    description: 'Complete Everything Claude Code suite (affaan-m/everything-claude-code): full-stack & domain skills, specialist subagents, common & multi-language coding rules, quality gate hooks, and MCP server configs.'
   zh-CN:
     name: Everything Claude Code 全栈工程套件
-    description: 完整同步 Affaan Mustafa 开源项目（affaan-m/everything-claude-code）：内置 271 个全栈与领域 Skill、67 个专家子代理、113 条通用与多语言编码规则、3
-      个质量门禁 Hook 与 32 套 MCP 服务配置。
+    description: 完整同步 Affaan Mustafa 开源项目（affaan-m/everything-claude-code）：涵盖全栈与领域 Skill、专家子代理、通用与多语言编码规则、质量门禁 Hook 及 MCP 服务配置。
 author: Affaan Mustafa (affaan-m)
 homepage: https://github.com/affaan-m/everything-claude-code
 skills:

@@ -17,123 +17,180 @@
   },
   "loadouts": [
     {
+      "id": "daily-workflow",
+      "name": "Daily Engineering Workflow",
+      "icon": "🧠",
+      "description": "All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing.",
+      "i18n": {
+        "en": {
+          "name": "Daily Engineering Workflow",
+          "description": "All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing."
+        },
+        "zh-CN": {
+          "name": "日常全能研发工作流",
+          "description": "面向日常开发与架构演进的通用全能套件：集成可视化单页解读与架构制图、交互式方案规划、公共边界 TDD、双轴代码审查、Graphify 知识图谱持久记忆与去 AI 腔自然表达。"
+        }
+      },
+      "category": "Workflow",
+      "author": "Lumzel",
+      "counts": {
+        "skills": 12,
+        "rules": 1,
+        "mcp": 1
+      },
+      "source": "./loadouts/daily-workflow"
+    },
+    {
       "id": "everything-claude-code",
       "name": "Everything Claude Code (ECC)",
       "icon": "⚡",
-      "description": "Complete Everything Claude Code suite (affaan-m/everything-claude-code): 271 skills, 67 specialist subagents, 113 common & language rules, 3 quality hooks, and 32 MCP server configs.",
+      "description": "Complete Everything Claude Code suite (affaan-m/everything-claude-code): full-stack & domain skills, specialist subagents, common & multi-language coding rules, quality gate hooks, and MCP server configs.",
       "i18n": {
         "en": {
           "name": "Everything Claude Code (ECC)",
-          "description": "Complete Everything Claude Code suite (affaan-m/everything-claude-code): 271 skills, 67 specialist subagents, 113 common & language rules, 3 quality hooks, and 32 MCP server configs."
+          "description": "Complete Everything Claude Code suite (affaan-m/everything-claude-code): full-stack & domain skills, specialist subagents, common & multi-language coding rules, quality gate hooks, and MCP server configs."
         },
         "zh-CN": {
           "name": "Everything Claude Code 全栈工程套件",
-          "description": "完整同步 Affaan Mustafa 开源项目（affaan-m/everything-claude-code）：内置 271 个全栈与领域 Skill、67 个专家子代理、113 条通用与多语言编码规则、3 个质量门禁 Hook 与 32 套 MCP 服务配置。"
+          "description": "完整同步 Affaan Mustafa 开源项目（affaan-m/everything-claude-code）：涵盖全栈与领域 Skill、专家子代理、通用与多语言编码规则、质量门禁 Hook 及 MCP 服务配置。"
         }
       },
       "category": "Engineering",
       "author": "Affaan Mustafa (affaan-m)",
       "homepage": "https://github.com/affaan-m/everything-claude-code",
+      "counts": {
+        "skills": 271,
+        "agents": 67,
+        "rules": 113,
+        "hooks": 3,
+        "mcp": 32
+      },
       "source": "./loadouts/everything-claude-code"
     },
     {
       "id": "matt-pocock",
       "name": "Matt Pocock Workflow",
       "icon": "🎯",
-      "description": "Complete Matt Pocock skill suite (mattpocock/skills): 39 upstream skills covering grill-me design interviews, deep module design, domain modeling, tracer-bullet specs/tickets, public-seam TDD, and dual-axis code review.",
+      "description": "Complete Matt Pocock skill suite (mattpocock/skills): grill-me design interviews, deep module design, domain modeling, tracer-bullet specs/tickets, public-seam TDD, and dual-axis code review.",
       "i18n": {
         "en": {
           "name": "Matt Pocock Workflow",
-          "description": "Complete Matt Pocock skill suite (mattpocock/skills): 39 upstream skills covering grill-me design interviews, deep module design, domain modeling, tracer-bullet specs/tickets, public-seam TDD, and dual-axis code review."
+          "description": "Complete Matt Pocock skill suite (mattpocock/skills): grill-me design interviews, deep module design, domain modeling, tracer-bullet specs/tickets, public-seam TDD, and dual-axis code review."
         },
         "zh-CN": {
           "name": "Matt Pocock 研发工作流",
-          "description": "完整同步 Matt Pocock 开源项目（mattpocock/skills）：内置全部 39 个官方 Skill 与配套参考文档，涵盖 grill-me 深度澄清、深模块设计、领域建模、曳光弹规格与工单拆解、公共边界 TDD 及双轴代码审查。"
+          "description": "完整同步 Matt Pocock 开源项目（mattpocock/skills）：涵盖 grill-me 深度澄清、深模块设计、领域建模、曳光弹规格与工单拆解、公共边界 TDD 及双轴代码审查。"
         }
       },
       "category": "Workflow",
       "author": "Matt Pocock",
       "homepage": "https://github.com/mattpocock/skills",
+      "counts": {
+        "skills": 39,
+        "agents": 3,
+        "rules": 1
+      },
       "source": "./loadouts/matt-pocock"
     },
     {
       "id": "superpowers",
       "name": "Obra Superpowers",
       "icon": "🦸",
-      "description": "Complete Obra Superpowers v7 suite (obra/superpowers): all 15 upstream skills with companion prompts & references, 3 review/implementation subagents, SessionStart hook, and the three Iron Laws.",
+      "description": "Complete Obra Superpowers suite (obra/superpowers): upstream workflow skills with companion prompts & references, review/implementation subagents, SessionStart hook, and the three Iron Laws.",
       "i18n": {
         "en": {
           "name": "Obra Superpowers",
-          "description": "Complete Obra Superpowers v7 suite (obra/superpowers): all 15 upstream skills with companion prompts & references, 3 review/implementation subagents, SessionStart hook, and the three Iron Laws."
+          "description": "Complete Obra Superpowers suite (obra/superpowers): upstream workflow skills with companion prompts & references, review/implementation subagents, SessionStart hook, and the three Iron Laws."
         },
         "zh-CN": {
           "name": "Obra Superpowers 工程纪律套件",
-          "description": "完整同步 Jesse Vincent 开源项目（obra/superpowers）：内置全部 15 个官方 Skill 与配套提示词模板、3 个实现与审查子代理、SessionStart 启动 Hook 及三大工程铁律。"
+          "description": "完整同步 Jesse Vincent 开源项目（obra/superpowers）：包含全套官方工作流 Skill 与配套提示词模板、实现与审查子代理、SessionStart 启动 Hook 及三大工程铁律。"
         }
       },
       "category": "Workflow",
       "author": "Jesse Vincent (obra)",
       "homepage": "https://github.com/obra/superpowers",
+      "counts": {
+        "skills": 15,
+        "agents": 3,
+        "rules": 1,
+        "hooks": 1
+      },
       "source": "./loadouts/superpowers"
     },
     {
       "id": "spec-kit",
       "name": "GitHub Spec-Kit (SDD)",
       "icon": "📐",
-      "description": "Complete GitHub Spec-Kit SDD suite (github/spec-kit): all 9 official speckit-* workflow skills (Constitution, Specify, Clarify, Plan, Checklist, Tasks, Analyze, Implement, Converge) bundled with official templates & SDD principles.",
+      "description": "Complete GitHub Spec-Kit SDD suite (github/spec-kit): official speckit-* workflow skills (Constitution, Specify, Clarify, Plan, Checklist, Tasks, Analyze, Implement, Converge) bundled with official templates & SDD principles.",
       "i18n": {
         "en": {
           "name": "GitHub Spec-Kit (SDD)",
-          "description": "Complete GitHub Spec-Kit SDD suite (github/spec-kit): all 9 official speckit-* workflow skills (Constitution, Specify, Clarify, Plan, Checklist, Tasks, Analyze, Implement, Converge) bundled with official templates & SDD principles."
+          "description": "Complete GitHub Spec-Kit SDD suite (github/spec-kit): official speckit-* workflow skills (Constitution, Specify, Clarify, Plan, Checklist, Tasks, Analyze, Implement, Converge) bundled with official templates & SDD principles."
         },
         "zh-CN": {
           "name": "GitHub Spec-Kit 规格驱动开发",
-          "description": "完整同步 GitHub 官方 Spec-Kit（github/spec-kit）：内置全部 9 个 speckit-* 规格驱动开发 Skill（Constitution / Specify / Clarify / Plan / Checklist / Tasks / Analyze / Implement / Converge）及全套官方模板。"
+          "description": "完整同步 GitHub 官方 Spec-Kit（github/spec-kit）：包含 speckit-* 规格驱动开发全流程 Skill（Constitution / Specify / Clarify / Plan / Checklist / Tasks / Analyze / Implement / Converge）及全套官方模板。"
         }
       },
       "category": "Architecture",
       "author": "GitHub",
       "homepage": "https://github.com/github/spec-kit",
+      "counts": {
+        "skills": 9,
+        "agents": 2,
+        "rules": 1
+      },
       "source": "./loadouts/spec-kit"
     },
     {
       "id": "compound-engineering",
       "name": "Compound Engineering",
       "icon": "🔄",
-      "description": "Complete EveryInc Compound Engineering v3 suite (EveryInc/compound-engineering-plugin): all 37 ce-* / lfg / wtf skills, 26 specialist research & review subagents, and coding standards.",
+      "description": "Complete EveryInc Compound Engineering suite (EveryInc/compound-engineering-plugin): ce-* / lfg / wtf workflow skills, specialist research & review subagents, and coding standards.",
       "i18n": {
         "en": {
           "name": "Compound Engineering",
-          "description": "Complete EveryInc Compound Engineering v3 suite (EveryInc/compound-engineering-plugin): all 37 ce-* / lfg / wtf skills, 26 specialist research & review subagents, and coding standards."
+          "description": "Complete EveryInc Compound Engineering suite (EveryInc/compound-engineering-plugin): ce-* / lfg / wtf workflow skills, specialist research & review subagents, and coding standards."
         },
         "zh-CN": {
           "name": "Compound Engineering 复利工程",
-          "description": "完整同步 EveryInc 复利工程套件（EveryInc/compound-engineering-plugin）：内置全部 37 个 ce-* / lfg / wtf 官方 Skill、26 个多维研究与审查子代理及编码规范。"
+          "description": "完整同步 EveryInc 复利工程套件（EveryInc/compound-engineering-plugin）：包含全套 ce-* / lfg / wtf 工作流 Skill、多维研究与审查子代理及编码规范。"
         }
       },
       "category": "Workflow",
       "author": "EveryInc",
       "homepage": "https://github.com/EveryInc/compound-engineering-plugin",
+      "counts": {
+        "skills": 37,
+        "agents": 26,
+        "rules": 1
+      },
       "source": "./loadouts/compound-engineering"
     },
     {
       "id": "gstack",
       "name": "Garry Tan gstack",
       "icon": "🚀",
-      "description": "Complete Garry Tan gstack software factory (garrytan/gstack): all 62 upstream skills (office-hours, plan-ceo-review, plan-eng-review, design-review, autoplan, review, cso, qa, ship, land-and-deploy, canary, retro, and more), 3 specialist subagents, and Boil-the-Lake ethos.",
+      "description": "Complete Garry Tan gstack software factory (garrytan/gstack): full-lifecycle skills (office-hours, plan-ceo-review, plan-eng-review, design-review, autoplan, review, cso, qa, ship, land-and-deploy, canary, retro, and more), specialist subagents, and Boil-the-Lake ethos.",
       "i18n": {
         "en": {
           "name": "Garry Tan gstack",
-          "description": "Complete Garry Tan gstack software factory (garrytan/gstack): all 62 upstream skills (office-hours, plan-ceo-review, plan-eng-review, design-review, autoplan, review, cso, qa, ship, land-and-deploy, canary, retro, and more), 3 specialist subagents, and Boil-the-Lake ethos."
+          "description": "Complete Garry Tan gstack software factory (garrytan/gstack): full-lifecycle skills (office-hours, plan-ceo-review, plan-eng-review, design-review, autoplan, review, cso, qa, ship, land-and-deploy, canary, retro, and more), specialist subagents, and Boil-the-Lake ethos."
         },
         "zh-CN": {
           "name": "Garry Tan gstack 交付工作流",
-          "description": "完整同步 Garry Tan 开源项目（garrytan/gstack）：内置全部 62 个官方 Skill（office-hours、CEO/研发/设计评审、autoplan、严苛代码与安全审查、QA、ship 发版、canary、retro 等）、3 个专家子代理与工程准则。"
+          "description": "完整同步 Garry Tan 开源项目（garrytan/gstack）：涵盖全周期交付 Skill（office-hours、CEO/研发/设计评审、autoplan、严苛代码与安全审查、QA、ship 发版、canary、retro 等）、专家子代理与工程准则。"
         }
       },
       "category": "Workflow",
       "author": "Garry Tan",
       "homepage": "https://github.com/garrytan/gstack",
+      "counts": {
+        "skills": 62,
+        "agents": 3,
+        "rules": 1
+      },
       "source": "./loadouts/gstack"
     },
     {
@@ -153,6 +210,9 @@
       },
       "category": "Architecture",
       "author": "Lumzel",
+      "counts": {
+        "skills": 1
+      },
       "source": "./loadouts/fullstack-architect"
     },
     {
@@ -191,6 +251,9 @@
       },
       "category": "Security",
       "author": "Lumzel",
+      "counts": {
+        "skills": 1
+      },
       "source": "./loadouts/security-auditor"
     },
     {
@@ -218,40 +281,53 @@
       "id": "spec-workbench",
       "title": "Spec Workbench",
       "icon": "dia",
-      "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project. Includes 9 spec-workbench-* skills and 4 subagents.",
+      "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project.",
       "i18n": {
         "en": {
           "title": "Spec Workbench",
-          "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project. Includes 9 spec-workbench-* skills and 4 subagents."
+          "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project."
         },
         "zh-CN": {
           "title": "方案工作台",
-          "description": "从想法到技术方案、工单、可点击原型，再到按工单实现与评审的研发工作台：在任意项目里用可视化文档推进功能交付。自带 9 个 spec-workbench-* 技能与 4 个子代理，不依赖项目脚手架。"
+          "description": "从想法到技术方案、工单、可点击原型，再到按工单实现与评审的研发工作台：在任意项目里用可视化文档推进功能交付，不依赖项目脚手架。"
         }
       },
       "category": "Workflow",
       "author": "Lumzel",
+      "counts": {
+        "skills": 9,
+        "agents": 4
+      },
       "source": "./decks/spec-workbench",
-      "cover": { "light": "preview/cover-light.webp", "dark": "preview/cover-dark.webp" },
-      "coverViewport": [1200, 750]
+      "cover": {
+        "light": "preview/cover-light.webp",
+        "dark": "preview/cover-dark.webp"
+      },
+      "coverViewport": [
+        1200,
+        750
+      ]
     },
     {
       "id": "release-readiness",
       "title": "Release Readiness",
       "icon": "rocket",
-      "description": "Release checklist, changelog summary, and security gate board powered by 3 bundled release skills (release-readiness-audit, release-readiness-changelog, release-readiness-security).",
+      "description": "Release checklist, changelog summary, and security gate board powered by bundled release skills (release-readiness-audit, release-readiness-changelog, release-readiness-security).",
       "i18n": {
         "en": {
           "title": "Release Readiness",
-          "description": "Release checklist, changelog summary, and security gate board powered by 3 bundled release skills (release-readiness-audit, release-readiness-changelog, release-readiness-security)."
+          "description": "Release checklist, changelog summary, and security gate board powered by bundled release skills (release-readiness-audit, release-readiness-changelog, release-readiness-security)."
         },
         "zh-CN": {
           "title": "发版就绪看板",
-          "description": "版本发布检查清单、变更摘要与安全门禁工作台，自带 3 个发版核验技能（release-readiness-audit / changelog / security）。"
+          "description": "版本发布检查清单、变更摘要与安全门禁工作台，自带配套发版核验技能（release-readiness-audit / changelog / security）。"
         }
       },
       "category": "DevOps",
       "author": "Lumzel",
+      "counts": {
+        "skills": 3
+      },
       "source": "./decks/release-readiness",
       "cover": {
         "light": "preview/cover-light.webp",
@@ -262,19 +338,22 @@
       "id": "architecture-radar",
       "title": "Architecture Radar",
       "icon": "dia",
-      "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by 3 bundled architecture skills (architecture-radar-scan, architecture-radar-dataflow, architecture-radar-refactor).",
+      "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by bundled architecture skills (architecture-radar-scan, architecture-radar-dataflow, architecture-radar-refactor).",
       "i18n": {
         "en": {
           "title": "Architecture Radar",
-          "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by 3 bundled architecture skills (architecture-radar-scan, architecture-radar-dataflow, architecture-radar-refactor)."
+          "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by bundled architecture skills (architecture-radar-scan, architecture-radar-dataflow, architecture-radar-refactor)."
         },
         "zh-CN": {
           "title": "架构与模块雷达",
-          "description": "梳理模块边界、端到端数据流转与重构热点的架构工作台，自带 3 个架构分析技能（architecture-radar-scan / dataflow / refactor）。"
+          "description": "梳理模块边界、端到端数据流转与重构热点的架构工作台，自带配套架构分析技能（architecture-radar-scan / dataflow / refactor）。"
         }
       },
       "category": "Architecture",
       "author": "Lumzel",
+      "counts": {
+        "skills": 3
+      },
       "source": "./decks/architecture-radar",
       "cover": {
         "light": "preview/cover-light.webp",
@@ -285,19 +364,22 @@
       "id": "pr-review-board",
       "title": "PR Review Board",
       "icon": "check",
-      "description": "Structured code review board along coding standards and specification compliance, powered by 3 bundled review skills (pr-review-board-review, pr-review-board-standards, pr-review-board-spec).",
+      "description": "Structured code review board along coding standards and specification compliance, powered by bundled review skills (pr-review-board-review, pr-review-board-standards, pr-review-board-spec).",
       "i18n": {
         "en": {
           "title": "PR Review Board",
-          "description": "Structured code review board along coding standards and specification compliance, powered by 3 bundled review skills (pr-review-board-review, pr-review-board-standards, pr-review-board-spec)."
+          "description": "Structured code review board along coding standards and specification compliance, powered by bundled review skills (pr-review-board-review, pr-review-board-standards, pr-review-board-spec)."
         },
         "zh-CN": {
           "title": "代码审查面板",
-          "description": "围绕编码规范与需求规格双轴展开的结构化 Code Review 面板，自带 3 个代码审查技能（pr-review-board-review / standards / spec）。"
+          "description": "围绕编码规范与需求规格双轴展开的结构化 Code Review 面板，自带配套代码审查技能（pr-review-board-review / standards / spec）。"
         }
       },
       "category": "Code Review",
       "author": "Lumzel",
+      "counts": {
+        "skills": 3
+      },
       "source": "./decks/pr-review-board",
       "cover": {
         "light": "preview/cover-light.webp",

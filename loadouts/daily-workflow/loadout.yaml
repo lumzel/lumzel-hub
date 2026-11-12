@@ -1,0 +1,34 @@
+id: daily-workflow
+name: Daily Engineering Workflow
+icon: 🧠
+category: Workflow
+description: 'All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing.'
+i18n:
+  en:
+    name: Daily Engineering Workflow
+    description: 'All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing.'
+  zh-CN:
+    name: 日常全能研发工作流
+    description: 面向日常开发与架构演进的通用全能套件：集成可视化单页解读与架构制图、交互式方案规划、公共边界 TDD、双轴代码审查、Graphify 知识图谱持久记忆与去 AI 腔自然表达。
+author: Lumzel
+skills:
+- answer-me-with-html
+- visual-plan
+- show-me
+- excalidraw-diagram-generator
+- git-commit
+- humanizer
+- humanizer-zh
+- eli5
+- code-review
+- tdd
+- graphify
+- skill-creator
+agents: {}
+mcp:
+- graphify
+hooks: []
+rules:
+- graphify-memory
+plugins: []
+env: {}

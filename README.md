@@ -8,15 +8,18 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 
 ## Included Loadouts
 
+> Live component counts (`skills`, `agents`, `rules`, `hooks`, `mcp`) are computed automatically into `marketplace.json`'s `counts` field by `tools/sync-upstreams.mjs`.
+
 | ID | Category | Name (`en` / `zh-CN`) | Upstream | Bundled Capabilities |
 | :--- | :--- | :--- | :--- | :--- |
-| `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 271 Skills, 67 Subagents, 113 Common & Language Rules, 3 Hooks, 32 MCP Configs |
+| `daily-workflow` | `Workflow` | 🧠 Daily Engineering Workflow / 日常全能研发工作流 | Curated Multi-Repo (`upstreams.json`) | Curated Skills (`answer-me-with-html`, `visual-plan`, `show-me`, `excalidraw-diagram-generator`, `git-commit`, `humanizer`, `humanizer-zh`, `eli5`, `code-review`, `tdd`, `graphify`, `skill-creator`), `graphify` MCP (`uvx`), `graphify-memory` Rule |
+| `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | Full-stack & domain Skills, Specialist Subagents, Common & Multi-Language Rules, Hooks, MCP Configs |
 | `tdd-engineer` | `Engineering` | 🧪 TDD Craft Engineer / TDD 测试驱动工程师 | Lumzel Official | Public Seam Red-Green-Refactor Instructions |
-| `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow / 研发工作流 | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 39 Skills (with companion testing/architecture docs), 3 Subagents, 1 Rule |
-| `superpowers` | `Workflow` | 🦸 Obra Superpowers / 工程纪律套件 | [`obra/superpowers`](https://github.com/obra/superpowers) | 15 Skills (with prompts, references & templates), 3 Subagents, 1 Hook, 1 Rule |
-| `compound-engineering` | `Workflow` | 🔄 Compound Engineering / 复利工程 | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | 37 `ce-*` / `lfg` / `wtf` Skills, 26 Specialist Subagents, 1 Rule |
-| `gstack` | `Workflow` | 🚀 Garry Tan gstack / 交付工作流 | [`garrytan/gstack`](https://github.com/garrytan/gstack) | 62 Full-Lifecycle Skills, 3 Subagents, 1 Ethos Rule |
-| `spec-kit` | `Architecture` | 📐 GitHub Spec-Kit (SDD) / 规格驱动开发 | [`github/spec-kit`](https://github.com/github/spec-kit) | 9 `speckit-*` Workflow Skills (bundled with official templates), 2 Subagents, 1 Rule |
+| `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow / 研发工作流 | [`mattpocock/skills`](https://github.com/mattpocock/skills) | Upstream Skills (with companion testing/architecture docs), Review/Explorer Subagents, Rule |
+| `superpowers` | `Workflow` | 🦸 Obra Superpowers / 工程纪律套件 | [`obra/superpowers`](https://github.com/obra/superpowers) | Upstream Skills (with prompts, references & templates), Subagents, SessionStart Hook, Iron Laws Rule |
+| `compound-engineering` | `Workflow` | 🔄 Compound Engineering / 复利工程 | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | `ce-*` / `lfg` / `wtf` Workflow Skills, Specialist Research & Review Subagents, Coding Standards Rule |
+| `gstack` | `Workflow` | 🚀 Garry Tan gstack / 交付工作流 | [`garrytan/gstack`](https://github.com/garrytan/gstack) | Full-Lifecycle Delivery Skills, Specialist Subagents, Boil-the-Lake Ethos Rule |
+| `spec-kit` | `Architecture` | 📐 GitHub Spec-Kit (SDD) / 规格驱动开发 | [`github/spec-kit`](https://github.com/github/spec-kit) | `speckit-*` SDD Workflow Skills (bundled with official templates), Subagents, Principles Rule |
 | `fullstack-architect` | `Architecture` | 🏛️ Fullstack Architect / 全栈系统架构师 | Lumzel Official | `architecture-adr` Skill + System Architecture & Boundary Instructions |
 | `security-auditor` | `Security` | 🛡️ Security & Reliability Auditor / 安全与可靠性审计师 | Lumzel Official | `owasp-security-audit` Skill + Threat Modeling & Concurrency Audit |
 | `frontend-craftsman` | `Frontend` | ✨ Frontend UI Craftsman / 前端与桌面界面工匠 | Lumzel Official | Design Tokens, Accessibility & Desktop-Grade UI Polish |
@@ -25,31 +28,10 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 
 | ID | Category | Title (`en` / `zh-CN`) | Capabilities |
 | :--- | :--- | :--- | :--- |
-| `spec-workbench` | `Workflow` | Spec Workbench / 方案工作台 | Visual design docs, tickets, clickable prototypes, and 9 `spec-workbench-*` skills + 4 `spec-workbench-*` subagents |
-| `pr-review-board` | `Code Review` | PR Review Board / 代码审查面板 | Dual-axis Standards & Spec code review board + 3 `pr-review-board-*` skills |
-| `release-readiness` | `DevOps` | Release Readiness / 发版就绪看板 | Release checklist, changelog summary, and Agent verification gate + 3 `release-readiness-*` skills |
-| `architecture-radar` | `Architecture` | Architecture Radar / 架构与模块雷达 | Module boundaries, dependency health, and Agent structural analysis + 3 `architecture-radar-*` skills |
-
---- | :--- | :--- | :--- |
-| `everything-claude-code` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 5 Skills (`ecc-plan`, `ecc-tdd-workflow`, `ecc-security-shield`, `ecc-code-review`, `ecc-verification-loop`), 6 Subagents (`ecc-planner`, `ecc-architect`, `ecc-tdd-guide`, `ecc-code-reviewer`, `ecc-security-reviewer`, `ecc-build-fixer`), 2 Rules |
-| `matt-pocock` | 🎯 Matt Pocock Workflow / 研发工作流 | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 14 Skills (`grill-me`, `grill-with-docs`, `domain-modeling`, `codebase-design`, `to-spec`, `to-tickets`, `wayfinder`, `tdd`, `prototype`, `diagnosing-bugs`, `code-review`, `improve-codebase-architecture`, `handoff`, `teach`), 3 Subagents (`standards-reviewer`, `spec-reviewer`, `architecture-explorer`), 1 Rule |
-| `superpowers` | 🦸 Obra Superpowers / 工程纪律套件 | [`obra/superpowers`](https://github.com/obra/superpowers) | 5 Skills (`brainstorming`, `writing-plans`, `subagent-driven-development`, `systematic-debugging`, `verification-before-completion`), 3 Subagents (`task-implementer`, `spec-compliance-reviewer`, `code-quality-reviewer`), 1 Rule (`superpowers-iron-laws`) |
-| `spec-kit` | 📐 GitHub Spec-Kit (SDD) / 规格驱动开发 | [`github/spec-kit`](https://github.com/github/spec-kit) | 4 Skills (`speckit-constitution`, `speckit-specify`, `speckit-plan`, `speckit-tasks`), 2 Subagents (`spec-analyst`, `contract-architect`), 1 Rule (`spec-first-gate`) |
-| `compound-engineering` | 🔄 Compound Engineering / 复利工程 | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | 3 Skills (`compound-plan`, `compound-review`, `compound-codify`), 3 Subagents (`simplicity-reviewer`, `data-integrity-reviewer`, `performance-oracle`), 1 Rule (`compound-knowledge`) |
-| `gstack` | 🚀 Garry Tan gstack / 交付工作流 | [`garrytan/gstack`](https://github.com/garrytan/gstack) | 3 Skills (`gstack-ceo-plan`, `gstack-eng-plan`, `gstack-paranoid-review`), 2 Subagents (`staff-paranoid-reviewer`, `release-ship-captain`) |
-| `fullstack-architect` | 🏛️ Fullstack Architect / 全栈系统架构师 | Lumzel Official | `architecture-adr` Skill + System Architecture & Boundary Instructions |
-| `tdd-engineer` | 🧪 TDD Craft Engineer / TDD 测试驱动工程师 | Lumzel Official | Public Seam Red-Green-Refactor Instructions |
-| `security-auditor` | 🛡️ Security & Reliability Auditor / 安全与可靠性审计师 | Lumzel Official | `security-review` Skill + Threat Modeling & Concurrency Audit |
-| `frontend-craftsman` | ✨ Frontend UI Craftsman / 前端与桌面界面工匠 | Lumzel Official | Design Tokens, Accessibility & Desktop-Grade UI Polish |
-
-## Included Decks
-
-| ID | Title (`en` / `zh-CN`) | Category | Capabilities |
-| :--- | :--- | :--- | :--- |
-| `spec-workbench` | Spec Workbench / 方案工作台 | Engineering | Visual design docs, tickets, clickable prototypes, and 9 `spec-workbench-*` skills + 4 `spec-workbench-*` subagents |
-| `release-readiness` | Release Readiness / 发版就绪看板 | DevOps | Release checklist, changelog summary, and Agent verification gate + 3 `release-readiness-*` skills |
-| `architecture-radar` | Architecture Radar / 架构与模块雷达 | Architecture | Module boundaries, dependency health, and Agent structural analysis + 3 `architecture-radar-*` skills |
-| `pr-review-board` | PR Review Board / 代码审查面板 | Engineering | Dual-axis Standards & Spec code review board + 3 `pr-review-board-*` skills |
+| `spec-workbench` | `Workflow` | Spec Workbench / 方案工作台 | Visual design docs, tickets, clickable prototypes + bundled `spec-workbench-*` skills & subagents |
+| `pr-review-board` | `Code Review` | PR Review Board / 代码审查面板 | Dual-axis Standards & Spec code review board + bundled `pr-review-board-*` skills |
+| `release-readiness` | `DevOps` | Release Readiness / 发版就绪看板 | Release checklist, changelog summary, and Agent verification gate + bundled `release-readiness-*` skills |
+| `architecture-radar` | `Architecture` | Architecture Radar / 架构与模块雷达 | Module boundaries, dependency health, and Agent structural analysis + bundled `architecture-radar-*` skills |
 
 ---
 
@@ -108,6 +90,10 @@ i18n:
 ```text
 lumzel-hub/
 ├── marketplace.json                 # Index manifest for in-app Marketplace discovery
+├── upstreams.json                   # Declarative upstream sources & pinned SHAs (curated skills + full suites)
+├── tools/
+│   ├── sync-upstreams.mjs           # Zero-dependency upstream synchronizer & catalog verifier
+│   └── render-previews.mjs          # Automated Deck cover renderer
 ├── loadouts/
 │   └── <loadout-id>/
 │       ├── loadout.yaml             # Loadout metadata (with optional i18n), runtime params, and library references
@@ -137,11 +123,11 @@ Lumzel supports browsing repositories directly in the **Loadout** and **Deck** p
    - `lumzel/lumzel-hub`
 
 2. **Import a Specific Loadout or Deck**
-   - **GitHub Tree URL**: `https://github.com/lumzel/lumzel-hub/tree/main/loadouts/everything-claude-code`
-   - **Shorthand (`owner/repo/id`)**: `lumzel/lumzel-hub/everything-claude-code` or `lumzel/lumzel-hub/matt-pocock`
+   - **GitHub Tree URL**: `https://github.com/lumzel/lumzel-hub/tree/main/loadouts/daily-workflow`
+   - **Shorthand (`owner/repo/id`)**: `lumzel/lumzel-hub/daily-workflow` or `lumzel/lumzel-hub/matt-pocock`
    - **Lumzel URI Schema**:
+     - `lumzel://loadout/lumzel/lumzel-hub/daily-workflow`
      - `lumzel://loadout/lumzel/lumzel-hub/everything-claude-code`
-     - `lumzel://loadout/lumzel/lumzel-hub/matt-pocock`
      - `lumzel://deck/lumzel/lumzel-hub/release-readiness`
      - `lumzel://repo/lumzel/lumzel-hub`
    - **Local Folder Path**: `/path/to/my-loadout-or-deck`
@@ -173,10 +159,38 @@ A Deck that needs a project to show anything ships a sample one. `spec-workbench
 
 ---
 
+## Declarative Upstream Auto-Sync (`upstreams.json` + CI)
+
+Loadouts stay self-contained in `loadouts/<id>/` (enabling single-folder sparse checkout and instant in-app Market Previews) while tracking upstream GitHub repositories through `upstreams.json` and `tools/sync-upstreams.mjs`:
+
+- **`curated` mode** (e.g. `daily-workflow`): Composes individual Skills from multiple upstream repositories (`repo` + `path` or `skillFile` + `extraDirs`) alongside Hub-maintained `AGENTS.md`, `rules/`, and portable `mcp/` configs.
+- **`suite` mode** (e.g. `everything-claude-code`, `matt-pocock`, `superpowers`, `spec-kit`, `compound-engineering`, `gstack`): Mirrors complete upstream suites and adapts skills, subagents, rules, and MCP configs into Lumzel's standard Loadout layout while preserving Hub-specific hooks/rules listed in `preserve`.
+
+```bash
+# Dry-run check for new upstream commits via git ls-remote
+node tools/sync-upstreams.mjs --check
+
+# Incrementally sync changed upstreams and regenerate loadout.yaml manifests
+node tools/sync-upstreams.mjs
+
+# Sync specific Loadout(s) or force full re-sync
+node tools/sync-upstreams.mjs --only daily-workflow,matt-pocock --force
+
+# Regenerate structured component counts in marketplace.json without network fetches
+node tools/sync-upstreams.mjs --counts
+
+# Verify catalog manifests, counts drift, JSON configs, and Lumzel Market Preview bounds (<= 2000 files, <= 20 MiB)
+node tools/sync-upstreams.mjs --verify
+```
+
+The GitHub Actions workflow (`.github/workflows/sync-upstreams.yml`) runs daily (`03:00 UTC`) and on manual `workflow_dispatch`, opening or updating a rolling `chore/sync-upstreams` Pull Request with upstream commit compare links and per-Loadout component diffs.
+
+---
+
 ## Creating Your Own Repository
 
 1. Create a GitHub repository with `marketplace.json` at the root (or `.lumzel-plugin/marketplace.json`).
-2. List your `loadouts` and/or `decks` in `marketplace.json`:
+2. List your `loadouts` and/or `decks` in `marketplace.json` (optional `counts` renders component badges on Market cards without hardcoding numbers in descriptions):
 
 ```json
 {
@@ -204,6 +218,10 @@ A Deck that needs a project to show anything ships a sample one. `spec-workbench
       },
       "category": "Backend",
       "author": "Acme Eng",
+      "counts": {
+        "skills": 3,
+        "rules": 1
+      },
       "source": "./loadouts/backend-go"
     }
   ],
@@ -225,6 +243,9 @@ A Deck that needs a project to show anything ships a sample one. `spec-workbench
       },
       "category": "SRE",
       "author": "Acme Eng",
+      "counts": {
+        "skills": 2
+      },
       "source": "./decks/incident-triage"
     }
   ]

@@ -2,16 +2,14 @@ id: compound-engineering
 name: Compound Engineering
 icon: 🔄
 category: Workflow
-description: 'Complete EveryInc Compound Engineering v3 suite (EveryInc/compound-engineering-plugin): all 37 ce-* / lfg /
-  wtf skills, 26 specialist research & review subagents, and coding standards.'
+description: 'Complete EveryInc Compound Engineering suite (EveryInc/compound-engineering-plugin): ce-* / lfg / wtf workflow skills, specialist research & review subagents, and coding standards.'
 i18n:
   en:
     name: Compound Engineering
-    description: 'Complete EveryInc Compound Engineering v3 suite (EveryInc/compound-engineering-plugin): all 37 ce-* / lfg
-      / wtf skills, 26 specialist research & review subagents, and coding standards.'
+    description: 'Complete EveryInc Compound Engineering suite (EveryInc/compound-engineering-plugin): ce-* / lfg / wtf workflow skills, specialist research & review subagents, and coding standards.'
   zh-CN:
     name: Compound Engineering 复利工程
-    description: 完整同步 EveryInc 复利工程套件（EveryInc/compound-engineering-plugin）：内置全部 37 个 ce-* / lfg / wtf 官方 Skill、26 个多维研究与审查子代理及编码规范。
+    description: 完整同步 EveryInc 复利工程套件（EveryInc/compound-engineering-plugin）：包含全套 ce-* / lfg / wtf 工作流 Skill、多维研究与审查子代理及编码规范。
 author: EveryInc
 homepage: https://github.com/EveryInc/compound-engineering-plugin
 skills:

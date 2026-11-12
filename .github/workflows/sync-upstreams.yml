@@ -1,0 +1,110 @@
+# Periodically syncs standalone upstream Skills and full upstream Suite Loadouts declared in
+# `upstreams.json`, validates catalog & preview bounds, and opens/updates a rolling Pull Request.
+name: Sync Upstreams
+
+on:
+  schedule:
+    # Runs daily at 03:00 UTC (11:00 CST)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Optional comma-separated Loadout IDs to sync (e.g. daily-workflow,matt-pocock)'
+        required: false
+        type: string
+      force:
+        description: 'Force full re-sync even when upstream commit SHA has not changed'
+        required: false
+        default: false
+        type: boolean
+  pull_request:
+    paths:
+      - 'marketplace.json'
+      - 'upstreams.json'
+      - 'loadouts/**'
+      - 'tools/sync-upstreams.mjs'
+
+concurrency:
+  group: sync-upstreams-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify catalog manifests and Lumzel preview bounds
+        run: node tools/sync-upstreams.mjs --verify
+
+  sync:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run declarative upstream sync
+        env:
+          INPUT_ONLY: ${{ inputs.only }}
+          INPUT_FORCE: ${{ inputs.force }}
+        run: |
+          ARGS=(--report /tmp/sync-report.md)
+          if [ -n "$INPUT_ONLY" ]; then
+            ARGS+=(--only "$INPUT_ONLY")
+          fi
+          if [ "$INPUT_FORCE" = "true" ]; then
+            ARGS+=(--force)
+          fi
+          node tools/sync-upstreams.mjs "${ARGS[@]}"
+
+      - name: Open or update Pull Request on upstream changes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BRANCH: chore/sync-upstreams
+          PR_TITLE: 'chore(upstreams): sync upstream skills and suite loadouts'
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No upstream changes detected."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B "$PR_BRANCH"
+          git add upstreams.json loadouts/
+          if git diff --cached --quiet; then
+            echo "No staged changes after filtering."
+            exit 0
+          fi
+
+          git commit -m "$PR_TITLE"
+          git push --force origin "HEAD:refs/heads/$PR_BRANCH"
+
+          BODY_FILE=/tmp/sync-report.md
+          if [ ! -s "$BODY_FILE" ]; then
+            echo "Automated sync of upstream skills and suite loadouts." > "$BODY_FILE"
+          fi
+
+          EXISTING_PR=$(gh pr list --head "$PR_BRANCH" --base main --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING_PR" ]; then
+            gh pr edit "$EXISTING_PR" --title "$PR_TITLE" --body-file "$BODY_FILE"
+            echo "Updated existing PR #$EXISTING_PR"
+          else
+            gh pr create --base main --head "$PR_BRANCH" --title "$PR_TITLE" --body-file "$BODY_FILE"
+          fi
