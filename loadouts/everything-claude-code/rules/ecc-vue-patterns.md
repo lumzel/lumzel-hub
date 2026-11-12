@@ -1,7 +1,7 @@
 ---
 name: ecc-vue-patterns
 description: 'ECC vue rule: patterns'
-paths: '**/*.vue'
+paths: - "**/*.vue"
 ---
 
 # Vue Patterns

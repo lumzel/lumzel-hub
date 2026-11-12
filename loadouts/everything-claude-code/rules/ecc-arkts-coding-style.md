@@ -1,7 +1,7 @@
 ---
 name: ecc-arkts-coding-style
 description: 'ECC arkts rule: coding style'
-paths: '**/*.ets, **/*.ts, **/module.json5, **/oh-package.json5, **/build-profile.json5'
+paths: - "**/*.ets"
 ---
 
 # HarmonyOS / ArkTS Coding Style

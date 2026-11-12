@@ -1,7 +1,7 @@
 ---
 name: ecc-fsharp-coding-style
 description: 'ECC fsharp rule: coding style'
-paths: '**/*.fs, **/*.fsx'
+paths: - "**/*.fs"
 ---
 
 # F# Coding Style

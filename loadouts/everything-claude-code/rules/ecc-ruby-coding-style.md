@@ -1,7 +1,7 @@
 ---
 name: ecc-ruby-coding-style
 description: 'ECC ruby rule: coding style'
-paths: '**/*.rb, **/*.rake, **/Gemfile, **/*.gemspec, **/config.ru'
+paths: - "**/*.rb"
 ---
 
 # Ruby Coding Style

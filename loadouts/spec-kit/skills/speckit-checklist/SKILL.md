@@ -1,6 +1,6 @@
 ---
 name: speckit-checklist
-description: Generate a custom checklist for the current feature based on user requirements.
+description: 'Generate a custom checklist for the current feature based on user requirements.'
 ---
 
 > **Bundled Spec-Kit Templates**: Official templates (`constitution-template.md`, `spec-template.md`, `plan-template.md`, `tasks-template.md`, `checklist-template.md`) are available in `./references/` if `.specify/templates/` has not been initialized in the current repository yet.

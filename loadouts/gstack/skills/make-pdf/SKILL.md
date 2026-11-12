@@ -1,8 +1,18 @@
 ---
 name: make-pdf
+preamble-tier: 1
+version: 1.0.0
 description: Turn any markdown file into a publication-quality PDF. (gstack)
+triggers:
+  - markdown to pdf
+  - generate pdf
+  - make pdf
+  - export pdf
+allowed-tools:
+  - Bash
+  - Read
+  - AskUserQuestion
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

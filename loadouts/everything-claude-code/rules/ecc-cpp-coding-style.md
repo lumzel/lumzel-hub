@@ -1,7 +1,7 @@
 ---
 name: ecc-cpp-coding-style
 description: 'ECC cpp rule: coding style'
-paths: '**/*.cpp, **/*.hpp, **/*.cc, **/*.hh, **/*.cxx, **/*.h, **/CMakeLists.txt'
+paths: - "**/*.cpp"
 ---
 
 # C++ Coding Style

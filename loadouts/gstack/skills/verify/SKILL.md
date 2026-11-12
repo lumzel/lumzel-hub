@@ -1,8 +1,23 @@
 ---
 name: verify
-description: 'Use when coding: run the checks and tests /ship picks until green. (gstack)'
+preamble-tier: 1
+version: 0.1.0
+description: "Use when coding: run the checks and tests /ship picks until green. (gstack)"
+triggers:
+  - verify my change
+  - run the checks
+  - make the tests pass
+  - make it green
+  - is it green
+  - check my work before ship
+allowed-tools:
+  - Bash
+  - Read
+  - Edit
+  - Grep
+  - Glob
+  - AskUserQuestion
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

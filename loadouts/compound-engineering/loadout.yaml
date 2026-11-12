@@ -38,6 +38,7 @@ skills:
 - ce-proof
 - ce-prototype
 - ce-resolve-pr-feedback
+- ce-retro
 - ce-retune
 - ce-riffrec-feedback-analysis
 - ce-setup
@@ -51,35 +52,66 @@ skills:
 - lfg
 - wtf
 agents:
+  ce-adversarial-document-reviewer: {}
+  ce-adversarial-reviewer: {}
   ce-agent-native-planning-strategist: {}
+  ce-agent-native-reviewer: {}
+  ce-api-contract-reviewer: {}
   ce-architecture-strategist: {}
   ce-behavior-trace-scout: {}
   ce-best-practices-researcher: {}
+  ce-code-quality-reviewer: {}
+  ce-code-reuse-reviewer: {}
+  ce-coherence-reviewer: {}
+  ce-comment-reviewer: {}
+  ce-correctness-reviewer: {}
   ce-data-integrity-guardian: {}
+  ce-data-migration-reviewer: {}
+  ce-deployment-verification-agent: {}
+  ce-design-lens-reviewer: {}
+  ce-efficiency-reviewer: {}
   ce-external-evidence-researcher: {}
+  ce-feasibility-reviewer: {}
   ce-figma-design-sync: {}
   ce-framework-docs-researcher: {}
+  ce-frontend-races-reviewer: {}
   ce-git-history-analyzer: {}
   ce-implementation-worker: {}
   ce-issue-intelligence-analyst: {}
   ce-learnings-researcher: {}
+  ce-maintainability-reviewer: {}
   ce-media-analyzer: {}
   ce-pattern-recognition-specialist: {}
   ce-performance-oracle: {}
+  ce-performance-reviewer: {}
   ce-pov-peer: {}
   ce-pr-comment-resolver: {}
   ce-precedent-activity-scout: {}
+  ce-previous-comments-reviewer: {}
+  ce-product-lens-reviewer: {}
   ce-project-grounding-scout: {}
+  ce-project-standards-reviewer: {}
+  ce-reliability-reviewer: {}
   ce-repo-research-analyst: {}
+  ce-scope-guardian-reviewer: {}
+  ce-security-lens-reviewer: {}
+  ce-security-reviewer: {}
   ce-security-sentinel: {}
   ce-session-historian: {}
+  ce-session-miner: {}
   ce-slack-researcher: {}
   ce-spec-flow-analyzer: {}
+  ce-structure-reviewer: {}
+  ce-test-value-reviewer: {}
+  ce-testing-reviewer: {}
   ce-web-researcher: {}
+  ce-whole-doc-reviewer: {}
   ce-work-recap-scout: {}
 mcp: []
 hooks: []
 rules:
 - ce-coding-standards
+- ce-pr-review-rules
+- ce-skill-authoring-standards
 plugins: []
 env: {}

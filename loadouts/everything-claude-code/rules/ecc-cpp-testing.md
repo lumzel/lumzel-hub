@@ -1,7 +1,7 @@
 ---
 name: ecc-cpp-testing
 description: 'ECC cpp rule: testing'
-paths: '**/*.cpp, **/*.hpp, **/*.cc, **/*.hh, **/*.cxx, **/*.h, **/CMakeLists.txt'
+paths: - "**/*.cpp"
 ---
 
 # C++ Testing

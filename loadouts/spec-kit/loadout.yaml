@@ -30,4 +30,7 @@ hooks: []
 rules:
 - speckit-sdd-principles
 plugins: []
-env: {}
+env:
+  SPECIFY_FEATURE: ''
+  SPECIFY_INIT_DIR: ''
+  SPECIFY_FEATURE_NO_PERSIST: '0'

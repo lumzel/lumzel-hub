@@ -1,7 +1,7 @@
 ---
 name: ecc-python-coding-style
 description: 'ECC python rule: coding style'
-paths: '**/*.py, **/*.pyi'
+paths: - "**/*.py"
 ---
 
 # Python Coding Style

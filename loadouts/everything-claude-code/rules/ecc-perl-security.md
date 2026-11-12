@@ -1,7 +1,7 @@
 ---
 name: ecc-perl-security
 description: 'ECC perl rule: security'
-paths: '**/*.pl, **/*.pm, **/*.t, **/*.psgi, **/*.cgi'
+paths: - "**/*.pl"
 ---
 
 # Perl Security

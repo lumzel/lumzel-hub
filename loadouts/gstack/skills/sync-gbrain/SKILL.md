@@ -1,8 +1,22 @@
 ---
 name: sync-gbrain
+preamble-tier: 2
+version: 1.0.0
 description: Keep gbrain current with this repo's code and refresh agent search guidance in CLAUDE.md. (gstack)
+triggers:
+  - sync gbrain
+  - refresh gbrain
+  - reindex repo
+  - update gbrain
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - AskUserQuestion
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

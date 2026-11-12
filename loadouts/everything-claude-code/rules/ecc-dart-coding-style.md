@@ -1,7 +1,7 @@
 ---
 name: ecc-dart-coding-style
 description: 'ECC dart rule: coding style'
-paths: '**/*.dart, **/pubspec.yaml, **/analysis_options.yaml'
+paths: - "**/*.dart"
 ---
 
 # Dart/Flutter Coding Style

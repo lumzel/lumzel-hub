@@ -1,8 +1,21 @@
 ---
 name: devex-review
+preamble-tier: 3
+version: 1.0.0
 description: Live developer experience audit. (gstack)
+triggers:
+  - live dx audit
+  - test developer experience
+  - measure onboarding time
+allowed-tools:
+  - Read
+  - Edit
+  - Grep
+  - Glob
+  - Bash
+  - AskUserQuestion
+  - WebSearch
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

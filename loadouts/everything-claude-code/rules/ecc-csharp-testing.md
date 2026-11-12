@@ -1,7 +1,7 @@
 ---
 name: ecc-csharp-testing
 description: 'ECC csharp rule: testing'
-paths: '**/*.cs, **/*.csx, **/*.csproj'
+paths: - "**/*.cs"
 ---
 
 # C# Testing
@@ -11,7 +11,7 @@ paths: '**/*.cs, **/*.csx, **/*.csproj'
 ## Test Framework
 
 - Prefer **xUnit** for unit and integration tests
-- Use **FluentAssertions** for readable assertions
+- Use **AwesomeAssertions** for readable assertions
 - Use **Moq** or **NSubstitute** for mocking dependencies
 - Use **Testcontainers** when integration tests need real infrastructure
 

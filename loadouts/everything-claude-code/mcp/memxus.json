@@ -1,0 +1,7 @@
+{
+  "type": "http",
+  "url": "https://mcp.memxus.com/mcp",
+  "headers": {
+    "Authorization": "Bearer ${env:MEMXUS_API_KEY}"
+  }
+}

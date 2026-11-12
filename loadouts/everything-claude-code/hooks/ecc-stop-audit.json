@@ -1,0 +1,6 @@
+{
+  "event": "Stop",
+  "matcher": "",
+  "command": "node -e \"if(process.env.ECC_HOOK_PROFILE!=='strict'||(process.env.ECC_DISABLED_HOOKS||'').includes('stop:check-console-log'))process.exit(0);const cp=require('child_process');try{const out=cp.execSync('git diff --name-only HEAD',{encoding:'utf8',stdio:['ignore','pipe','ignore']}).split('\\n').filter(f=>/\\.(ts|tsx|js|jsx)$/.test(f)&&!/\\.(test|spec)\\./.test(f));const fs=require('fs');const hits=out.filter(f=>fs.existsSync(f)&&fs.readFileSync(f,'utf8').includes('console.log('));if(hits.length)console.error('[ECC Strict Audit] Modified files still contain console.log: '+hits.join(', '));}catch{}\"",
+  "timeout": 5
+}

@@ -1,8 +1,40 @@
 ---
 name: review
+preamble-tier: 4
+version: 1.0.0
 description: Use when you review this PR's diff. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Edit
+  - Write
+  - Grep
+  - Glob
+  - Agent
+  - AskUserQuestion
+  - WebSearch
+triggers:
+  - review this pr
+  - look over my diff
+  - code review
+  - check my diff
+  - review my changes
+  - pre-landing review
+contract:
+  version: 1
+  items:
+    - id: specialists-dispatched
+      kind: selected_specialists_dispatched
+      marker: "Dispatching N specialists:"
+    - id: adversarial-pass
+      kind: agent_dispatch
+      match: Think like an attacker and a chaos engineer
+    - id: review-report
+      kind: report_labels
+      heading: Pre-Landing Review
+      labels:
+        - Gate edits
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

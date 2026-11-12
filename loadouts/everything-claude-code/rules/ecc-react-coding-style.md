@@ -1,7 +1,7 @@
 ---
 name: ecc-react-coding-style
 description: 'ECC react rule: coding style'
-paths: '**/*.tsx, **/*.jsx, **/components/**/*.ts, **/components/**/*.js, **/hooks/**/*.ts, **/hooks/**/*.js'
+paths: - "**/*.tsx"
 ---
 
 # React Coding Style

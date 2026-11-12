@@ -1,7 +1,7 @@
 ---
 name: ecc-cpp-patterns
 description: 'ECC cpp rule: patterns'
-paths: '**/*.cpp, **/*.hpp, **/*.cc, **/*.hh, **/*.cxx, **/*.h, **/CMakeLists.txt'
+paths: - "**/*.cpp"
 ---
 
 # C++ Patterns

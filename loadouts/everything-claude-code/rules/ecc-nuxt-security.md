@@ -1,7 +1,7 @@
 ---
 name: ecc-nuxt-security
 description: 'ECC nuxt rule: security'
-paths: '**/nuxt.config.*, **/app.config.*, **/server/**/*.ts'
+paths: - "**/nuxt.config.*"
 ---
 
 # Nuxt Security

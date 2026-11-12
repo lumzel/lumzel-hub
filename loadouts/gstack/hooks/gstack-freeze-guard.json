@@ -1,0 +1,6 @@
+{
+  "event": "PreToolUse",
+  "matcher": "Edit|Write|MultiEdit",
+  "command": "node -e \"const fs=require('fs'),path=require('path');let freeze=(process.env.GSTACK_FREEZE_DIR||'').trim();if(!freeze&&fs.existsSync('.gstack/freeze-dir.txt'))freeze=fs.readFileSync('.gstack/freeze-dir.txt','utf8').trim();if(!freeze)process.exit(0);let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const p=String((j.tool_input&&(j.tool_input.file_path||j.tool_input.path))||'');if(!p)return;const abs=path.resolve(p),allowed=path.resolve(freeze);if(abs!==allowed&&!abs.startsWith(allowed+path.sep)){console.error('[gstack freeze] Edit blocked outside frozen directory ('+allowed+'): '+p);process.exit(2);}}catch{}})\"",
+  "timeout": 5
+}

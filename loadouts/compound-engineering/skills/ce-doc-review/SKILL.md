@@ -1,6 +1,7 @@
 ---
 name: ce-doc-review
 description: Review requirements, plans, or specs with role-specific lenses. Use when the user wants to improve an existing planning document.
+argument-hint: "[mode:non-interactive] [path/to/document.{md,html}]"
 ---
 
 # Document Review

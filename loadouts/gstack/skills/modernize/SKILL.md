@@ -1,8 +1,21 @@
 ---
 name: modernize
-description: 'Bring an aging PR onto its current base and decide: MODERNIZE, REWORK or CLOSE. (gstack)'
+preamble-tier: 2
+version: 0.1.0
+description: "Bring an aging PR onto its current base and decide: MODERNIZE, REWORK or CLOSE. (gstack)"
+triggers:
+  - modernize this pr
+  - rebase this old pr
+  - revive this branch
+  - is this pr still worth landing
+allowed-tools:
+  - Bash
+  - Read
+  - Grep
+  - Glob
+  - AskUserQuestion
+disable-model-invocation: true
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

@@ -1,8 +1,19 @@
 ---
 name: ios-design-review
+preamble-tier: 2
+version: 1.0.0
 description: Visual design audit for iOS apps on real hardware. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Glob
+  - Grep
+  - AskUserQuestion
+triggers:
+  - review the ios design
+  - audit the iphone app visuals
+  - design qa the ios app
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

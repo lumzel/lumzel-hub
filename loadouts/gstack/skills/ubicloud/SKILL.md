@@ -1,8 +1,17 @@
 ---
 name: ubicloud
-description: 'Run a heavy suite, build or eval on an ephemeral 16-vCPU Ubicloud VM: TTL-named VMs, a reaper, quota preflight and a hang watchdog. (gstack)'
+preamble-tier: 2
+version: 1.0.0
+description: "Run a heavy suite, build or eval on an ephemeral 16-vCPU Ubicloud VM: TTL-named VMs, a reaper, quota preflight and a hang watchdog. (gstack)"
+triggers:
+  - run on ubicloud
+  - ubicloud vm
+  - remote test run
+  - full suite on a vm
+allowed-tools:
+  - Bash
+  - Read
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

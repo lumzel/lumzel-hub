@@ -1,8 +1,26 @@
 ---
 name: captain
-description: 'Run a crew of coding agents from one controller (also /crew): lanes send READY blocks and never merge; the controller merges through trains, keeps the digest, relays approvals, fixes flakes daily. (gstack)'
+preamble-tier: 2
+version: 1.0.0
+description: "Run a crew of coding agents from one controller (also /crew): lanes send READY blocks and never merge; the controller merges through trains, keeps the digest, relays approvals, fixes flakes daily. (gstack)"
+triggers:
+  - captain
+  - crew
+  - run the crew
+  - merge train
+  - call the slot
+  - validate this ready
+  - write the digest
+  - flaky pass
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - AskUserQuestion
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

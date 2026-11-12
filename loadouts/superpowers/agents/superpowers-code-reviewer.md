@@ -1,6 +1,6 @@
 ---
 name: superpowers-code-reviewer
-description: Senior code reviewer validating completed tasks against plan requirements and architecture quality.
+description: 'Senior code reviewer subagent verifying completed work against plan requirements and architectural quality before cascading.'
 ---
 
 # Code Reviewer Prompt Template

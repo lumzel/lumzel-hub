@@ -1,7 +1,7 @@
 ---
 name: ecc-react-patterns
 description: 'ECC react rule: patterns'
-paths: '**/*.tsx, **/*.jsx, **/components/**/*.ts, **/components/**/*.js, **/app/**/*.tsx, **/pages/**/*.tsx'
+paths: - "**/*.tsx"
 ---
 
 # React Patterns

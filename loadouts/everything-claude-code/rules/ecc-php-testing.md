@@ -1,7 +1,7 @@
 ---
 name: ecc-php-testing
 description: 'ECC php rule: testing'
-paths: '**/*.php, **/phpunit.xml, **/phpunit.xml.dist, **/composer.json'
+paths: - "**/*.php"
 ---
 
 # PHP Testing

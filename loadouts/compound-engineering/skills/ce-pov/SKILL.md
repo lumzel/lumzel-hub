@@ -1,6 +1,7 @@
 ---
 name: ce-pov
-description: Judge a supplied subject against the project's evidence and constraints. Use when assessing an external-adoption question, a holistic take on a document, or a supplied approach set. Use for an oracle panel to consult other models and reconcile their opinions. Use ce-explain for u
+description: "Judge a supplied subject against the project's evidence and constraints. Use when assessing an external-adoption question, a holistic take on a document, or a supplied approach set. Use for an oracle panel to consult other models and reconcile their opinions. Use ce-explain for understanding and ce-doc-review for findings review."
+argument-hint: "[question, document, or approaches] [cross-check] — or bare"
 ---
 
 # Form a Point of View

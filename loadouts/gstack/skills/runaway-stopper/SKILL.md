@@ -1,8 +1,18 @@
 ---
 name: runaway-stopper
+preamble-tier: 1
+version: 0.1.0
 description: Find runaway Capy threads and subagents, stop or rotate them safely, and prevent repeats. (gstack)
+triggers:
+  - find runaway threads
+  - stop runaway jobs
+  - rotate this thread
+  - token sweep
+allowed-tools:
+  - Bash
+  - Read
+  - Write
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

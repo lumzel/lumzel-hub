@@ -1,8 +1,19 @@
 ---
 name: scrape
+preamble-tier: 1
+version: 2.0.0
 description: Pull data from a web page through the Aside browser — your real, already signed-in sessions. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - AskUserQuestion
+triggers:
+  - scrape this page
+  - get data from
+  - pull from
+  - extract from
+  - what is on
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

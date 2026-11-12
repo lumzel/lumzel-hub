@@ -1,7 +1,7 @@
 ---
 name: ecc-react-testing
 description: 'ECC react rule: testing'
-paths: '**/*.test.tsx, **/*.test.jsx, **/*.spec.tsx, **/*.spec.jsx, **/__tests__/**/*.ts, **/__tests__/**/*.tsx'
+paths: - "**/*.test.tsx"
 ---
 
 # React Testing

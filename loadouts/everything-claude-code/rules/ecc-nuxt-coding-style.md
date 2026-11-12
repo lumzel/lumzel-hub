@@ -1,7 +1,7 @@
 ---
 name: ecc-nuxt-coding-style
 description: 'ECC nuxt rule: coding style'
-paths: '**/nuxt.config.*, **/app.config.*, **/app.vue, **/pages/**, **/layouts/**, **/middleware/**'
+paths: - "**/nuxt.config.*"
 ---
 
 # Nuxt Coding Style

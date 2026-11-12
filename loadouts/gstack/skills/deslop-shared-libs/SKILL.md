@@ -1,8 +1,16 @@
 ---
 name: deslop-shared-libs
+version: 1.0.0
 description: Find worthwhile shared-code extractions in recent work. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Glob
+  - Grep
+triggers:
+  - find code worth sharing
+  - shared-code extraction opportunities
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

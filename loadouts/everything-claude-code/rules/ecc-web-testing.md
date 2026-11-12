@@ -1,6 +1,7 @@
 ---
 name: ecc-web-testing
 description: 'ECC web rule: testing'
+paths: - "**/*.css"
 ---
 
 > This file extends [common/testing.md](../common/testing.md) with web-specific testing content.

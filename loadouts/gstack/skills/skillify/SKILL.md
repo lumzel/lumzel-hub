@@ -1,8 +1,19 @@
 ---
 name: skillify
+preamble-tier: 2
+version: 1.0.0
 description: Codify the most recent successful /scrape flow into a permanent browser-skill on disk. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - AskUserQuestion
+triggers:
+  - skillify
+  - codify this scrape
+  - save this scrape
+  - make this permanent
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

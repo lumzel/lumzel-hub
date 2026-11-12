@@ -1,7 +1,7 @@
 ---
 name: ecc-java-testing
 description: 'ECC java rule: testing'
-paths: '**/*.java'
+paths: - "**/*.java"
 ---
 
 # Java Testing

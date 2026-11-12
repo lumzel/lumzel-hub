@@ -1,6 +1,7 @@
 ---
 name: ecc-web-design-quality
 description: 'ECC web rule: design quality'
+paths: - "**/*.css"
 ---
 
 > This file extends [common/patterns.md](../common/patterns.md) with web-specific design-quality guidance.

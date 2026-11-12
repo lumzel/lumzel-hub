@@ -1,7 +1,7 @@
 ---
 name: ecc-golang-testing
 description: 'ECC golang rule: testing'
-paths: '**/*.go, **/go.mod, **/go.sum'
+paths: - "**/*.go"
 ---
 
 # Go Testing

@@ -1,6 +1,6 @@
 {
   "event": "SessionStart",
   "matcher": "startup|clear|compact",
-  "command": "node -e \"console.log('Superpowers active: check applicable skills (using-superpowers, brainstorming, writing-plans, test-driven-development, systematic-debugging, verification-before-completion) before acting.')\"",
+  "command": "node -e \"console.log('Superpowers active: check applicable skills (using-superpowers, brainstorming, writing-plans, subagent-driven-development, test-driven-development, systematic-debugging, verification-before-completion) before acting.')\"",
   "timeout": 5
 }

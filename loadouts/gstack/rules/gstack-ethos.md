@@ -1,6 +1,6 @@
 ---
 name: gstack-ethos
-description: Garry Tan gstack Boil-the-Lake engineering ethos and shipping principles.
+description: 'Garry Tan gstack Boil-the-Lake engineering ethos and shipping principles.'
 ---
 
 # gstack Builder Ethos

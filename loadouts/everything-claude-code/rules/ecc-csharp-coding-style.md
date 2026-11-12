@@ -1,7 +1,7 @@
 ---
 name: ecc-csharp-coding-style
 description: 'ECC csharp rule: coding style'
-paths: '**/*.cs, **/*.csx'
+paths: - "**/*.cs"
 ---
 
 # C# Coding Style

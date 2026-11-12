@@ -31,6 +31,9 @@ skills:
 agents:
   superpowers-code-reviewer: {}
   superpowers-implementer: {}
+  superpowers-plan-reviewer: {}
+  superpowers-re-reviewer: {}
+  superpowers-session-diagnostician: {}
   superpowers-task-reviewer: {}
 mcp: []
 hooks:

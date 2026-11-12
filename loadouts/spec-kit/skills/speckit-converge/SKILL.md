@@ -1,6 +1,6 @@
 ---
 name: speckit-converge
-description: Assess the current codebase against the feature's spec, plan, and tasks, then append any remaining unbuilt work as new tasks to tasks.md so implement can complete it.
+description: 'Assess the current codebase against the feature''s spec, plan, and tasks, then append any remaining unbuilt work as new tasks to tasks.md so implement can complete it.'
 ---
 
 > **Bundled Spec-Kit Templates**: Official templates (`constitution-template.md`, `spec-template.md`, `plan-template.md`, `tasks-template.md`, `checklist-template.md`) are available in `./references/` if `.specify/templates/` has not been initialized in the current repository yet.

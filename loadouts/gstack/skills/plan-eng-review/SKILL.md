@@ -1,8 +1,21 @@
 ---
 name: plan-eng-review
+preamble-tier: 3
+version: 1.0.0
 description: Eng manager-mode plan review. (gstack)
+allowed-tools:
+  - Read
+  - Write
+  - Grep
+  - Glob
+  - AskUserQuestion
+  - Bash
+  - WebSearch
+triggers:
+  - review architecture
+  - eng plan review
+  - check the implementation plan
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

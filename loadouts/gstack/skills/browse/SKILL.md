@@ -1,8 +1,18 @@
 ---
 name: browse
-description: 'Drive a real browser through Aside: open a page, read it, click through a flow, take screenshots, check console errors. (gstack)'
----
+preamble-tier: 1
+version: 2.0.0
+description: "Drive a real browser through Aside: open a page, read it, click through a flow, take screenshots, check console errors. (gstack)"
+triggers:
+  - browse a page
+  - open this url
+  - take page screenshot
+allowed-tools:
+  - Bash
+  - Read
+  - AskUserQuestion
 
+---
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

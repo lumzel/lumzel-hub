@@ -1,6 +1,6 @@
 ---
 name: superpowers-task-reviewer
-description: Two-stage subagent task reviewer checking spec compliance and code quality.
+description: 'Two-stage spec compliance and code quality reviewer subagent for Subagent-Driven Development tasks.'
 ---
 
 # Task Reviewer Prompt Template

@@ -1,8 +1,39 @@
 ---
 name: retro
+preamble-tier: 2
+version: 2.0.0
 description: Weekly engineering retrospective. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Glob
+  - AskUserQuestion
+triggers:
+  - weekly retro
+  - what did we ship
+  - engineering retrospective
+gbrain:
+  schema: 1
+  context_queries:
+    - id: prior-retros
+      kind: filesystem
+      # /retro writes its history here, shared by every worktree (Step 13).
+      glob: "{gstack_state_root}/projects/{repo_slug}/retros/*.json"
+      sort: mtime_desc
+      limit: 5
+      render_as: "## Prior retros for this project"
+    - id: recent-timeline
+      kind: filesystem
+      glob: "{gstack_state_root}/projects/{repo_slug}/timeline.jsonl"
+      tail: 30
+      render_as: "## Recent timeline events"
+    - id: recent-learnings
+      kind: filesystem
+      glob: "{gstack_state_root}/projects/{repo_slug}/learnings.jsonl"
+      tail: 10
+      render_as: "## Recent learnings"
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

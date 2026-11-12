@@ -1,0 +1,6 @@
+{
+  "event": "PreToolUse",
+  "matcher": "Read|Glob",
+  "command": "sh -c 'if [ -f graphify-out/graph.json ] && command -v graphify >/dev/null 2>&1; then exec graphify hook-guard read; fi'",
+  "timeout": 5
+}

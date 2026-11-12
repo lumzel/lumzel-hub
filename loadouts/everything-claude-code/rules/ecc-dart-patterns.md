@@ -1,7 +1,7 @@
 ---
 name: ecc-dart-patterns
 description: 'ECC dart rule: patterns'
-paths: '**/*.dart, **/pubspec.yaml'
+paths: - "**/*.dart"
 ---
 
 # Dart/Flutter Patterns

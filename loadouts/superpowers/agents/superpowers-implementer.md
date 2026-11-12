@@ -1,6 +1,6 @@
 ---
 name: superpowers-implementer
-description: Focused task implementer executing micro-step plans with TDD and self-review.
+description: 'Focused task implementer subagent for Subagent-Driven Development (TDD, self-review, and scoped task brief execution).'
 ---
 
 # Implementer Subagent Prompt Template

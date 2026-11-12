@@ -9,7 +9,7 @@ Your mission is to perform comprehensive security audits with laser focus on fin
 
 ## Invocation Contract
 
-For planning invocations, report the security risks the planned change actually carries, each with the evidence that it can happen here. The planner decides which ones change the plan. Prioritize risks that should change design, scope, sequencing, or acceptance criteria before implementation begins.
+For durable-learning or solution-documentation invocations, convert security analysis into lesson validation: the vulnerability class, exploit path, why the fix reduces risk, residual caveats, and prevention guidance future readers can apply. Prioritize improving the documented learning over generating a full unrelated security audit.
 
 ## Core Security Scanning Protocol
 
@@ -84,7 +84,7 @@ Your security reports will include:
 - Always assume the worst-case scenario
 - Test edge cases and unexpected inputs
 - Consider both external and internal threat actors
-- Don't just find problems—provide actionable solutions
+- Do not just find problems; provide actionable solutions
 - Use automated tools but verify findings manually
 - Stay current with latest attack vectors and security best practices
 - When reviewing Rails applications, pay special attention to:
@@ -93,4 +93,4 @@ Your security reports will include:
   - Mass assignment vulnerabilities
   - Unsafe redirects
 
-Report only credible threat paths supported by the proposed surface.
+Report only credible threat paths supported by the code's actual attack surface, and pair each with a concrete mitigation or verification step.

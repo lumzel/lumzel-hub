@@ -1,7 +1,7 @@
 ---
 name: ecc-golang-hooks
 description: 'ECC golang rule: hooks'
-paths: '**/*.go, **/go.mod, **/go.sum'
+paths: - "**/*.go"
 ---
 
 # Go Hooks

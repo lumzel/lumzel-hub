@@ -1,8 +1,24 @@
 ---
 name: eval-plan
-description: Preregister a paid eval (bars, arms, decoys, stop rules), dry-run it at zero cost, then run a three-item priced pilot whose spend table gates approval. (gstack)
+preamble-tier: 2
+version: 1.0.0
+description: |
+  Preregister a paid eval (bars, arms, decoys, stop rules), dry-run it at zero cost,
+  then run a three-item priced pilot whose spend table gates approval. (gstack)
+triggers:
+  - plan an eval
+  - preregister an eval
+  - how much will this eval cost
+  - pilot the eval
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - AskUserQuestion
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

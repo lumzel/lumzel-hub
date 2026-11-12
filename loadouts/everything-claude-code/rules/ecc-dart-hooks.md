@@ -1,7 +1,7 @@
 ---
 name: ecc-dart-hooks
 description: 'ECC dart rule: hooks'
-paths: '**/*.dart, **/pubspec.yaml, **/analysis_options.yaml'
+paths: - "**/*.dart"
 ---
 
 # Dart/Flutter Hooks

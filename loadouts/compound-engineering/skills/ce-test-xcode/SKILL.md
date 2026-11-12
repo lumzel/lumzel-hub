@@ -1,6 +1,8 @@
 ---
 name: ce-test-xcode
-description: Test iOS apps in a simulator with XcodeBuildMCP. Use when iOS changes need simulator evidence before handoff.
+description: "Test iOS apps in a simulator with XcodeBuildMCP. Use when iOS changes need simulator evidence before handoff."
+argument-hint: "[scheme name or 'current' to use default]"
+disable-model-invocation: true
 ---
 
 # Xcode Simulator Test

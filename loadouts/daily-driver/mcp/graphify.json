@@ -1,8 +1,7 @@
 {
-  "command": "uvx",
+  "command": "sh",
   "args": [
-    "--from",
-    "graphifyy",
-    "graphify-mcp"
+    "-c",
+    "for cmd in graphify-mcp \"$HOME/.local/bin/graphify-mcp\" \"$HOME/Library/Python/3.12/bin/graphify-mcp\" \"$HOME/Library/Python/3.11/bin/graphify-mcp\" /opt/homebrew/bin/graphify-mcp; do if command -v \"$cmd\" >/dev/null 2>&1; then exec \"$cmd\" --graph graphify-out/graph.json; fi; done; for py in python3 /opt/homebrew/bin/python3 /usr/local/bin/python3; do if command -v \"$py\" >/dev/null 2>&1 && \"$py\" -c 'import graphify.serve' >/dev/null 2>&1; then exec \"$py\" -m graphify.serve graphify-out/graph.json; fi; done; echo 'graphify is not installed. Run: pipx install graphifyy or uv tool install graphifyy' >&2; exit 1"
   ]
 }

@@ -1,7 +1,7 @@
 ---
 name: ecc-rust-testing
 description: 'ECC rust rule: testing'
-paths: '**/*.rs'
+paths: - "**/*.rs"
 ---
 
 # Rust Testing

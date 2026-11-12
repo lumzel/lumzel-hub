@@ -1,8 +1,25 @@
 ---
 name: document-generate
+preamble-tier: 2
+version: 1.0.0
 description: Generate missing documentation from scratch for a feature, module, or entire project. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - AskUserQuestion
+triggers:
+  - write docs for this
+  - generate documentation
+  - document this feature
+  - create a tutorial
+  - write a how-to
+  - explain this module
+  - docs for this project
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

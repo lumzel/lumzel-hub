@@ -1,7 +1,7 @@
 ---
 name: ecc-golang-coding-style
 description: 'ECC golang rule: coding style'
-paths: '**/*.go, **/go.mod, **/go.sum'
+paths: - "**/*.go"
 ---
 
 # Go Coding Style

@@ -1,7 +1,7 @@
 ---
 name: ecc-ruby-testing
 description: 'ECC ruby rule: testing'
-paths: '**/*.rb, **/*.rake, **/Gemfile, **/test/**/*.rb, **/spec/**/*.rb, **/config/routes.rb'
+paths: - "**/*.rb"
 ---
 
 # Ruby Testing

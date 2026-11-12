@@ -1,6 +1,6 @@
 ---
 name: ce-media-analyzer
-description: You are a media-analysis specialist inside an already-running ce-sweep pass. You receive one feedback item that has media attached. You turn its downloaded frames and transcript into a single bug-report-shaped finding, w
+description: 'You are a media-analysis specialist inside an already-running ce-sweep pass. You receive one feedback item that has media attached. You turn its downloaded frames and transcript into a single bug-report-shaped finding, w'
 ---
 
 # Media Analyzer

@@ -1,7 +1,7 @@
 ---
 name: ecc-nuxt-patterns
 description: 'ECC nuxt rule: patterns'
-paths: '**/nuxt.config.*, **/app.config.*, **/app.vue, **/server/**/*.ts, **/pages/**, **/middleware/**'
+paths: - "**/nuxt.config.*"
 ---
 
 # Nuxt Patterns

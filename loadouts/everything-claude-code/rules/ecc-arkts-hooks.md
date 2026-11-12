@@ -1,7 +1,7 @@
 ---
 name: ecc-arkts-hooks
 description: 'ECC arkts rule: hooks'
-paths: '**/*.ets, **/*.ts, **/module.json5, **/oh-package.json5'
+paths: - "**/*.ets"
 ---
 
 # HarmonyOS / ArkTS Hooks

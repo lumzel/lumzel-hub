@@ -1,7 +1,7 @@
 ---
 name: ecc-php-coding-style
 description: 'ECC php rule: coding style'
-paths: '**/*.php, **/composer.json'
+paths: - "**/*.php"
 ---
 
 # PHP Coding Style

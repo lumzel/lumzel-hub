@@ -1,7 +1,7 @@
 ---
 name: ecc-arkts-testing
 description: 'ECC arkts rule: testing'
-paths: '**/*.ets, **/*.ts, **/ohosTest/**'
+paths: - "**/*.ets"
 ---
 
 # HarmonyOS / ArkTS Testing

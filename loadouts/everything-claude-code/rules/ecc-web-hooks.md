@@ -1,6 +1,7 @@
 ---
 name: ecc-web-hooks
 description: 'ECC web rule: hooks'
+paths: - "**/*.css"
 ---
 
 > This file extends [common/hooks.md](../common/hooks.md) with web-specific hook recommendations.

@@ -1,7 +1,7 @@
 ---
 name: ecc-angular-hooks
 description: 'ECC angular rule: hooks'
-paths: '**/*.component.ts, **/*.component.html, **/*.service.ts, **/*.directive.ts, **/*.pipe.ts, **/*.spec.ts'
+paths: - "**/*.component.ts"
 ---
 
 # Angular Hooks

@@ -1,7 +1,7 @@
 ---
 name: ecc-ruby-security
 description: 'ECC ruby rule: security'
-paths: '**/*.rb, **/*.rake, **/Gemfile, **/Gemfile.lock, **/config/routes.rb, **/config/credentials*.yml.enc'
+paths: - "**/*.rb"
 ---
 
 # Ruby Security

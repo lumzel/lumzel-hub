@@ -1,6 +1,6 @@
 ---
 name: ce-pov-peer
-description: Form an independent, decisive point of view on the supplied subject, grounding
+description: 'Form an independent, decisive point of view on the supplied subject, grounding'
 ---
 
 # Peer point-of-view brief

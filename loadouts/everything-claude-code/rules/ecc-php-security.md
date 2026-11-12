@@ -1,7 +1,7 @@
 ---
 name: ecc-php-security
 description: 'ECC php rule: security'
-paths: '**/*.php, **/composer.lock, **/composer.json'
+paths: - "**/*.php"
 ---
 
 # PHP Security

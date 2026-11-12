@@ -1,8 +1,20 @@
 ---
 name: codex
+preamble-tier: 3
+version: 1.0.0
 description: OpenAI Codex CLI wrapper — three modes. (gstack)
+triggers:
+  - codex review
+  - second opinion
+  - outside voice challenge
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Glob
+  - Grep
+  - AskUserQuestion
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

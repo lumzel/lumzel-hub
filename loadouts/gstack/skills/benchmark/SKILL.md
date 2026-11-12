@@ -1,8 +1,19 @@
 ---
 name: benchmark
+preamble-tier: 1
+version: 1.0.0
 description: Web performance regression detection. (gstack)
+triggers:
+  - web performance benchmark
+  - check page speed
+  - detect page performance regression
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Glob
+  - AskUserQuestion
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

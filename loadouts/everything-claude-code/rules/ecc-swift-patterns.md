@@ -1,7 +1,7 @@
 ---
 name: ecc-swift-patterns
 description: 'ECC swift rule: patterns'
-paths: '**/*.swift, **/Package.swift'
+paths: - "**/*.swift"
 ---
 
 # Swift Patterns

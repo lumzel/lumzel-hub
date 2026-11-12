@@ -1,7 +1,7 @@
 ---
 name: ecc-arkts-security
 description: 'ECC arkts rule: security'
-paths: '**/*.ets, **/*.ts, **/module.json5'
+paths: - "**/*.ets"
 ---
 
 # HarmonyOS / ArkTS Security

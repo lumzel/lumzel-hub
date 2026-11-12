@@ -1,7 +1,7 @@
 ---
 name: ecc-swift-coding-style
 description: 'ECC swift rule: coding style'
-paths: '**/*.swift, **/Package.swift'
+paths: - "**/*.swift"
 ---
 
 # Swift Coding Style

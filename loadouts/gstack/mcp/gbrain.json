@@ -1,0 +1,6 @@
+{
+  "command": "gbrain",
+  "args": [
+    "serve"
+  ]
+}

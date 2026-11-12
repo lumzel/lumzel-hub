@@ -1,7 +1,7 @@
 ---
 name: ecc-java-security
 description: 'ECC java rule: security'
-paths: '**/*.java'
+paths: - "**/*.java"
 ---
 
 # Java Security

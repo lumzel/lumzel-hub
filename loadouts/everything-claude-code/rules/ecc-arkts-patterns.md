@@ -1,7 +1,7 @@
 ---
 name: ecc-arkts-patterns
 description: 'ECC arkts rule: patterns'
-paths: '**/*.ets, **/*.ts'
+paths: - "**/*.ets"
 ---
 
 # HarmonyOS / ArkTS Patterns

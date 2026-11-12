@@ -1,7 +1,7 @@
 ---
 name: ecc-rust-patterns
 description: 'ECC rust rule: patterns'
-paths: '**/*.rs'
+paths: - "**/*.rs"
 ---
 
 # Rust Patterns

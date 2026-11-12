@@ -1,7 +1,7 @@
 ---
 name: ecc-csharp-patterns
 description: 'ECC csharp rule: patterns'
-paths: '**/*.cs, **/*.csx'
+paths: - "**/*.cs"
 ---
 
 # C# Patterns

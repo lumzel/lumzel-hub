@@ -1,0 +1,7 @@
+{
+  "command": "gh",
+  "args": [
+    "aw",
+    "mcp-server"
+  ]
+}

@@ -1,7 +1,7 @@
 ---
 name: ecc-ruby-patterns
 description: 'ECC ruby rule: patterns'
-paths: '**/*.rb, **/*.rake, **/Gemfile, **/app/**/*.erb, **/config/routes.rb'
+paths: - "**/*.rb"
 ---
 
 # Ruby Patterns

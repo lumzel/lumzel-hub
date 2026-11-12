@@ -1,7 +1,7 @@
 ---
 name: ecc-php-patterns
 description: 'ECC php rule: patterns'
-paths: '**/*.php, **/composer.json'
+paths: - "**/*.php"
 ---
 
 # PHP Patterns

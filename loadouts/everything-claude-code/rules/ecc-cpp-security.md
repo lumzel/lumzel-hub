@@ -1,7 +1,7 @@
 ---
 name: ecc-cpp-security
 description: 'ECC cpp rule: security'
-paths: '**/*.cpp, **/*.hpp, **/*.cc, **/*.hh, **/*.cxx, **/*.h, **/CMakeLists.txt'
+paths: - "**/*.cpp"
 ---
 
 # C++ Security

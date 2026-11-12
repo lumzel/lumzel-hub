@@ -1,7 +1,7 @@
 ---
 name: ecc-java-patterns
 description: 'ECC java rule: patterns'
-paths: '**/*.java'
+paths: - "**/*.java"
 ---
 
 # Java Patterns

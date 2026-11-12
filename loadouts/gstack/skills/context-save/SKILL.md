@@ -1,8 +1,21 @@
 ---
 name: context-save
+preamble-tier: 2
+version: 1.0.0
 description: Save working context. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Glob
+  - Grep
+  - AskUserQuestion
+triggers:
+  - save progress
+  - save state
+  - save my work
+  - context save
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

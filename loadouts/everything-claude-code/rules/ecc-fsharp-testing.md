@@ -1,7 +1,7 @@
 ---
 name: ecc-fsharp-testing
 description: 'ECC fsharp rule: testing'
-paths: '**/*.fs, **/*.fsx, **/*.fsproj'
+paths: - "**/*.fs"
 ---
 
 # F# Testing

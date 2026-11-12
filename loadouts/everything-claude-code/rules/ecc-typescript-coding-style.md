@@ -1,7 +1,7 @@
 ---
 name: ecc-typescript-coding-style
 description: 'ECC typescript rule: coding style'
-paths: '**/*.ts, **/*.tsx, **/*.js, **/*.jsx'
+paths: - "**/*.ts"
 ---
 
 # TypeScript/JavaScript Coding Style

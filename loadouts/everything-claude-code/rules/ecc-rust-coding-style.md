@@ -1,7 +1,7 @@
 ---
 name: ecc-rust-coding-style
 description: 'ECC rust rule: coding style'
-paths: '**/*.rs'
+paths: - "**/*.rs"
 ---
 
 # Rust Coding Style

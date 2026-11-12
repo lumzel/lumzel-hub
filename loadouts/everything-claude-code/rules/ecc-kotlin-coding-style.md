@@ -1,7 +1,7 @@
 ---
 name: ecc-kotlin-coding-style
 description: 'ECC kotlin rule: coding style'
-paths: '**/*.kt, **/*.kts'
+paths: - "**/*.kt"
 ---
 
 # Kotlin Coding Style

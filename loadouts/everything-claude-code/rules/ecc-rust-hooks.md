@@ -1,7 +1,7 @@
 ---
 name: ecc-rust-hooks
 description: 'ECC rust rule: hooks'
-paths: '**/*.rs, **/Cargo.toml'
+paths: - "**/*.rs"
 ---
 
 # Rust Hooks

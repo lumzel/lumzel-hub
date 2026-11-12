@@ -1,7 +1,7 @@
 ---
 name: ecc-swift-hooks
 description: 'ECC swift rule: hooks'
-paths: '**/*.swift, **/Package.swift'
+paths: - "**/*.swift"
 ---
 
 # Swift Hooks

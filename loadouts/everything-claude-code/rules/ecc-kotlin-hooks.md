@@ -1,7 +1,7 @@
 ---
 name: ecc-kotlin-hooks
 description: 'ECC kotlin rule: hooks'
-paths: '**/*.kt, **/*.kts, **/build.gradle.kts'
+paths: - "**/*.kt"
 ---
 
 # Kotlin Hooks

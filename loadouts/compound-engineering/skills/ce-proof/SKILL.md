@@ -1,6 +1,11 @@
 ---
 name: ce-proof
 description: Publish, read, comment on, or edit markdown in Proof. Use for Proof links, sharing specs/plans/drafts, or publish handoffs from planning workflows; avoid proofread, math, evidence, or proof-of-concept meanings.
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - WebFetch
 ---
 
 # Proof - Collaborative Markdown Editor

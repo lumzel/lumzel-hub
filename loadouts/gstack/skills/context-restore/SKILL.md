@@ -1,8 +1,21 @@
 ---
 name: context-restore
+preamble-tier: 2
+version: 1.0.0
 description: Restore working context saved earlier by /context-save. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Glob
+  - Grep
+  - AskUserQuestion
+triggers:
+  - resume where i left off
+  - restore context
+  - where was i
+  - pick up where i left off
+  - context restore
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

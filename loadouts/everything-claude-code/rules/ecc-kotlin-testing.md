@@ -1,7 +1,7 @@
 ---
 name: ecc-kotlin-testing
 description: 'ECC kotlin rule: testing'
-paths: '**/*.kt, **/*.kts'
+paths: - "**/*.kt"
 ---
 
 # Kotlin Testing

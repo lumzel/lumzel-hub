@@ -1,0 +1,6 @@
+{
+  "event": "PreToolUse",
+  "matcher": "Bash",
+  "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const cmd=String((j.tool_input&&j.tool_input.command)||'');const pats=[/\\bgit\\s+push\\b/,/\\bgit\\s+reset\\s+--hard\\b/,/\\bgit\\s+clean\\s+-fd?\\b/,/\\bgit\\s+branch\\s+-D\\b/,/\\bgit\\s+checkout\\s+\\./,/\\bgit\\s+restore\\s+\\./,/\\bpush\\s+--force\\b/,/\\breset\\s+--hard\\b/];for(const p of pats){if(p.test(cmd)){console.error('BLOCKED: \\''+cmd+'\\' matches dangerous git guardrail '+p+'. Run manually if intended.');process.exit(2);}}}catch{}})\"",
+  "timeout": 5
+}

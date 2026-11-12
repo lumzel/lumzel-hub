@@ -1,7 +1,7 @@
 ---
 name: ecc-ruby-hooks
 description: 'ECC ruby rule: hooks'
-paths: '**/*.rb, **/*.rake, **/Gemfile, **/Gemfile.lock, **/config/routes.rb'
+paths: - "**/*.rb"
 ---
 
 # Ruby Hooks

@@ -1,8 +1,21 @@
 ---
 name: setup-deploy
+preamble-tier: 2
+version: 1.0.0
 description: Configure deployment settings for /land-and-deploy.
+triggers:
+  - configure deploy
+  - setup deployment
+  - set deploy platform
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - AskUserQuestion
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

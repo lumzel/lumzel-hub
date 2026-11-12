@@ -1,6 +1,7 @@
 ---
 name: ecc-web-coding-style
 description: 'ECC web rule: coding style'
+paths: - "**/*.css"
 ---
 
 > This file extends [common/coding-style.md](../common/coding-style.md) with web-specific frontend content.

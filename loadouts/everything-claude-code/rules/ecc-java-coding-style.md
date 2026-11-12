@@ -1,7 +1,7 @@
 ---
 name: ecc-java-coding-style
 description: 'ECC java rule: coding style'
-paths: '**/*.java'
+paths: - "**/*.java"
 ---
 
 # Java Coding Style

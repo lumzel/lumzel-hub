@@ -1,8 +1,21 @@
 ---
 name: document-release
+preamble-tier: 2
+version: 1.0.0
 description: Release documentation audit. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - AskUserQuestion
+triggers:
+  - update docs after ship
+  - document what changed
+  - post-ship docs
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

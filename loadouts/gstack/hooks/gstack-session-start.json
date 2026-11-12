@@ -1,0 +1,6 @@
+{
+  "event": "SessionStart",
+  "matcher": "startup|clear|compact",
+  "command": "node -e \"const fs=require('fs');const f=(process.env.GSTACK_FREEZE_DIR||'').trim()||(fs.existsSync('.gstack/freeze-dir.txt')?fs.readFileSync('.gstack/freeze-dir.txt','utf8').trim():'');if(f)console.log('[gstack] Active /freeze edit boundary: '+f);\"",
+  "timeout": 5
+}

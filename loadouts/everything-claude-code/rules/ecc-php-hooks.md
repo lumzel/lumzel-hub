@@ -1,7 +1,7 @@
 ---
 name: ecc-php-hooks
 description: 'ECC php rule: hooks'
-paths: '**/*.php, **/composer.json, **/phpstan.neon, **/phpstan.neon.dist, **/psalm.xml'
+paths: - "**/*.php"
 ---
 
 # PHP Hooks

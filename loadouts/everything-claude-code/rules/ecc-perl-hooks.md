@@ -1,7 +1,7 @@
 ---
 name: ecc-perl-hooks
 description: 'ECC perl rule: hooks'
-paths: '**/*.pl, **/*.pm, **/*.t, **/*.psgi, **/*.cgi'
+paths: - "**/*.pl"
 ---
 
 # Perl Hooks

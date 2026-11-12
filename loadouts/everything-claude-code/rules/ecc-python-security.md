@@ -1,7 +1,7 @@
 ---
 name: ecc-python-security
 description: 'ECC python rule: security'
-paths: '**/*.py, **/*.pyi'
+paths: - "**/*.py"
 ---
 
 # Python Security

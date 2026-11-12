@@ -1,7 +1,7 @@
 ---
 name: ecc-dart-testing
 description: 'ECC dart rule: testing'
-paths: '**/*.dart, **/pubspec.yaml, **/analysis_options.yaml'
+paths: - "**/*.dart"
 ---
 
 # Dart/Flutter Testing

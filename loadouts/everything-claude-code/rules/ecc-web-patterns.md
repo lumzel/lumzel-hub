@@ -1,6 +1,7 @@
 ---
 name: ecc-web-patterns
 description: 'ECC web rule: patterns'
+paths: - "**/*.css"
 ---
 
 > This file extends [common/patterns.md](../common/patterns.md) with web-specific patterns.

@@ -36,8 +36,12 @@ skills:
 - document-release
 - eval-plan
 - freeze
+- gstack-openclaw-ceo-review
+- gstack-openclaw-office-hours
+- gstack-openclaw-retro
 - gstack-upgrade
 - guard
+- hackernews-frontpage
 - health
 - ios-clean
 - ios-design-review
@@ -80,8 +84,13 @@ agents:
   gstack-eng-lead: {}
   gstack-paranoid-reviewer: {}
 mcp: []
-hooks: []
+hooks:
+- gstack-careful-guard
+- gstack-freeze-guard
+- gstack-session-start
 rules:
 - gstack-ethos
 plugins: []
-env: {}
+env:
+  GSTACK_CAREFUL: '1'
+  GSTACK_FREEZE_DIR: ''

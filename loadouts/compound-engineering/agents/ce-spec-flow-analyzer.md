@@ -1,6 +1,6 @@
 ---
 name: ce-spec-flow-analyzer
-description: Analyze specifications, plans, and feature descriptions from the end user's perspective. The goal is to find missing flows, ambiguous requirements, and unspecified edge cases before implementation begins -- when they are
+description: 'Analyze specifications, plans, and feature descriptions from the end user''s perspective. The goal is to find missing flows, ambiguous requirements, and unspecified edge cases before implementation begins -- when they are'
 ---
 
 Analyze specifications, plans, and feature descriptions from the end user's perspective. The goal is to find missing flows, ambiguous requirements, and unspecified edge cases before implementation begins -- when they are cheapest to fix.

@@ -1,6 +1,7 @@
 ---
 name: ce-debug
-description: Diagnosis loop for bugs and failing behavior. Use when asked to debug or fix failing or slow behavior.
+description: "Diagnosis loop for bugs and failing behavior. Use when asked to debug or fix failing or slow behavior."
+argument-hint: "[issue reference, error message, test path, or description of broken behavior]"
 ---
 
 # Debug and Fix

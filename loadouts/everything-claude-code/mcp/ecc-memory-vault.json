@@ -1,0 +1,6 @@
+{
+  "command": "ecc-memory-mcp",
+  "env": {
+    "ECC_MEMORY_HARNESS": "${env:ECC_MEMORY_HARNESS}"
+  }
+}

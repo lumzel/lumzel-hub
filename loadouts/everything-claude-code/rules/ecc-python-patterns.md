@@ -1,7 +1,7 @@
 ---
 name: ecc-python-patterns
 description: 'ECC python rule: patterns'
-paths: '**/*.py, **/*.pyi'
+paths: - "**/*.py"
 ---
 
 # Python Patterns

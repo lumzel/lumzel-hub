@@ -1,7 +1,7 @@
 ---
 name: ecc-vue-coding-style
 description: 'ECC vue rule: coding style'
-paths: '**/*.vue'
+paths: - "**/*.vue"
 ---
 
 # Vue Coding Style

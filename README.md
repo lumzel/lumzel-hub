@@ -2,23 +2,23 @@
 
 Official open-source repository of **Loadouts** and **Decks** for [Lumzel](https://github.com/lumzel/lumzel-hub).
 
-A single repository can host both **Loadouts** (complete Agent persona + instructions + bundled skills/agents/rules/hooks/MCP) and **Decks** (interactive HTML/JS workbench panels powered by `/sdk.js`).
+A single repository can host both **Loadouts** (complete Agent persona + instructions + bundled skills/subagents/rules/hooks/MCP/plugins/env) and **Decks** (interactive HTML/JS workbench panels powered by `/sdk.js`).
 
 ---
 
 ## Included Loadouts
 
-> Live component counts (`skills`, `agents`, `rules`, `hooks`, `mcp`) are computed automatically into `marketplace.json`'s `counts` field by `tools/sync-upstreams.mjs`.
+> Live component counts (`skills`, `agents`, `rules`, `hooks`, `mcp`, `plugins`, `env`) are computed automatically into `marketplace.json`'s `counts` field by `tools/sync-upstreams.mjs`.
 
 | ID | Category | Name (`en` / `zh-CN`) | Upstream | Bundled Capabilities |
 | :--- | :--- | :--- | :--- | :--- |
-| `daily-driver` | `Workflow` | 🧠 Daily Driver / 日常主力研发工作流 | Curated Multi-Repo (`upstreams.json`) | Curated Skills (`answer-me-with-html`, `visual-plan`, `show-me`, `excalidraw-diagram-generator`, `git-commit`, `humanizer`, `humanizer-zh`, `eli5`, `code-review`, `tdd`, `graphify`, `skill-creator`), `graphify` MCP (`uvx`), `graphify-memory` Rule |
-| `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | Full-stack & domain Skills, Specialist Subagents, Common & Multi-Language Rules, Hooks, MCP Configs |
-| `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow / 研发工作流 | [`mattpocock/skills`](https://github.com/mattpocock/skills) | Upstream Skills (with companion testing/architecture docs), Review/Explorer Subagents, Rule |
-| `superpowers` | `Workflow` | 🦸 Obra Superpowers / 工程纪律套件 | [`obra/superpowers`](https://github.com/obra/superpowers) | Upstream Skills (with prompts, references & templates), Subagents, SessionStart Hook, Iron Laws Rule |
-| `compound-engineering` | `Workflow` | 🔄 Compound Engineering / 复利工程 | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | `ce-*` / `lfg` / `wtf` Workflow Skills, Specialist Research & Review Subagents, Coding Standards Rule |
-| `gstack` | `Workflow` | 🚀 Garry Tan gstack / 交付工作流 | [`garrytan/gstack`](https://github.com/garrytan/gstack) | Full-Lifecycle Delivery Skills, Specialist Subagents, Boil-the-Lake Ethos Rule |
-| `spec-kit` | `Architecture` | 📐 GitHub Spec-Kit (SDD) / 规格驱动开发 | [`github/spec-kit`](https://github.com/github/spec-kit) | `speckit-*` SDD Workflow Skills (bundled with official templates), Subagents, Principles Rule |
+| `daily-driver` | `Workflow` | 🧠 Daily Driver / 日常主力研发工作流 | Curated Multi-Repo (`upstreams.json`) | 14 Curated Skills, 5 Review/Eval Subagents, 4 MCP Configs (`graphify`, `plan`, `agent-native-dispatch`, `github-agentic-workflows`), 2 Plugins (`rpi`, `visual-pr`), 3 Graphify Hooks, `graphify-memory` Rule, `GRAPHIFY_HOOK_STRICT` Env |
+| `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 314 Canonical Skills, 71 Subagents (with `model`/`tools` params), 121 Common & Multi-Language Rules, 8 Lifecycle Quality Hooks, 35 MCP Configs, 22 Runtime & MCP Env Vars |
+| `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow / 研发工作流 | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 39 Upstream Skills (with companion testing/architecture docs), 3 Review/Explorer Subagents, 2 Rules (`mp-engineering-philosophy`, `mp-domain-glossary`), `mp-git-guardrails` Hook |
+| `superpowers` | `Workflow` | 🦸 Obra Superpowers / 工程纪律套件 | [`obra/superpowers`](https://github.com/obra/superpowers) | 15 Upstream Skills (with prompts, references & templates), 6 Implementation/Review/Diagnostic Subagents, `superpowers-session-start` Hook, Iron Laws Rule |
+| `compound-engineering` | `Workflow` | 🔄 Compound Engineering / 复利工程 | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | 38 Canonical `ce-*` / `lfg` / `wtf` Skills, 55 Research/Review Subagents & Personas (with `model` params), 3 Coding/Authoring/PR Review Rules |
+| `gstack` | `Workflow` | 🚀 Garry Tan gstack / 交付工作流 | [`garrytan/gstack`](https://github.com/garrytan/gstack) | 66 Full-Lifecycle, Browser & OpenClaw Skills, 3 Specialist Subagents, 3 `careful`/`freeze`/SessionStart Hooks, `gbrain` MCP Config, Boil-the-Lake Rule, 2 Env Flags |
+| `spec-kit` | `Architecture` | 📐 GitHub Spec-Kit (SDD) / 规格驱动开发 | [`github/spec-kit`](https://github.com/github/spec-kit) | 9 Core `speckit-*` SDD Workflow Skills (with bundled templates), 2 Subagents, `specify` MCP Config, Principles Rule, 3 `SPECIFY_*` Env Vars |
 
 ## Included Decks
 
@@ -46,14 +46,14 @@ Every repository catalog (`marketplace.json`), Loadout (`loadout.yaml`), and Dec
 ```yaml
 id: daily-driver
 name: Daily Driver
-description: "All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing."
+description: "Everyday engineering companion across all 7 Library categories: visual HTML explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, RPI & Visual PR plugins, Graphify memory + hooks, and portable MCP servers."
 i18n:
   en:
     name: Daily Driver
-    description: "All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing."
+    description: "Everyday engineering companion across all 7 Library categories: visual HTML explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, RPI & Visual PR plugins, Graphify memory + hooks, and portable MCP servers."
   zh-CN:
-    name: "日常全能研发工作流"
-    description: "面向日常开发与架构演进的通用全能套件：集成可视化单页解读与架构制图、交互式方案规划、公共边界 TDD、双轴代码审查、Graphify 知识图谱持久记忆与去 AI 腔自然表达。"
+    name: "日常主力研发工作流"
+    description: "覆盖全部 7 类资源的日常主力研发套件：可视化单页与架构制图、交互式方案规划、公共边界 TDD、双轴代码审查子代理、RPI 与 Visual PR 插件、Graphify 知识图谱记忆与自动 Hook 及多款便携 MCP 服务。"
 ```
 
 ### `deck.json` Example
@@ -84,19 +84,20 @@ i18n:
 ```text
 lumzel-hub/
 ├── marketplace.json                 # Index manifest for in-app Marketplace discovery
-├── upstreams.json                   # Declarative upstream sources & pinned SHAs (curated skills + full suites)
+├── upstreams.json                   # Declarative upstream sources & pinned SHAs (curated + full suites)
 ├── tools/
 │   ├── sync-upstreams.mjs           # Zero-dependency upstream synchronizer & catalog verifier
 │   └── render-previews.mjs          # Automated Deck cover renderer
 ├── loadouts/
 │   └── <loadout-id>/
-│       ├── loadout.yaml             # Loadout metadata (with optional i18n), runtime params, and library references
+│       ├── loadout.yaml             # Loadout metadata, structured subagent params, library refs & env defaults
 │       ├── AGENTS.md                # System instructions for the Loadout
-│       ├── skills/<name>/SKILL.md   # Optional bundled Skills (auto-installed into Library)
-│       ├── agents/<name>.md         # Optional bundled Subagents
-│       ├── rules/<name>.md          # Optional bundled Rules
-│       ├── hooks/<name>.json        # Optional bundled Hooks
-│       └── mcp/<name>.json          # Optional bundled MCP server configs
+│       ├── skills/<name>/SKILL.md   # Bundled Skills (auto-installed into Library)
+│       ├── agents/<name>.md         # Bundled Subagents (prompt body + loadout.yaml model/tools params)
+│       ├── rules/<name>.md          # Bundled Rules (with optional globs)
+│       ├── hooks/<name>.json        # Bundled Hooks (SessionStart / PreToolUse / PostToolUse / PreCompact / Stop)
+│       ├── mcp/<name>.json          # Bundled MCP server configs (stdio / http, ${env:VAR} placeholders)
+│       └── plugins/<name>/          # Optional bundled Claude/Codex plugin packs (.claude-plugin/plugin.json)
 └── decks/
     └── <deck-id>/
         ├── deck.json                # Deck manifest (id, title, description, i18n, icon, entry, uses, permissions)

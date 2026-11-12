@@ -1,7 +1,7 @@
 ---
 name: ecc-typescript-security
 description: 'ECC typescript rule: security'
-paths: '**/*.ts, **/*.tsx, **/*.js, **/*.jsx'
+paths: - "**/*.ts"
 ---
 
 # TypeScript/JavaScript Security

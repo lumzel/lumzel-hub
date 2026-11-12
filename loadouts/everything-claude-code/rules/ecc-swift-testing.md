@@ -1,7 +1,7 @@
 ---
 name: ecc-swift-testing
 description: 'ECC swift rule: testing'
-paths: '**/*.swift, **/Package.swift'
+paths: - "**/*.swift"
 ---
 
 # Swift Testing

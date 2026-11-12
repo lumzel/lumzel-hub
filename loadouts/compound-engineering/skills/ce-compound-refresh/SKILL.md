@@ -1,6 +1,7 @@
 ---
 name: ce-compound-refresh
 description: Old name for refreshing learnings, which now lives in `ce-compound`. Use only when a prompt or standing instruction names `ce-compound-refresh`; use `ce-compound` for every other learnings audit.
+argument-hint: "[optional: scope hint — directory, filename, module, or keyword] [mode:non-interactive] "
 ---
 
 # Compound Refresh (deprecated)

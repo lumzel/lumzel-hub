@@ -1,6 +1,6 @@
 ---
 name: speckit-tasks
-description: Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts.
+description: 'Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts.'
 ---
 
 > **Bundled Spec-Kit Templates**: Official templates (`constitution-template.md`, `spec-template.md`, `plan-template.md`, `tasks-template.md`, `checklist-template.md`) are available in `./references/` if `.specify/templates/` has not been initialized in the current repository yet.

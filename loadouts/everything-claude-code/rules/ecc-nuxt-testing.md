@@ -1,7 +1,7 @@
 ---
 name: ecc-nuxt-testing
 description: 'ECC nuxt rule: testing'
-paths: '**/nuxt.config.*, **/server/**/*.ts, **/pages/**, **/layouts/**, **/middleware/**'
+paths: - "**/nuxt.config.*"
 ---
 
 # Nuxt Testing

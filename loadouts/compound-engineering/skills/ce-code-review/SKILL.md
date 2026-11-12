@@ -1,6 +1,7 @@
 ---
 name: ce-code-review
-description: Review a named diff or PR for bugs, regressions, tests, and standards. Use when asked to review code or when a shipping skill needs a review receipt. Use when asked to apply this review's findings locally. Use ce-resolve-pr-feedback for feedback already left on a PR.
+description: "Review a named diff or PR for bugs, regressions, tests, and standards. Use when asked to review code or when a shipping skill needs a review receipt. Use when asked to apply this review's findings locally. Use ce-resolve-pr-feedback for feedback already left on a PR."
+argument-hint: "[mode:agent] [apply:local] [blank to review current branch, or provide PR link]"
 ---
 
 # Code Review

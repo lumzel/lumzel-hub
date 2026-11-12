@@ -1,6 +1,7 @@
 ---
 name: ce-simplify-code
-description: Simplify code for clarity, reuse, quality, and efficiency while preserving behavior, and prune tests and comments that carry no value. Use after implementation and before review, or to audit tests or comments in any part of a repo; use ce-debug for bugs.
+description: "Simplify code for clarity, reuse, quality, and efficiency while preserving behavior, and prune tests and comments that carry no value. Use after implementation and before review, or to audit tests or comments in any part of a repo; use ce-debug for bugs."
+argument-hint: "[blank for current branch changes, or describe what to simplify or audit] [mode:pipeline] [size-cutoff:<N>] [proof-test:<path>]"
 ---
 
 Simplify code for clarity, reuse, quality, and efficiency, and prune tests and comments that carry no value, while preserving exact behavior. Prioritize readable, explicit code over compact code — fewer lines is not the goal.

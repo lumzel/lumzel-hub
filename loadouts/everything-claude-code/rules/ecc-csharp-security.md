@@ -1,7 +1,7 @@
 ---
 name: ecc-csharp-security
 description: 'ECC csharp rule: security'
-paths: '**/*.cs, **/*.csx, **/*.csproj, **/appsettings*.json'
+paths: - "**/*.cs"
 ---
 
 # C# Security

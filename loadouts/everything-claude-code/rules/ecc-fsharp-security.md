@@ -1,7 +1,7 @@
 ---
 name: ecc-fsharp-security
 description: 'ECC fsharp rule: security'
-paths: '**/*.fs, **/*.fsx, **/*.fsproj, **/appsettings*.json'
+paths: - "**/*.fs"
 ---
 
 # F# Security

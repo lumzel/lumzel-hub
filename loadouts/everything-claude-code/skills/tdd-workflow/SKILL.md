@@ -1,6 +1,9 @@
 ---
 name: tdd-workflow
-description: Use this skill when writing new features, fixing bugs, or refactoring code. Enforces test-driven development with 80%+ coverage including unit, integration, and E2E tests.
+description: "Test-driven development workflow: write a failing test first, watch it fail, implement the smallest change to green, then refactor with 80%+ coverage across unit, integration, and E2E tests. Use when writing a new feature, fixing a bug, refactoring, or when told to write failing tests first."
+argument-hint: <path/to/*.plan.md>
+metadata:
+  origin: ECC
 ---
 
 # Test-Driven Development Workflow
@@ -82,6 +85,41 @@ ALWAYS write tests first, then implement code to make tests pass.
 
 ## TDD Workflow Steps
 
+### Step 0: Detect the Test Runner
+
+Do not assume `npm test`. The commands in the steps and examples below use `<test>`, `<test-watch>`, and `<coverage>` as placeholders for the project's actual runner. Resolve them once before starting:
+
+1. **Run the package-manager detector** (ships with ECC):
+
+   ```bash
+   # Use the configured plugin root or standalone install (~/.claude or
+   # $CLAUDE_CONFIG_DIR). For a reviewed and explicitly authorized ECC checkout:
+   # export CLAUDE_PLUGIN_ROOT="/absolute/path/to/reviewed/ECC"
+   ECC_ROOT="${CLAUDE_PLUGIN_ROOT:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}}"
+   [ -f "$ECC_ROOT/scripts/setup-package-manager.js" ] || { echo "ECC scripts not found in the selected root (set CLAUDE_PLUGIN_ROOT to an authorized ECC checkout)" >&2; exit 1; }
+   node "$ECC_ROOT/scripts/setup-package-manager.js" --detect
+   ```
+
+   The resolution lines use the configured plugin root or standalone install and stop when the selected root lacks the helper. For an ECC checkout you have reviewed and authorized, explicitly set `CLAUDE_PLUGIN_ROOT` to its absolute path first. Project marker files do not establish executable trust. Keep the working directory at the project under test, and keep paths quoted because install locations may contain spaces.
+
+   It resolves the package manager (npm / pnpm / yarn / bun) from, in order: `CLAUDE_PACKAGE_MANAGER`, `.claude/package-manager.json`, the `package.json` `packageManager` field, the lockfile, then global config.
+
+2. **Distinguish the package manager from the test runner — they are not the same.** A project can use Bun to install dependencies yet still run Jest or Vitest. Inspect `package.json` `scripts.test` and the test files:
+   - `scripts.test` invokes `jest` / `vitest` -> run through the detected PM (`npm test`, `pnpm test`, `yarn test`, or `bun run test`).
+   - `scripts.test` is `bun test`, or test files `import { test, expect } from "bun:test"`, or there is no jest/vitest config but Bun is present -> use **Bun's native runner** (`bun test`). See [Bun Native Test Pattern](#bun-native-test-pattern-buntest) below.
+
+Runner command matrix:
+
+| Runner | `<test>` | `<test-watch>` | `<coverage>` | `<lint>` |
+|--------|----------|----------------|--------------|----------|
+| npm | `npm test` | `npm test -- --watch` | `npm run test:coverage` | `npm run lint` |
+| pnpm | `pnpm test` | `pnpm test --watch` | `pnpm test:coverage` | `pnpm lint` |
+| yarn | `yarn test` | `yarn test --watch` | `yarn test:coverage` | `yarn lint` |
+| Bun (script runs jest/vitest) | `bun run test` | `bun run test --watch` | `bun run test:coverage` | `bun run lint` |
+| Bun (native `bun:test`) | `bun test` | `bun test --watch` | `bun test --coverage` | `bun run lint` |
+
+> `bun test` (Bun's built-in runner) is **not** the same as `bun run test` (which runs the `package.json` `test` script). Picking the wrong one is a common failure — e.g. invoking Jest through `npx`/`bun run` in an ESM-only project breaks, while `bun test` runs the suite natively. Confirm which the project expects before the RED gate, then substitute `<test>` / `<coverage>` everywhere `npm test` appears below.
+
 ### Step 1: Write User Journeys
 
 If a `*.plan.md` file was provided, extract the user journeys and acceptance criteria from that plan first. Only write new journeys for gaps the plan does not cover.
@@ -119,7 +157,7 @@ describe('Semantic Search', () => {
 
 ### Step 3: Run Tests (They Should Fail)
 ```bash
-npm test
+<test>
 # Tests should fail - we haven't implemented yet
 ```
 
@@ -160,7 +198,7 @@ If the repository is under Git, stage the minimal fix now but defer the checkpoi
 
 ### Step 5: Run Tests Again
 ```bash
-npm test
+<test>
 # Tests should now pass
 ```
 
@@ -188,7 +226,7 @@ Recommended commit message format:
 
 ### Step 7: Verify Coverage
 ```bash
-npm run test:coverage
+<coverage>
 # Verify 80%+ coverage achieved
 ```
 
@@ -201,7 +239,7 @@ Recommended path:
 Store the evidence report in the project's standard documentation directory, for example:
 
 ```text
-docs/testing/<plan-or-task-name>.tdd.md
+docs/releases/<version>/<plan-or-task-name>.tdd.md
 .github/tdd/<plan-or-task-name>.tdd.md
 .claude/tdd/<plan-or-task-name>.tdd.md
 ```
@@ -257,6 +295,35 @@ describe('Button Component', () => {
   })
 })
 ```
+
+### Bun Native Test Pattern (`bun:test`)
+
+When the project uses Bun's built-in runner (see [Step 0](#step-0-detect-the-test-runner)), import from `bun:test` and run with `bun test` — not `bun run test`. The API is Jest-like, so `describe` / `it` / `expect` and most matchers carry over. See the `bun-runtime` skill for runtime, install, and bundler details.
+
+```typescript
+import { describe, it, expect, mock } from 'bun:test'
+import { searchMarkets } from './search'
+
+describe('searchMarkets', () => {
+  it('returns an empty list for an empty query', async () => {
+    expect(await searchMarkets('')).toEqual([])
+  })
+
+  it('sorts results by similarity score', async () => {
+    const results = await searchMarkets('election')
+    expect(results).toEqual([...results].sort((a, b) => b.score - a.score))
+  })
+})
+```
+
+```bash
+bun test              # run once (RED/GREEN gate)
+bun test --watch      # watch mode during development
+bun test --coverage   # coverage report
+```
+
+- Mock modules with `mock.module(...)` / `mock(...)` from `bun:test` instead of `jest.mock(...)`.
+- Configure coverage thresholds in `bunfig.toml` under `[test]` (e.g. `coverageThreshold`) rather than the Jest `coverageThresholds` config block.
 
 ### API Integration Test Pattern
 ```typescript
@@ -406,7 +473,7 @@ jest.mock('@/lib/openai', () => ({
 
 ### Run Coverage Report
 ```bash
-npm run test:coverage
+<coverage>
 ```
 
 ### Coverage Thresholds
@@ -477,21 +544,21 @@ test('updates user', () => {
 
 ### Watch Mode During Development
 ```bash
-npm test -- --watch
+<test-watch>
 # Tests run automatically on file changes
 ```
 
 ### Pre-Commit Hook
 ```bash
 # Runs before every commit
-npm test && npm run lint
+<test> && <lint>
 ```
 
 ### CI/CD Integration
 ```yaml
 # GitHub Actions
 - name: Run Tests
-  run: npm test -- --coverage
+  run: <coverage>
 - name: Upload Coverage
   uses: codecov/codecov-action@v3
 ```

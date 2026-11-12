@@ -1,7 +1,7 @@
 ---
 name: ecc-angular-security
 description: 'ECC angular rule: security'
-paths: '**/*.component.ts, **/*.component.html, **/*.service.ts, **/*.interceptor.ts'
+paths: - "**/*.component.ts"
 ---
 
 # Angular Security

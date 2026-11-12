@@ -1,0 +1,6 @@
+{
+  "event": "SessionStart",
+  "matcher": "startup|clear|compact",
+  "command": "node -e \"if(process.env.ECC_HOOK_PROFILE==='off'||(process.env.ECC_DISABLED_HOOKS||'').includes('session:start'))process.exit(0);const fs=require('fs');const pm=fs.existsSync('pnpm-lock.yaml')?'pnpm':fs.existsSync('bun.lockb')||fs.existsSync('bun.lock')?'bun':fs.existsSync('yarn.lock')?'yarn':fs.existsSync('package-lock.json')?'npm':null;if(pm)console.log('[ECC] Detected package manager: '+pm+' (profile='+(process.env.ECC_HOOK_PROFILE||'standard')+')');\"",
+  "timeout": 5
+}

@@ -1,7 +1,7 @@
 ---
 name: ecc-python-fastapi
 description: 'ECC python rule: fastapi'
-paths: '**/app/**/*.py, **/fastapi/**/*.py, **/*_api.py'
+paths: - "**/app/**/*.py"
 ---
 
 # FastAPI Rules

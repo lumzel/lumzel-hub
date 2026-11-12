@@ -1,8 +1,39 @@
 ---
 name: design-shotgun
-description: 'Design shotgun: generate multiple AI design variants, open a comparison board, collect structured feedback, and iterate. (gstack)'
+preamble-tier: 2
+version: 1.0.0
+description: "Design shotgun: generate multiple AI design variants, open a comparison board, collect structured feedback, and iterate. (gstack)"
+triggers:
+  - explore design variants
+  - show me design options
+  - visual design brainstorm
+allowed-tools:
+  - Bash
+  - Read
+  - Glob
+  - Grep
+  - AskUserQuestion
+gbrain:
+  schema: 1
+  context_queries:
+    - id: prior-approved-variants
+      kind: filesystem
+      glob: "{gstack_state_root}/projects/{repo_slug}/designs/*/approved.json"
+      sort: mtime_desc
+      limit: 5
+      render_as: "## Prior approved design variants for this project"
+    - id: design-md
+      kind: filesystem
+      glob: "DESIGN.md"
+      tail: 1
+      render_as: "## DESIGN.md (project design system)"
+    - id: recent-design-docs
+      kind: filesystem
+      glob: "{gstack_state_root}/projects/{repo_slug}/*-design-*.md"
+      sort: mtime_desc
+      limit: 3
+      render_as: "## Recent design docs"
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

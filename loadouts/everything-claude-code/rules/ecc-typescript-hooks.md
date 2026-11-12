@@ -1,7 +1,7 @@
 ---
 name: ecc-typescript-hooks
 description: 'ECC typescript rule: hooks'
-paths: '**/*.ts, **/*.tsx, **/*.js, **/*.jsx'
+paths: - "**/*.ts"
 ---
 
 # TypeScript/JavaScript Hooks

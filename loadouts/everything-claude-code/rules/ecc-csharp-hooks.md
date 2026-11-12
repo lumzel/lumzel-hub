@@ -1,7 +1,7 @@
 ---
 name: ecc-csharp-hooks
 description: 'ECC csharp rule: hooks'
-paths: '**/*.cs, **/*.csx, **/*.csproj, **/*.sln, **/Directory.Build.props, **/Directory.Build.targets'
+paths: - "**/*.cs"
 ---
 
 # C# Hooks

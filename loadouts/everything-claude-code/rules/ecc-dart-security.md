@@ -1,7 +1,7 @@
 ---
 name: ecc-dart-security
 description: 'ECC dart rule: security'
-paths: '**/*.dart, **/pubspec.yaml, **/AndroidManifest.xml, **/Info.plist'
+paths: - "**/*.dart"
 ---
 
 # Dart/Flutter Security

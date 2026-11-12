@@ -1,7 +1,7 @@
 ---
 name: ecc-nuxt-hooks
 description: 'ECC nuxt rule: hooks'
-paths: '**/nuxt.config.*, **/app.config.*, **/server/**/*.ts, **/*.vue'
+paths: - "**/nuxt.config.*"
 ---
 
 # Nuxt Hooks

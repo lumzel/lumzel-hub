@@ -1,8 +1,20 @@
 ---
 name: land-and-deploy
+preamble-tier: 4
+version: 1.0.0
 description: Land and deploy workflow. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Glob
+  - AskUserQuestion
+triggers:
+  - merge and deploy
+  - land the pr
+  - ship to production
+disable-model-invocation: true
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

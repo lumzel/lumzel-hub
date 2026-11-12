@@ -1,7 +1,7 @@
 ---
 name: ecc-perl-coding-style
 description: 'ECC perl rule: coding style'
-paths: '**/*.pl, **/*.pm, **/*.t, **/*.psgi, **/*.cgi'
+paths: - "**/*.pl"
 ---
 
 # Perl Coding Style

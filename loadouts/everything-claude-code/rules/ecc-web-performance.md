@@ -1,6 +1,7 @@
 ---
 name: ecc-web-performance
 description: 'ECC web rule: performance'
+paths: - "**/*.css"
 ---
 
 > This file extends [common/performance.md](../common/performance.md) with web-specific performance content.

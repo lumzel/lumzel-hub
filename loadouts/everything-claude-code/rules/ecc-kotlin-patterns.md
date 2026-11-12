@@ -1,7 +1,7 @@
 ---
 name: ecc-kotlin-patterns
 description: 'ECC kotlin rule: patterns'
-paths: '**/*.kt, **/*.kts'
+paths: - "**/*.kt"
 ---
 
 # Kotlin Patterns

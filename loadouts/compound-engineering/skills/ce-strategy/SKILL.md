@@ -1,6 +1,7 @@
 ---
 name: ce-strategy
-description: Create or update STRATEGY.md. Use when starting a product, adding a strategy doc, or changing direction or roadmap.
+description: "Create or update STRATEGY.md. Use when starting a product, adding a strategy doc, or changing direction or roadmap."
+argument-hint: "[optional: section to revisit, e.g. 'metrics' or 'approach']"
 ---
 
 # Product Strategy

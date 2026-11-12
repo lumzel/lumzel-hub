@@ -1,8 +1,21 @@
 ---
 name: test-audit
+preamble-tier: 2
+version: 1.0.0
 description: Find low-value or duplicate tests and the test-only code they keep alive. (gstack)
+triggers:
+  - audit the test suite
+  - find low-value tests
+  - prune useless tests
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - AskUserQuestion
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

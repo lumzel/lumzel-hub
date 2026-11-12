@@ -1,8 +1,22 @@
 ---
 name: write-skill
-description: 'Write a new agent skill or improve one without bloat: the edit ladder, levels, drift and size checks, full diets. (gstack)'
+preamble-tier: 2
+version: 0.1.0
+description: "Write a new agent skill or improve one without bloat: the edit ladder, levels, drift and size checks, full diets. (gstack)"
+triggers:
+  - write a skill
+  - improve this skill
+  - add this lesson to the skill
+  - put this skill on a diet
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - AskUserQuestion
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

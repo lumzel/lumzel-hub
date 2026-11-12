@@ -1,8 +1,19 @@
 ---
 name: qa-only
+preamble-tier: 4
+version: 1.0.0
 description: Report browser/API/CLI/job/worker/webhook bugs. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - AskUserQuestion
+  - WebSearch
+triggers:
+  - qa report only
+  - just report bugs
+  - test but dont fix
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

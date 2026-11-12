@@ -1,7 +1,7 @@
 ---
 name: ecc-typescript-testing
 description: 'ECC typescript rule: testing'
-paths: '**/*.ts, **/*.tsx, **/*.js, **/*.jsx'
+paths: - "**/*.ts"
 ---
 
 # TypeScript/JavaScript Testing

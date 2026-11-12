@@ -1,7 +1,7 @@
 ---
 name: ecc-python-testing
 description: 'ECC python rule: testing'
-paths: '**/*.py, **/*.pyi'
+paths: - "**/*.py"
 ---
 
 # Python Testing

@@ -1,7 +1,7 @@
 ---
 name: ecc-angular-testing
 description: 'ECC angular rule: testing'
-paths: '**/*.spec.ts, **/*.test.ts'
+paths: - "**/*.spec.ts"
 ---
 
 # Angular Testing

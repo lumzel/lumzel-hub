@@ -1,6 +1,7 @@
 ---
 name: ecc-web-security
 description: 'ECC web rule: security'
+paths: - "**/*.css"
 ---
 
 > This file extends [common/security.md](../common/security.md) with web-specific security content.

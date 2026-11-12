@@ -1,8 +1,21 @@
 ---
 name: plan-devex-review
+preamble-tier: 3
+version: 2.0.0
 description: Interactive developer experience plan review. (gstack)
+allowed-tools:
+  - Read
+  - Edit
+  - Grep
+  - Glob
+  - Bash
+  - AskUserQuestion
+  - WebSearch
+triggers:
+  - developer experience review
+  - dx plan review
+  - check developer onboarding
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

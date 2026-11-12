@@ -1,7 +1,7 @@
 ---
 name: ecc-typescript-patterns
 description: 'ECC typescript rule: patterns'
-paths: '**/*.ts, **/*.tsx, **/*.js, **/*.jsx'
+paths: - "**/*.ts"
 ---
 
 # TypeScript/JavaScript Patterns

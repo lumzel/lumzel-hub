@@ -1,7 +1,7 @@
 ---
 name: ecc-python-hooks
 description: 'ECC python rule: hooks'
-paths: '**/*.py, **/*.pyi'
+paths: - "**/*.py"
 ---
 
 # Python Hooks

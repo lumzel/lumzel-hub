@@ -1,7 +1,7 @@
 ---
 name: ecc-angular-coding-style
 description: 'ECC angular rule: coding style'
-paths: '**/*.component.ts, **/*.component.html, **/*.service.ts, **/*.directive.ts, **/*.pipe.ts, **/*.guard.ts, **/*.resolver.ts, **/*.module.ts'
+paths: - "**/*.component.ts"
 ---
 
 # Angular Coding Style

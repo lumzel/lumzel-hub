@@ -19,6 +19,8 @@ skills:
 - agent-harness-construction
 - agent-introspection-debugging
 - agent-payment-x402
+- agent-runtime-gateway-smoke-test
+- agent-security-hardening
 - agent-self-evaluation
 - agent-sort
 - agentic-engineering
@@ -38,14 +40,17 @@ skills:
 - benchmark
 - benchmark-methodology
 - benchmark-optimization-loop
+- bengali-nlp
 - blender-motion-state-inspection
 - blueprint
 - brand-discovery
 - brand-voice
+- brownfield-retrospective
 - browser-qa
 - bun-runtime
 - canary-watch
 - carrier-relationship-management
+- change-impact
 - cisco-ios-patterns
 - ck
 - claude-devfleet
@@ -63,13 +68,18 @@ skills:
 - connections-optimizer
 - content-engine
 - content-hash-cache-pattern
+- context-and-decisions
 - context-budget
 - continuous-agent-loop
 - continuous-learning
 - continuous-learning-v2
+- contract-first
+- conventional-commit-review
 - cost-aware-llm-pipeline
 - cost-tracking
 - council
+- council-multi-model
+- counterparty-channel-discipline
 - cpp-coding-standards
 - cpp-testing
 - crosspost
@@ -82,9 +92,12 @@ skills:
 - data-throughput-accelerator
 - database-migrations
 - deep-research
+- deepseek-harness-setup
 - defi-amm-security
+- delivery-gate
 - deployment-patterns
 - design-system
+- dev-team
 - django-celery
 - django-patterns
 - django-security
@@ -92,16 +105,19 @@ skills:
 - django-verification
 - dmux-workflows
 - docker-patterns
+- docs-governance
 - documentation-lookup
 - dotnet-patterns
 - dynamic-workflow-mode
 - e2e-testing
 - ecc-guide
+- ecc-recipes
 - ecc-tools-cost-audit
 - email-ops
 - energy-procurement
 - enterprise-agent-ops
 - error-handling
+- esign-field-placement
 - eval-harness
 - evm-token-decimals
 - exa-search
@@ -124,6 +140,7 @@ skills:
 - golang-patterns
 - golang-testing
 - google-workspace-ops
+- growth-log
 - healthcare-cdss-patterns
 - healthcare-emr-patterns
 - healthcare-eval-harness
@@ -137,17 +154,19 @@ skills:
 - homelab-vlan-segmentation
 - homelab-wireguard-vpn
 - hookify-rules
+- i18n-sync
 - inherit-legacy-style
 - intent-driven-development
 - inventory-demand-planning
 - investor-materials
 - investor-outreach
 - ios-icon-gen
+- issue-review
 - iterative-retrieval
-- ito-basket-compare
-- ito-data-atlas-agent
-- ito-market-intelligence
-- ito-trade-planner
+- ito-baskets
+- ito-compute
+- ito-inference
+- ito-training
 - java-coding-standards
 - jira-integration
 - jpa-patterns
@@ -166,22 +185,30 @@ skills:
 - latency-critical-systems
 - lead-intelligence
 - liquid-glass-design
+- living-docs-governance
 - llm-trading-agent-security
 - logistics-exception-management
+- loop-design-check
+- mailtrap-email-integration
 - make-interfaces-feel-better
 - manim-video
 - market-research
 - marketing-campaign
+- master-agreement-generator
+- mcp-dependency-review
 - mcp-server-patterns
 - messages-ops
 - ml-adoption-playbook
 - mle-workflow
+- module-governance
+- module-regression
 - motion-advanced
 - motion-foundations
 - motion-patterns
-- motion-ui
+- mybatis-patterns
 - mysql-patterns
 - nanoclaw-repl
+- nasiko-control-plane
 - nestjs-patterns
 - netmiko-ssh-automation
 - network-bgp-diagnostics
@@ -193,16 +220,19 @@ skills:
 - nuxt4-patterns
 - openclaw-persona-forge
 - opensource-pipeline
+- operator-approval-loop
 - orch-add-feature
 - orch-build-mvp
 - orch-change-feature
 - orch-fix-defect
 - orch-pipeline
 - orch-refine-code
+- osint-investigation
 - parallel-execution-optimizer
 - perl-patterns
 - perl-security
 - perl-testing
+- plan-canvas
 - plan-orchestrate
 - plankton-code-quality
 - postgres-patterns
@@ -214,6 +244,7 @@ skills:
 - production-audit
 - production-scheduling
 - project-flow-ops
+- prompt-caching-strategy
 - prompt-optimizer
 - python-patterns
 - python-testing
@@ -223,7 +254,9 @@ skills:
 - quarkus-security
 - quarkus-tdd
 - quarkus-verification
+- rails-patterns
 - ralphinho-rfc-pipeline
+- react-native-patterns
 - react-patterns
 - react-performance
 - react-testing
@@ -251,6 +284,7 @@ skills:
 - security-scan
 - seo
 - skill-comply
+- skill-host-compat
 - skill-scout
 - skill-stocktake
 - social-graph-ranker
@@ -259,21 +293,30 @@ skills:
 - springboot-security
 - springboot-tdd
 - springboot-verification
+- story-lifecycle
 - strategic-compact
 - swift-actor-persistence
 - swift-concurrency-6-2
 - swift-protocol-di-testing
 - swiftui-patterns
 - taste
+- taste-application
+- taste-distillation
+- tasteforge-video
 - tdd-workflow
 - team-agent-orchestration
 - team-builder
+- terminal-opener
 - terminal-ops
+- test-collaboration
 - tinystruct-patterns
 - token-budget-advisor
+- token-card
+- typescript-patterns
 - ui-demo
 - ui-to-vue
 - uncloud
+- unified-memory
 - unified-notifications-ops
 - verification-loop
 - video-editing
@@ -286,6 +329,7 @@ skills:
 - x-api
 agents:
   a11y-architect:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -293,17 +337,26 @@ agents:
     - Grep
     - Glob
   agent-evaluator:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   architect:
+    model: opus
+    tools:
+    - Read
+    - Grep
+    - Glob
+  bengali-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
   build-error-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -312,6 +365,7 @@ agents:
     - Grep
     - Glob
   chief-of-staff:
+    model: sonnet
     tools:
     - Read
     - Grep
@@ -320,23 +374,27 @@ agents:
     - Edit
     - Write
   code-architect:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   code-explorer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
   code-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   code-simplifier:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -345,15 +403,25 @@ agents:
     - Grep
     - Glob
   comment-analyzer:
+    model: haiku
     tools:
     - Read
     - Grep
     - Glob
+  commit-reviewer:
+    model: sonnet
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
   conversation-analyzer:
+    model: haiku
     tools:
     - Read
     - Grep
   cpp-build-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -362,18 +430,21 @@ agents:
     - Grep
     - Glob
   cpp-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   csharp-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   dart-build-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -382,14 +453,14 @@ agents:
     - Grep
     - Glob
   database-reviewer:
+    model: sonnet
     tools:
     - Read
-    - Write
-    - Edit
-    - Bash
     - Grep
     - Glob
+    - Bash
   django-build-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -398,12 +469,14 @@ agents:
     - Grep
     - Glob
   django-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   doc-updater:
+    model: haiku
     tools:
     - Read
     - Write
@@ -412,12 +485,14 @@ agents:
     - Grep
     - Glob
   docs-lookup:
+    model: haiku
     tools:
     - Read
     - Grep
     - mcp__context7__resolve-library-id
     - mcp__context7__query-docs
   e2e-runner:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -426,31 +501,44 @@ agents:
     - Grep
     - Glob
   fastapi-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   flutter-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   fsharp-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   gan-evaluator:
+    model: sonnet
     tools:
     - Read
     - Write
     - Bash
     - Grep
     - Glob
+    - mcp__playwright__browser_navigate
+    - mcp__playwright__browser_click
+    - mcp__playwright__browser_take_screenshot
+    - mcp__playwright__browser_snapshot
+    - mcp__playwright__browser_type
+    - mcp__playwright__browser_fill_form
+    - mcp__playwright__browser_resize
+    - mcp__playwright__browser_press_key
   gan-generator:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -459,12 +547,14 @@ agents:
     - Grep
     - Glob
   gan-planner:
+    model: sonnet
     tools:
     - Read
     - Write
     - Grep
     - Glob
   go-build-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -473,12 +563,14 @@ agents:
     - Grep
     - Glob
   go-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   harmonyos-app-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -487,6 +579,7 @@ agents:
     - Grep
     - Glob
   harness-optimizer:
+    model: sonnet
     tools:
     - Read
     - Grep
@@ -494,15 +587,18 @@ agents:
     - Bash
     - Edit
   healthcare-reviewer:
+    model: opus
     tools:
     - Read
     - Grep
     - Glob
   homelab-architect:
+    model: sonnet
     tools:
     - Read
     - Grep
   java-build-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -511,12 +607,14 @@ agents:
     - Grep
     - Glob
   java-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   kotlin-build-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -525,12 +623,14 @@ agents:
     - Grep
     - Glob
   kotlin-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   loop-operator:
+    model: sonnet
     tools:
     - Read
     - Grep
@@ -538,6 +638,7 @@ agents:
     - Bash
     - Edit
   marketing-agent:
+    model: sonnet
     tools:
     - Read
     - Grep
@@ -545,25 +646,30 @@ agents:
     - WebSearch
     - WebFetch
   mle-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   network-architect:
+    model: sonnet
     tools:
     - Read
     - Grep
   network-config-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
   network-troubleshooter:
+    model: sonnet
     tools:
     - Read
     - Bash
     - Grep
   opensource-forker:
+    model: haiku
     tools:
     - Read
     - Write
@@ -572,6 +678,7 @@ agents:
     - Grep
     - Glob
   opensource-packager:
+    model: haiku
     tools:
     - Read
     - Write
@@ -580,12 +687,14 @@ agents:
     - Grep
     - Glob
   opensource-sanitizer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   performance-optimizer:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -594,29 +703,34 @@ agents:
     - Grep
     - Glob
   php-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   planner:
+    model: opus
     tools:
     - Read
     - Grep
     - Glob
   pr-test-analyzer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   python-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   pytorch-build-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -624,7 +738,15 @@ agents:
     - Bash
     - Grep
     - Glob
+  rag-pipeline-reviewer:
+    model: sonnet
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
   react-build-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -633,12 +755,14 @@ agents:
     - Grep
     - Glob
   react-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   refactor-cleaner:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -646,7 +770,15 @@ agents:
     - Bash
     - Grep
     - Glob
+  ruby-reviewer:
+    model: sonnet
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
   rust-build-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -655,20 +787,21 @@ agents:
     - Grep
     - Glob
   rust-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   security-reviewer:
+    model: sonnet
     tools:
     - Read
-    - Write
-    - Edit
-    - Bash
     - Grep
     - Glob
+    - Bash
   seo-specialist:
+    model: sonnet
     tools:
     - Read
     - Grep
@@ -676,12 +809,14 @@ agents:
     - WebSearch
     - WebFetch
   silent-failure-hunter:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   spec-miner:
+    model: opus
     tools:
     - Read
     - Grep
@@ -689,6 +824,7 @@ agents:
     - Bash
     - Write
   swift-build-resolver:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -697,12 +833,14 @@ agents:
     - Grep
     - Glob
   swift-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   tdd-guide:
+    model: sonnet
     tools:
     - Read
     - Write
@@ -710,30 +848,39 @@ agents:
     - Bash
     - Grep
   type-design-analyzer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
   typescript-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   vue-reviewer:
+    model: sonnet
     tools:
     - Read
     - Grep
     - Glob
     - Bash
 mcp:
-- context7
-- sequential-thinking
 - memory
+- sequential-thinking
+- context7
+- chrome-devtools
 hooks:
 - ecc-block-linter-config-tamper
-- ecc-warn-console-log
+- ecc-doc-file-warning
 - ecc-git-push-review-gate
+- ecc-pre-compact
+- ecc-secret-governance-guard
+- ecc-session-start
+- ecc-stop-audit
+- ecc-warn-console-log
 rules:
 - ecc-angular-coding-style
 - ecc-angular-hooks
@@ -813,6 +960,14 @@ rules:
 - ecc-python-testing
 - ecc-react-coding-style
 - ecc-react-hooks
+- ecc-react-native-accessibility
+- ecc-react-native-coding-style
+- ecc-react-native-hooks
+- ecc-react-native-patterns
+- ecc-react-native-performance
+- ecc-react-native-production-readiness
+- ecc-react-native-security
+- ecc-react-native-testing
 - ecc-react-patterns
 - ecc-react-security
 - ecc-react-testing
@@ -849,4 +1004,9 @@ rules:
 - ecc-web-security
 - ecc-web-testing
 plugins: []
-env: {}
+env:
+  ECC_HOOK_PROFILE: standard
+  ECC_DISABLED_HOOKS: ''
+  ECC_GOVERNANCE_CAPTURE: '0'
+  DEFAULT_BASE_BRANCH: main
+  ENABLE_VERBOSE_LOGGING: 'false'

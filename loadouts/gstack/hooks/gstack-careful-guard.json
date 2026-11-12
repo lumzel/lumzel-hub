@@ -1,0 +1,6 @@
+{
+  "event": "PreToolUse",
+  "matcher": "Bash",
+  "command": "node -e \"if(process.env.GSTACK_CAREFUL==='0')process.exit(0);let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const cmd=String((j.tool_input&&j.tool_input.command)||'');if(/\\brm\\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\\s+(\\/|~|\\$HOME)(\\s|$)/i.test(cmd)){console.error('[gstack careful] Catastrophic rm -rf root/home blocked: '+cmd);process.exit(2);}if(/\\b(DROP\\s+(DATABASE|TABLE)|TRUNCATE\\s+TABLE|terraform\\s+destroy|kubectl\\s+delete\\s+(ns|namespace|deployment)|git\\s+push\\s+.*--force|git\\s+reset\\s+--hard)\\b/i.test(cmd)){console.error('[gstack careful] Destructive command detected — verify target carefully: '+cmd);}}catch{}})\"",
+  "timeout": 5
+}

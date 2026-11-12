@@ -1,7 +1,7 @@
 ---
 name: ecc-perl-testing
 description: 'ECC perl rule: testing'
-paths: '**/*.pl, **/*.pm, **/*.t, **/*.psgi, **/*.cgi'
+paths: - "**/*.pl"
 ---
 
 # Perl Testing

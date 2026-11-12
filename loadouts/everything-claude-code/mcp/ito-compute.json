@@ -1,0 +1,6 @@
+{
+  "command": "node",
+  "args": [
+    "/absolute/path/to/ito-cloud-runtime/cli/ito-compute-cli/dist/bin/ito-mcp.js"
+  ]
+}

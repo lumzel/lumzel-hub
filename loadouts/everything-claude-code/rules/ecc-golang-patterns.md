@@ -1,7 +1,7 @@
 ---
 name: ecc-golang-patterns
 description: 'ECC golang rule: patterns'
-paths: '**/*.go, **/go.mod, **/go.sum'
+paths: - "**/*.go"
 ---
 
 # Go Patterns

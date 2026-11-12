@@ -1,7 +1,7 @@
 ---
 name: ecc-angular-patterns
 description: 'ECC angular rule: patterns'
-paths: '**/*.component.ts, **/*.component.html, **/*.service.ts, **/*.store.ts, **/*.routes.ts'
+paths: - "**/*.component.ts"
 ---
 
 # Angular Patterns

@@ -1,7 +1,7 @@
 ---
 name: ecc-kotlin-security
 description: 'ECC kotlin rule: security'
-paths: '**/*.kt, **/*.kts'
+paths: - "**/*.kt"
 ---
 
 # Kotlin Security

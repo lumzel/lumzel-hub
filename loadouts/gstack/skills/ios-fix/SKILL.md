@@ -1,8 +1,21 @@
 ---
 name: ios-fix
+preamble-tier: 2
+version: 1.0.0
 description: Autonomous iOS bug fixer. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - AskUserQuestion
+triggers:
+  - fix this ios bug
+  - patch the iphone app
+  - auto-fix the ios issue
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

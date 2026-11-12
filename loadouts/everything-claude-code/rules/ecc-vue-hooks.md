@@ -1,7 +1,7 @@
 ---
 name: ecc-vue-hooks
 description: 'ECC vue rule: hooks'
-paths: '**/*.vue, **/*.ts, **/*.tsx'
+paths: - "**/*.vue"
 ---
 
 # Vue Hooks

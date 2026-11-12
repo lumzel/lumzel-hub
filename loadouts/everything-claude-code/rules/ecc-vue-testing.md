@@ -1,7 +1,7 @@
 ---
 name: ecc-vue-testing
 description: 'ECC vue rule: testing'
-paths: '**/*.vue'
+paths: - "**/*.vue"
 ---
 
 # Vue Testing

@@ -57,8 +57,10 @@ agents:
   mp-spec-reviewer: {}
   mp-standards-reviewer: {}
 mcp: []
-hooks: []
+hooks:
+- mp-git-guardrails
 rules:
 - mp-deep-modules-and-seams
+- mp-domain-glossary
 plugins: []
 env: {}

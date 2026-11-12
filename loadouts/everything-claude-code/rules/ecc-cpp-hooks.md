@@ -1,7 +1,7 @@
 ---
 name: ecc-cpp-hooks
 description: 'ECC cpp rule: hooks'
-paths: '**/*.cpp, **/*.hpp, **/*.cc, **/*.hh, **/*.cxx, **/*.h, **/CMakeLists.txt'
+paths: - "**/*.cpp"
 ---
 
 # C++ Hooks

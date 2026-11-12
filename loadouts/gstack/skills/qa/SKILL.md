@@ -1,8 +1,22 @@
 ---
 name: qa
+preamble-tier: 4
+version: 2.0.0
 description: Use when you test the site, API or CLI and fix bugs. (gstack)
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - AskUserQuestion
+  - WebSearch
+triggers:
+  - qa test this
+  - find bugs on site
+  - test the site
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

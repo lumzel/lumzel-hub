@@ -1,0 +1,6 @@
+{
+  "event": "PreCompact",
+  "matcher": ".*",
+  "command": "node -e \"if(process.env.ECC_HOOK_PROFILE==='off'||process.env.ECC_HOOK_PROFILE==='minimal'||(process.env.ECC_DISABLED_HOOKS||'').includes('pre:compact'))process.exit(0);console.log('[ECC] Context compaction starting — preserve active plan steps, failing test paths, and verification state in summary.');\"",
+  "timeout": 5
+}

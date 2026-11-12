@@ -1,7 +1,7 @@
 ---
 name: ecc-golang-security
 description: 'ECC golang rule: security'
-paths: '**/*.go, **/go.mod, **/go.sum'
+paths: - "**/*.go"
 ---
 
 # Go Security

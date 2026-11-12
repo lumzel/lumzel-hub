@@ -20,23 +20,27 @@
       "id": "daily-driver",
       "name": "Daily Driver",
       "icon": "🧠",
-      "description": "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing.",
+      "description": "Everyday engineering companion across all 7 Library categories: visual HTML explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, RPI & Visual PR plugins, Graphify memory + hooks, and portable MCP servers.",
       "i18n": {
         "en": {
           "name": "Daily Driver",
-          "description": "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing."
+          "description": "Everyday engineering companion across all 7 Library categories: visual HTML explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, RPI & Visual PR plugins, Graphify memory + hooks, and portable MCP servers."
         },
         "zh-CN": {
           "name": "日常主力研发工作流",
-          "description": "轻量顺手的日常主力研发伴侣：开箱即用的可视化单页与架构图、方案规划、边界 TDD、双轴代码审查、Graphify 图谱持久记忆与去 AI 腔自然表达。"
+          "description": "覆盖全部 7 类资源的日常主力研发套件：可视化单页与架构制图、交互式方案规划、公共边界 TDD、双轴代码审查子代理、RPI 与 Visual PR 插件、Graphify 知识图谱记忆与自动 Hook 及多款便携 MCP 服务。"
         }
       },
       "category": "Workflow",
       "author": "Lumzel",
       "counts": {
-        "skills": 12,
+        "skills": 14,
+        "agents": 5,
         "rules": 1,
-        "mcp": 1
+        "hooks": 3,
+        "mcp": 4,
+        "plugins": 2,
+        "env": 1
       },
       "source": "./loadouts/daily-driver"
     },
@@ -44,26 +48,27 @@
       "id": "everything-claude-code",
       "name": "Everything Claude Code (ECC)",
       "icon": "⚡",
-      "description": "Complete Everything Claude Code suite (affaan-m/everything-claude-code): full-stack & domain skills, specialist subagents, common & multi-language coding rules, quality gate hooks, and MCP server configs.",
+      "description": "Complete Everything Claude Code suite (affaan-m/everything-claude-code): 314 canonical full-stack & domain skills, 71 specialist subagents with model/tool params, multi-language rules, lifecycle quality hooks, MCP configs, and runtime env flags.",
       "i18n": {
         "en": {
           "name": "Everything Claude Code (ECC)",
-          "description": "Complete Everything Claude Code suite (affaan-m/everything-claude-code): full-stack & domain skills, specialist subagents, common & multi-language coding rules, quality gate hooks, and MCP server configs."
+          "description": "Complete Everything Claude Code suite (affaan-m/everything-claude-code): 314 canonical full-stack & domain skills, 71 specialist subagents with model/tool params, multi-language rules, lifecycle quality hooks, MCP configs, and runtime env flags."
         },
         "zh-CN": {
           "name": "Everything Claude Code 全栈工程套件",
-          "description": "完整同步 Affaan Mustafa 开源项目（affaan-m/everything-claude-code）：涵盖全栈与领域 Skill、专家子代理、通用与多语言编码规则、质量门禁 Hook 及 MCP 服务配置。"
+          "description": "完整同步 Affaan Mustafa 开源项目（affaan-m/everything-claude-code）：涵盖 314 个正式全栈与领域 Skill、带模型/工具配置的 71 个专家子代理、通用与多语言编码规则、全生命周期质量门禁 Hook、MCP 服务配置及运行环境变量。"
         }
       },
       "category": "Engineering",
       "author": "Affaan Mustafa (affaan-m)",
       "homepage": "https://github.com/affaan-m/everything-claude-code",
       "counts": {
-        "skills": 271,
-        "agents": 67,
-        "rules": 113,
-        "hooks": 3,
-        "mcp": 32
+        "skills": 314,
+        "agents": 71,
+        "rules": 121,
+        "hooks": 8,
+        "mcp": 35,
+        "env": 22
       },
       "source": "./loadouts/everything-claude-code"
     },
@@ -71,15 +76,15 @@
       "id": "matt-pocock",
       "name": "Matt Pocock Workflow",
       "icon": "🎯",
-      "description": "Complete Matt Pocock skill suite (mattpocock/skills): grill-me design interviews, deep module design, domain modeling, tracer-bullet specs/tickets, public-seam TDD, and dual-axis code review.",
+      "description": "Complete Matt Pocock skill suite (mattpocock/skills): grill-me design interviews, deep module design, domain modeling & glossary rules, tracer-bullet specs/tickets, public-seam TDD, dual-axis code review subagents, and git guardrails hook.",
       "i18n": {
         "en": {
           "name": "Matt Pocock Workflow",
-          "description": "Complete Matt Pocock skill suite (mattpocock/skills): grill-me design interviews, deep module design, domain modeling, tracer-bullet specs/tickets, public-seam TDD, and dual-axis code review."
+          "description": "Complete Matt Pocock skill suite (mattpocock/skills): grill-me design interviews, deep module design, domain modeling & glossary rules, tracer-bullet specs/tickets, public-seam TDD, dual-axis code review subagents, and git guardrails hook."
         },
         "zh-CN": {
           "name": "Matt Pocock 研发工作流",
-          "description": "完整同步 Matt Pocock 开源项目（mattpocock/skills）：涵盖 grill-me 深度澄清、深模块设计、领域建模、曳光弹规格与工单拆解、公共边界 TDD 及双轴代码审查。"
+          "description": "完整同步 Matt Pocock 开源项目（mattpocock/skills）：涵盖 grill-me 深度澄清、深模块设计、领域建模与术语表规则、曳光弹规格与工单拆解、公共边界 TDD、双轴代码审查子代理及 Git 危险命令拦截 Hook。"
         }
       },
       "category": "Workflow",
@@ -88,7 +93,8 @@
       "counts": {
         "skills": 39,
         "agents": 3,
-        "rules": 1
+        "rules": 2,
+        "hooks": 1
       },
       "source": "./loadouts/matt-pocock"
     },
@@ -96,15 +102,15 @@
       "id": "superpowers",
       "name": "Obra Superpowers",
       "icon": "🦸",
-      "description": "Complete Obra Superpowers suite (obra/superpowers): upstream workflow skills with companion prompts & references, review/implementation subagents, SessionStart hook, and the three Iron Laws.",
+      "description": "Complete Obra Superpowers suite (obra/superpowers): upstream workflow skills with companion prompts & references, all 6 implementation/review/diagnostic subagents, SessionStart hook, and the three Iron Laws.",
       "i18n": {
         "en": {
           "name": "Obra Superpowers",
-          "description": "Complete Obra Superpowers suite (obra/superpowers): upstream workflow skills with companion prompts & references, review/implementation subagents, SessionStart hook, and the three Iron Laws."
+          "description": "Complete Obra Superpowers suite (obra/superpowers): upstream workflow skills with companion prompts & references, all 6 implementation/review/diagnostic subagents, SessionStart hook, and the three Iron Laws."
         },
         "zh-CN": {
           "name": "Obra Superpowers 工程纪律套件",
-          "description": "完整同步 Jesse Vincent 开源项目（obra/superpowers）：包含全套官方工作流 Skill 与配套提示词模板、实现与审查子代理、SessionStart 启动 Hook 及三大工程铁律。"
+          "description": "完整同步 Jesse Vincent 开源项目（obra/superpowers）：包含全套官方工作流 Skill 与配套提示词模板、全部 6 个实现/审查/会话诊断子代理、SessionStart 启动 Hook 及三大工程铁律。"
         }
       },
       "category": "Workflow",
@@ -112,7 +118,7 @@
       "homepage": "https://github.com/obra/superpowers",
       "counts": {
         "skills": 15,
-        "agents": 3,
+        "agents": 6,
         "rules": 1,
         "hooks": 1
       },
@@ -122,15 +128,15 @@
       "id": "spec-kit",
       "name": "GitHub Spec-Kit (SDD)",
       "icon": "📐",
-      "description": "Complete GitHub Spec-Kit SDD suite (github/spec-kit): official speckit-* workflow skills (Constitution, Specify, Clarify, Plan, Checklist, Tasks, Analyze, Implement, Converge) bundled with official templates & SDD principles.",
+      "description": "Complete GitHub Spec-Kit SDD suite (github/spec-kit): official speckit-* workflow skills (Constitution, Specify, Clarify, Plan, Checklist, Tasks, Analyze, Implement, Converge) with bundled templates, specify MCP server, and env defaults.",
       "i18n": {
         "en": {
           "name": "GitHub Spec-Kit (SDD)",
-          "description": "Complete GitHub Spec-Kit SDD suite (github/spec-kit): official speckit-* workflow skills (Constitution, Specify, Clarify, Plan, Checklist, Tasks, Analyze, Implement, Converge) bundled with official templates & SDD principles."
+          "description": "Complete GitHub Spec-Kit SDD suite (github/spec-kit): official speckit-* workflow skills (Constitution, Specify, Clarify, Plan, Checklist, Tasks, Analyze, Implement, Converge) with bundled templates, specify MCP server, and env defaults."
         },
         "zh-CN": {
           "name": "GitHub Spec-Kit 规格驱动开发",
-          "description": "完整同步 GitHub 官方 Spec-Kit（github/spec-kit）：包含 speckit-* 规格驱动开发全流程 Skill（Constitution / Specify / Clarify / Plan / Checklist / Tasks / Analyze / Implement / Converge）及全套官方模板。"
+          "description": "完整同步 GitHub 官方 Spec-Kit（github/spec-kit）：包含 9 个核心 speckit-* 规格驱动工作流 Skill 与全套官方模板、specify MCP 服务及环境变量配置。"
         }
       },
       "category": "Architecture",
@@ -139,7 +145,9 @@
       "counts": {
         "skills": 9,
         "agents": 2,
-        "rules": 1
+        "rules": 1,
+        "mcp": 1,
+        "env": 3
       },
       "source": "./loadouts/spec-kit"
     },
@@ -147,24 +155,24 @@
       "id": "compound-engineering",
       "name": "Compound Engineering",
       "icon": "🔄",
-      "description": "Complete EveryInc Compound Engineering suite (EveryInc/compound-engineering-plugin): ce-* / lfg / wtf workflow skills, specialist research & review subagents, and coding standards.",
+      "description": "Complete EveryInc Compound Engineering suite (EveryInc/compound-engineering-plugin): 38 canonical ce-* / lfg / wtf workflow skills, 55 research/review subagents & personas with model params, and coding/PR review standards.",
       "i18n": {
         "en": {
           "name": "Compound Engineering",
-          "description": "Complete EveryInc Compound Engineering suite (EveryInc/compound-engineering-plugin): ce-* / lfg / wtf workflow skills, specialist research & review subagents, and coding standards."
+          "description": "Complete EveryInc Compound Engineering suite (EveryInc/compound-engineering-plugin): 38 canonical ce-* / lfg / wtf workflow skills, 55 research/review subagents & personas with model params, and coding/PR review standards."
         },
         "zh-CN": {
           "name": "Compound Engineering 复利工程",
-          "description": "完整同步 EveryInc 复利工程套件（EveryInc/compound-engineering-plugin）：包含全套 ce-* / lfg / wtf 工作流 Skill、多维研究与审查子代理及编码规范。"
+          "description": "完整同步 EveryInc 复利工程套件（EveryInc/compound-engineering-plugin）：包含全套 38 个正式 ce-* / lfg / wtf 工作流 Skill、55 个多维研究与专家审查 Persona 子代理及编码与 PR 审查规范。"
         }
       },
       "category": "Workflow",
       "author": "EveryInc",
       "homepage": "https://github.com/EveryInc/compound-engineering-plugin",
       "counts": {
-        "skills": 37,
-        "agents": 26,
-        "rules": 1
+        "skills": 38,
+        "agents": 55,
+        "rules": 3
       },
       "source": "./loadouts/compound-engineering"
     },
@@ -172,24 +180,27 @@
       "id": "gstack",
       "name": "Garry Tan gstack",
       "icon": "🚀",
-      "description": "Complete Garry Tan gstack software factory (garrytan/gstack): full-lifecycle skills (office-hours, plan-ceo-review, plan-eng-review, design-review, autoplan, review, cso, qa, ship, land-and-deploy, canary, retro, and more), specialist subagents, and Boil-the-Lake ethos.",
+      "description": "Complete Garry Tan gstack software factory (garrytan/gstack): full-lifecycle delivery, browser & OpenClaw skills, specialist subagents, careful/freeze safety hooks, gbrain MCP server, Boil-the-Lake ethos, and runtime env flags.",
       "i18n": {
         "en": {
           "name": "Garry Tan gstack",
-          "description": "Complete Garry Tan gstack software factory (garrytan/gstack): full-lifecycle skills (office-hours, plan-ceo-review, plan-eng-review, design-review, autoplan, review, cso, qa, ship, land-and-deploy, canary, retro, and more), specialist subagents, and Boil-the-Lake ethos."
+          "description": "Complete Garry Tan gstack software factory (garrytan/gstack): full-lifecycle delivery, browser & OpenClaw skills, specialist subagents, careful/freeze safety hooks, gbrain MCP server, Boil-the-Lake ethos, and runtime env flags."
         },
         "zh-CN": {
           "name": "Garry Tan gstack 交付工作流",
-          "description": "完整同步 Garry Tan 开源项目（garrytan/gstack）：涵盖全周期交付 Skill（office-hours、CEO/研发/设计评审、autoplan、严苛代码与安全审查、QA、ship 发版、canary、retro 等）、专家子代理与工程准则。"
+          "description": "完整同步 Garry Tan 开源项目（garrytan/gstack）：涵盖全周期交付、浏览器与 OpenClaw Skill、专家子代理、careful/freeze 安全护栏 Hook、gbrain MCP 服务、工程准则及环境变量配置。"
         }
       },
       "category": "Workflow",
       "author": "Garry Tan",
       "homepage": "https://github.com/garrytan/gstack",
       "counts": {
-        "skills": 62,
+        "skills": 66,
         "agents": 3,
-        "rules": 1
+        "rules": 1,
+        "hooks": 3,
+        "mcp": 1,
+        "env": 2
       },
       "source": "./loadouts/gstack"
     }
@@ -228,4 +239,3 @@
     }
   ]
 }
-

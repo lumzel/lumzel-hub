@@ -1,7 +1,7 @@
 ---
 name: ecc-perl-patterns
 description: 'ECC perl rule: patterns'
-paths: '**/*.pl, **/*.pm, **/*.t, **/*.psgi, **/*.cgi'
+paths: - "**/*.pl"
 ---
 
 # Perl Patterns

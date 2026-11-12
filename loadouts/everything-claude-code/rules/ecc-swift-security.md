@@ -1,7 +1,7 @@
 ---
 name: ecc-swift-security
 description: 'ECC swift rule: security'
-paths: '**/*.swift, **/Package.swift'
+paths: - "**/*.swift"
 ---
 
 # Swift Security

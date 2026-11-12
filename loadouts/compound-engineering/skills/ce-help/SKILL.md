@@ -1,6 +1,8 @@
 ---
 name: ce-help
-description: 'Help and orientation for Compound Engineering: place the user''s work on the compounding loop and recommend the next command, without running it. Use when the user invokes ce-help to ask which skill fits, what comes next, how setup, configuration, cost, or upgrades work, or why a '
+description: "Help and orientation for Compound Engineering: place the user's work on the compounding loop and recommend the next command, without running it. Use when the user invokes ce-help to ask which skill fits, what comes next, how setup, configuration, cost, or upgrades work, or why a skill misbehaved."
+argument-hint: "[your question about Compound Engineering]"
+disable-model-invocation: true
 ---
 
 # Compound Engineering help

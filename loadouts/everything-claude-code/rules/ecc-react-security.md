@@ -1,7 +1,7 @@
 ---
 name: ecc-react-security
 description: 'ECC react rule: security'
-paths: '**/*.tsx, **/*.jsx, **/components/**/*.ts, **/app/**/*.ts, **/pages/**/*.ts'
+paths: - "**/*.tsx"
 ---
 
 # React Security

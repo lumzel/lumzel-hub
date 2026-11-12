@@ -14,6 +14,8 @@ author: Lumzel
 skills:
 - answer-me-with-html
 - visual-plan
+- visual-recap
+- an
 - show-me
 - excalidraw-diagram-generator
 - git-commit
@@ -24,11 +26,22 @@ skills:
 - tdd
 - graphify
 - skill-creator
-agents: {}
+agents:
+  mp-spec-reviewer: {}
+  mp-standards-reviewer: {}
+  skill-creator-analyzer: {}
+  skill-creator-comparator: {}
+  skill-creator-grader: {}
 mcp:
 - graphify
-hooks: []
+hooks:
+- graphify-post-compact
+- graphify-pre-read
+- graphify-pre-search
 rules:
 - graphify-memory
-plugins: []
-env: {}
+plugins:
+- rpi
+- visual-pr
+env:
+  GRAPHIFY_HOOK_STRICT: '0'

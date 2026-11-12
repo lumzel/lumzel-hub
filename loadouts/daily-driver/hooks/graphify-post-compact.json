@@ -1,0 +1,6 @@
+{
+  "event": "SessionStart",
+  "matcher": "compact",
+  "command": "sh -c 'if [ -f graphify-out/graph.json ] && command -v graphify >/dev/null 2>&1; then exec graphify hook-guard compact; fi'",
+  "timeout": 5
+}

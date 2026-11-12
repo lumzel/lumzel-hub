@@ -1,6 +1,6 @@
 ---
 name: speckit-specify
-description: Create or update the feature specification from a natural language feature description.
+description: 'Create or update the feature specification from a natural language feature description.'
 ---
 
 > **Bundled Spec-Kit Templates**: Official templates (`constitution-template.md`, `spec-template.md`, `plan-template.md`, `tasks-template.md`, `checklist-template.md`) are available in `./references/` if `.specify/templates/` has not been initialized in the current repository yet.

@@ -1,7 +1,7 @@
 ---
 name: ecc-react-hooks
 description: 'ECC react rule: hooks'
-paths: '**/*.tsx, **/*.jsx, **/hooks/**/*.ts, **/hooks/**/*.js, **/use-*.ts, **/use-*.tsx'
+paths: - "**/*.tsx"
 ---
 
 # React Hooks

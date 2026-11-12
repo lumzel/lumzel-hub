@@ -1,6 +1,8 @@
 ---
 name: wtf
-description: Explain the last message, or a supplied file, link, or passage, in plain language a person follows on the first read. Use when the user invokes wtf because they did not follow something. Use ce-explain to investigate how or why code works, and ce-noslop to rewrite prose.
+description: "Explain the last message, or a supplied file, link, or passage, in plain language a person follows on the first read. Use when the user invokes wtf because they did not follow something. Use ce-explain to investigate how or why code works, and ce-noslop to rewrite prose."
+disable-model-invocation: true
+argument-hint: "[file path, URL, pasted text, or which part lost you; blank for the last message]"
 ---
 
 # wtf

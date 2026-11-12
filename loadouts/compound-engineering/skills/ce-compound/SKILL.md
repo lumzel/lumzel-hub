@@ -1,6 +1,7 @@
 ---
 name: ce-compound
-description: 'Capture a solved problem''s lesson in its cheapest durable form, a test or lint rule, a coding standard, or a repo learning, or refresh existing learnings against the codebase. Use when verified work corrected a wrong belief about how something behaves, such as a failed approach, '
+description: Capture a solved problem's lesson in its cheapest durable form, a test or lint rule, a coding standard, or a repo learning, or refresh existing learnings against the codebase. Use when verified work corrected a wrong belief about how something behaves, such as a failed approach, a real defect a review caught, or a wrong assumption or document, or when auditing stale, overlapping, or drifted learnings. Do not auto-invoke it for work that went as first planned.
+argument-hint: "[optional: brief context, or refresh and a scope] [mode:refresh] [mode:non-interactive] [depth:lightweight|full]"
 ---
 
 # /ce-compound

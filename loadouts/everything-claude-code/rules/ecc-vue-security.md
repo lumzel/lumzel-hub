@@ -1,7 +1,7 @@
 ---
 name: ecc-vue-security
 description: 'ECC vue rule: security'
-paths: '**/*.vue'
+paths: - "**/*.vue"
 ---
 
 # Vue Security

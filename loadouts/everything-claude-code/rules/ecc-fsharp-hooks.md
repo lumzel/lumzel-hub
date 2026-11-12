@@ -1,7 +1,7 @@
 ---
 name: ecc-fsharp-hooks
 description: 'ECC fsharp rule: hooks'
-paths: '**/*.fs, **/*.fsx, **/*.fsproj, **/*.sln, **/*.slnx, **/Directory.Build.props, **/Directory.Build.targets'
+paths: - "**/*.fs"
 ---
 
 # F# Hooks

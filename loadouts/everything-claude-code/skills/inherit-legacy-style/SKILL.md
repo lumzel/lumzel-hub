@@ -1,6 +1,9 @@
 ---
 name: inherit-legacy-style
-description: 'Legacy-project style inheritance skill. Use when the user types /inherit-legacy-style, or when onboarding an AI coding agent onto a hand-written legacy project and you need to prevent "style drift" (the model imposing its pretrained mainstream idioms onto the project). Language- '
+description: Prevent AI style drift on legacy projects by scanning the codebase for implicit conventions, resolving conflicts with the operator one at a time, and writing an enforceable .ai-style-rules.md (Golden Files, naming rules, DONTs) plus an optional CLAUDE.md hook. Use when onboarding an AI agent onto a hand-written legacy codebase or extracting a project's unwritten coding rules.
+metadata:
+  origin: community
+allowed-tools: Read, Glob, Grep, Bash, Edit, Write, AskUserQuestion
 ---
 
 # Inherit Legacy Style

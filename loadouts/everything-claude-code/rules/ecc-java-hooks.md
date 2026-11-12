@@ -1,7 +1,7 @@
 ---
 name: ecc-java-hooks
 description: 'ECC java rule: hooks'
-paths: '**/*.java, **/pom.xml, **/build.gradle, **/build.gradle.kts'
+paths: - "**/*.java"
 ---
 
 # Java Hooks

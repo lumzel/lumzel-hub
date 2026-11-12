@@ -1,6 +1,6 @@
 ---
 name: speckit-sdd-principles
-description: GitHub Spec-Kit Specification-Driven Development (SDD) principles and phase gates.
+description: 'GitHub Spec-Kit Specification-Driven Development (SDD) principles and phase gates.'
 ---
 
 # Specification-Driven Development (SDD)

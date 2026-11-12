@@ -1,8 +1,21 @@
 ---
 name: diagram
-description: 'Turn an English description (or mermaid source) into a diagram triplet: the source, an editable .excalidraw file you can open on excalidraw.com, and rendered SVG + PNG. (gstack)'
+preamble-tier: 1
+version: 1.0.0
+description: "Turn an English description (or mermaid source) into a diagram triplet: the source, an editable .excalidraw file you can open on excalidraw.com, and rendered SVG + PNG. (gstack)"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - AskUserQuestion
+triggers:
+  - make a diagram
+  - draw a diagram
+  - create a flowchart
+  - diagram this
+  - visualize this flow
+  - architecture diagram
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

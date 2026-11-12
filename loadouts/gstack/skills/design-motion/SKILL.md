@@ -1,8 +1,21 @@
 ---
 name: design-motion
-description: 'Design motion: animate an approved design into a seamless MP4 and GIF loop. (gstack)'
+preamble-tier: 2
+version: 1.0.0
+description: "Design motion: animate an approved design into a seamless MP4 and GIF loop. (gstack)"
+triggers:
+  - animate this design
+  - make a showcase loop
+  - turn the design into a video
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - AskUserQuestion
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

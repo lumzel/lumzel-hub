@@ -1,8 +1,20 @@
 ---
 name: plan-design-review
+preamble-tier: 3
+version: 2.0.0
 description: Designer's eye plan review — interactive, like CEO and Eng review. (gstack)
+allowed-tools:
+  - Read
+  - Edit
+  - Grep
+  - Glob
+  - Bash
+  - AskUserQuestion
+triggers:
+  - design plan review
+  - review ux plan
+  - check design decisions
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

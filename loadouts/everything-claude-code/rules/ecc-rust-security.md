@@ -1,7 +1,7 @@
 ---
 name: ecc-rust-security
 description: 'ECC rust rule: security'
-paths: '**/*.rs'
+paths: - "**/*.rs"
 ---
 
 # Rust Security

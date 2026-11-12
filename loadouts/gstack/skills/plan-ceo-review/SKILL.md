@@ -1,8 +1,51 @@
 ---
 name: plan-ceo-review
+preamble-tier: 3
+version: 1.0.0
 description: CEO/founder-mode plan review. (gstack)
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+  - AskUserQuestion
+  - WebSearch
+hooks:
+  PostToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "bash -c 'S=\"$HOME/.claude/skills/gstack/plan-ceo-review/bin/mode-handoff-hook\"\nif [ -f \"$S\" ]; then exec bash \"$S\"; fi\nexit 0'"
+triggers:
+  - think bigger
+  - expand scope
+  - strategy review
+  - rethink this plan
+gbrain:
+  schema: 1
+  context_queries:
+    - id: prior-ceo-plans
+      kind: filesystem
+      glob: "{gstack_state_root}/projects/{repo_slug}/ceo-plans/*.md"
+      sort: mtime_desc
+      limit: 5
+      render_as: "## Prior CEO plans for this project"
+    - id: recent-design-docs
+      kind: filesystem
+      glob: "{gstack_state_root}/projects/{repo_slug}/*-design-*.md"
+      sort: mtime_desc
+      limit: 3
+      render_as: "## Recent design docs for this project"
+    - id: recent-reviews
+      kind: list
+      filter:
+        type: timeline
+        tags_contains: "repo:{repo_slug}"
+        content_contains: "plan-ceo-review"
+      sort: updated_at_desc
+      limit: 5
+      render_as: "## Recent CEO review activity"
 ---
-
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 

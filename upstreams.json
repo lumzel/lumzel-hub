@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "loadouts": [
     {
       "id": "daily-driver",
@@ -15,6 +15,16 @@
           "name": "visual-plan",
           "repo": "builderio/skills",
           "path": "skills/visual-plan"
+        },
+        {
+          "name": "visual-recap",
+          "repo": "builderio/skills",
+          "path": "skills/visual-recap"
+        },
+        {
+          "name": "an",
+          "repo": "builderio/skills",
+          "path": "skills/an"
         },
         {
           "name": "show-me",
@@ -69,7 +79,117 @@
           "repo": "anthropics/skills",
           "path": "skills/skill-creator"
         }
-      ]
+      ],
+      "agents": {
+        "mode": "files",
+        "items": [
+          {
+            "name": "skill-creator-analyzer",
+            "repo": "anthropics/skills",
+            "source": "skills/skill-creator/agents/analyzer.md",
+            "description": "Post-hoc skill benchmark analyzer that compares winning vs losing transcripts and extracts actionable skill improvements."
+          },
+          {
+            "name": "skill-creator-comparator",
+            "repo": "anthropics/skills",
+            "source": "skills/skill-creator/agents/comparator.md",
+            "description": "Blind A/B output comparator for evaluating two skill versions without authorship bias."
+          },
+          {
+            "name": "skill-creator-grader",
+            "repo": "anthropics/skills",
+            "source": "skills/skill-creator/agents/grader.md",
+            "description": "Execution transcript and output grader that evaluates expectations with concrete evidence and critiques weak assertions."
+          },
+          {
+            "name": "mp-standards-reviewer",
+            "localCopyFrom": "matt-pocock/agents/mp-standards-reviewer.md"
+          },
+          {
+            "name": "mp-spec-reviewer",
+            "localCopyFrom": "matt-pocock/agents/mp-spec-reviewer.md"
+          }
+        ]
+      },
+      "plugins": [
+        {
+          "name": "rpi",
+          "repo": "humanlayer/skills",
+          "path": "plugins/rpi"
+        },
+        {
+          "name": "visual-pr",
+          "repo": "humanlayer/skills",
+          "path": "plugins/visual-pr"
+        }
+      ],
+      "mcp": {
+        "mode": "multi",
+        "sources": [
+          {
+            "repo": "builderio/skills",
+            "source": ".mcp.json"
+          },
+          {
+            "repo": "github/awesome-copilot",
+            "source": "mcp.json"
+          }
+        ],
+        "inline": {
+          "graphify": {
+            "command": "sh",
+            "args": [
+              "-c",
+              "for cmd in graphify-mcp \"$HOME/.local/bin/graphify-mcp\" \"$HOME/Library/Python/3.12/bin/graphify-mcp\" \"$HOME/Library/Python/3.11/bin/graphify-mcp\" /opt/homebrew/bin/graphify-mcp; do if command -v \"$cmd\" >/dev/null 2>&1; then exec \"$cmd\" --graph graphify-out/graph.json; fi; done; for py in python3 /opt/homebrew/bin/python3 /usr/local/bin/python3; do if command -v \"$py\" >/dev/null 2>&1 && \"$py\" -c 'import graphify.serve' >/dev/null 2>&1; then exec \"$py\" -m graphify.serve graphify-out/graph.json; fi; done; echo 'graphify is not installed. Run: pipx install graphifyy or uv tool install graphifyy' >&2; exit 1"
+            ]
+          },
+          "plan": {
+            "type": "http",
+            "url": "https://plan.agent-native.com/mcp"
+          }
+        },
+        "defaultEnabled": [
+          "graphify"
+        ]
+      },
+      "hooks": [
+        {
+          "name": "graphify-pre-search",
+          "event": "PreToolUse",
+          "matcher": "Bash|Grep",
+          "command": "sh -c 'if [ -f graphify-out/graph.json ] && command -v graphify >/dev/null 2>&1; then exec graphify hook-guard search; fi'",
+          "timeout": 5
+        },
+        {
+          "name": "graphify-pre-read",
+          "event": "PreToolUse",
+          "matcher": "Read|Glob",
+          "command": "sh -c 'if [ -f graphify-out/graph.json ] && command -v graphify >/dev/null 2>&1; then exec graphify hook-guard read; fi'",
+          "timeout": 5
+        },
+        {
+          "name": "graphify-post-compact",
+          "event": "SessionStart",
+          "matcher": "compact",
+          "command": "sh -c 'if [ -f graphify-out/graph.json ] && command -v graphify >/dev/null 2>&1; then exec graphify hook-guard compact; fi'",
+          "timeout": 5
+        }
+      ],
+      "rules": {
+        "mode": "files",
+        "preserveExisting": true,
+        "items": [
+          {
+            "repo": "safishamsi/graphify",
+            "source": "graphify/always_on/agents-md.md",
+            "target": "graphify-memory",
+            "description": "Persistent codebase architecture and module-relationship memory powered by Graphify (graphify-out/)."
+          }
+        ]
+      },
+      "env": {
+        "GRAPHIFY_HOOK_STRICT": "0"
+      }
     },
     {
       "id": "everything-claude-code",
@@ -92,15 +212,90 @@
         ]
       },
       "mcp": {
-        "mode": "mcp-servers-json",
-        "source": "mcp-configs/mcp-servers.json"
+        "mode": "multi",
+        "sources": [
+          {
+            "source": "mcp-configs/mcp-servers.json"
+          },
+          {
+            "source": ".mcp.json"
+          }
+        ],
+        "defaultEnabled": [
+          "memory",
+          "sequential-thinking",
+          "context7",
+          "chrome-devtools"
+        ]
+      },
+      "hooks": [
+        {
+          "name": "ecc-session-start",
+          "event": "SessionStart",
+          "matcher": "startup|clear|compact",
+          "command": "node -e \"if(process.env.ECC_HOOK_PROFILE==='off'||(process.env.ECC_DISABLED_HOOKS||'').includes('session:start'))process.exit(0);const fs=require('fs');const pm=fs.existsSync('pnpm-lock.yaml')?'pnpm':fs.existsSync('bun.lockb')||fs.existsSync('bun.lock')?'bun':fs.existsSync('yarn.lock')?'yarn':fs.existsSync('package-lock.json')?'npm':null;if(pm)console.log('[ECC] Detected package manager: '+pm+' (profile='+(process.env.ECC_HOOK_PROFILE||'standard')+')');\"",
+          "timeout": 5
+        },
+        {
+          "name": "ecc-block-linter-config-tamper",
+          "event": "PreToolUse",
+          "matcher": "Write|Edit|MultiEdit",
+          "command": "node -e \"if(process.env.ECC_HOOK_PROFILE==='off'||(process.env.ECC_DISABLED_HOOKS||'').includes('pre:config-protection'))process.exit(0);let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const p=String((j.tool_input&&(j.tool_input.file_path||j.tool_input.path))||'');const b=/(^|\\/)(\\.eslintrc|eslint\\.config\\.|biome\\.json|\\.prettierrc|tsconfig\\.json|pyproject\\.toml|ruff\\.toml)/i;if(b.test(p)){console.error('[ECC Hook] Review linter/compiler config edit carefully — fix the code rather than weakening rules: '+p);}}catch{}})\"",
+          "timeout": 5
+        },
+        {
+          "name": "ecc-git-push-review-gate",
+          "event": "PreToolUse",
+          "matcher": "Bash",
+          "command": "node -e \"if(process.env.ECC_HOOK_PROFILE==='off'||(process.env.ECC_DISABLED_HOOKS||'').includes('pre:bash:dispatcher'))process.exit(0);let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const cmd=String((j.tool_input&&j.tool_input.command)||'');if(/\\bgit\\s+push\\b/.test(cmd)&&/--force|-f\\b/.test(cmd)){console.error('[ECC Hook] Force push detected — confirm branch target before pushing.');}}catch{}})\"",
+          "timeout": 5
+        },
+        {
+          "name": "ecc-doc-file-warning",
+          "event": "PreToolUse",
+          "matcher": "Write",
+          "command": "node -e \"if(process.env.ECC_HOOK_PROFILE==='off'||process.env.ECC_HOOK_PROFILE==='minimal'||(process.env.ECC_DISABLED_HOOKS||'').includes('pre:write:doc-file-warning'))process.exit(0);let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const p=String((j.tool_input&&(j.tool_input.file_path||j.tool_input.path))||'');if(/\\.(md|txt)$/i.test(p)&&!/(README|CHANGELOG|CONTRIBUTING|LICENSE|AGENTS|CLAUDE|SKILL|PLAN|SPEC|ADR|docs\\/|\\.agents\\/|\\.claude\\/|skills\\/|rules\\/)/i.test(p)){console.error('[ECC Hook] Non-standard doc file detected ('+p+') — avoid ad-hoc markdown sprawl.');}}catch{}})\"",
+          "timeout": 5
+        },
+        {
+          "name": "ecc-secret-governance-guard",
+          "event": "PreToolUse",
+          "matcher": "Write|Edit|MultiEdit",
+          "command": "node -e \"if(process.env.ECC_HOOK_PROFILE==='off'||(process.env.ECC_DISABLED_HOOKS||'').includes('pre:governance-capture'))process.exit(0);let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const p=String((j.tool_input&&(j.tool_input.file_path||j.tool_input.path))||'');if(/(^|\\/)\\.env($|\\.(?!example|sample|template))|\\.(pem|key|p12|pfx)$/i.test(p)){console.error('[ECC Hook] Sensitive credential/key file target detected: '+p);}}catch{}})\"",
+          "timeout": 5
+        },
+        {
+          "name": "ecc-warn-console-log",
+          "event": "PostToolUse",
+          "matcher": "Edit|Write",
+          "command": "node -e \"if(process.env.ECC_HOOK_PROFILE==='off'||(process.env.ECC_DISABLED_HOOKS||'').includes('post:dispatcher:sync'))process.exit(0);let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const i=j.tool_input||{};const p=String(i.file_path||i.path||'');const c=String(i.new_string||i.content||'');if(/\\.(ts|tsx|js|jsx)$/.test(p)&&!/\\.(test|spec)\\./.test(p)&&c.includes('console.log(')){console.error('[ECC Hook] Debug console.log detected in '+p+' — remove before committing.');}}catch{}})\"",
+          "timeout": 5
+        },
+        {
+          "name": "ecc-pre-compact",
+          "event": "PreCompact",
+          "matcher": ".*",
+          "command": "node -e \"if(process.env.ECC_HOOK_PROFILE==='off'||process.env.ECC_HOOK_PROFILE==='minimal'||(process.env.ECC_DISABLED_HOOKS||'').includes('pre:compact'))process.exit(0);console.log('[ECC] Context compaction starting — preserve active plan steps, failing test paths, and verification state in summary.');\"",
+          "timeout": 5
+        },
+        {
+          "name": "ecc-stop-audit",
+          "event": "Stop",
+          "matcher": "",
+          "command": "node -e \"if(process.env.ECC_HOOK_PROFILE!=='strict'||(process.env.ECC_DISABLED_HOOKS||'').includes('stop:check-console-log'))process.exit(0);const cp=require('child_process');try{const out=cp.execSync('git diff --name-only HEAD',{encoding:'utf8',stdio:['ignore','pipe','ignore']}).split('\\n').filter(f=>/\\.(ts|tsx|js|jsx)$/.test(f)&&!/\\.(test|spec)\\./.test(f));const fs=require('fs');const hits=out.filter(f=>fs.existsSync(f)&&fs.readFileSync(f,'utf8').includes('console.log('));if(hits.length)console.error('[ECC Strict Audit] Modified files still contain console.log: '+hits.join(', '));}catch{}\"",
+          "timeout": 5
+        }
+      ],
+      "env": {
+        "ECC_HOOK_PROFILE": "standard",
+        "ECC_DISABLED_HOOKS": "",
+        "ECC_GOVERNANCE_CAPTURE": "0",
+        "DEFAULT_BASE_BRANCH": "main",
+        "ENABLE_VERBOSE_LOGGING": "false"
       },
       "instructions": {
         "source": "AGENTS.md"
-      },
-      "preserve": [
-        "hooks"
-      ]
+      }
     },
     {
       "id": "matt-pocock",
@@ -116,13 +311,32 @@
           "in-progress"
         ]
       },
+      "hooks": [
+        {
+          "name": "mp-git-guardrails",
+          "event": "PreToolUse",
+          "matcher": "Bash",
+          "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const cmd=String((j.tool_input&&j.tool_input.command)||'');const pats=[/\\bgit\\s+push\\b/,/\\bgit\\s+reset\\s+--hard\\b/,/\\bgit\\s+clean\\s+-fd?\\b/,/\\bgit\\s+branch\\s+-D\\b/,/\\bgit\\s+checkout\\s+\\./,/\\bgit\\s+restore\\s+\\./,/\\bpush\\s+--force\\b/,/\\breset\\s+--hard\\b/];for(const p of pats){if(p.test(cmd)){console.error('BLOCKED: \\''+cmd+'\\' matches dangerous git guardrail '+p+'. Run manually if intended.');process.exit(2);}}}catch{}})\"",
+          "timeout": 5
+        }
+      ],
+      "rules": {
+        "mode": "files",
+        "preserveExisting": true,
+        "items": [
+          {
+            "source": "GLOSSARY.md",
+            "target": "mp-domain-glossary",
+            "description": "Matt Pocock shared workflow terminology: issue trackers, decision tickets, tracer bullets, deep modules, and ADRs."
+          }
+        ]
+      },
       "instructions": {
         "source": "AGENTS.md",
         "header": "# Matt Pocock Engineering & Planning Workflow\n\nUse `grill-me` / `grill-with-docs` to stress-test requirements before design, `domain-modeling` and `codebase-design` to shape deep modules, `to-spec` and `to-tickets` to slice tracer-bullet deliverables, `tdd` to test at public seams, and `code-review` to audit changes along Standards + Spec axes.\n\n"
       },
       "preserve": [
-        "agents",
-        "rules"
+        "agents"
       ]
     },
     {
@@ -133,9 +347,51 @@
         "mode": "dir",
         "path": "skills"
       },
+      "agents": {
+        "mode": "files",
+        "items": [
+          {
+            "name": "superpowers-code-reviewer",
+            "source": "skills/requesting-code-review/code-reviewer.md",
+            "description": "Senior code reviewer subagent verifying completed work against plan requirements and architectural quality before cascading."
+          },
+          {
+            "name": "superpowers-implementer",
+            "source": "skills/subagent-driven-development/implementer-prompt.md",
+            "description": "Focused task implementer subagent for Subagent-Driven Development (TDD, self-review, and scoped task brief execution)."
+          },
+          {
+            "name": "superpowers-task-reviewer",
+            "source": "skills/subagent-driven-development/task-reviewer-prompt.md",
+            "description": "Two-stage spec compliance and code quality reviewer subagent for Subagent-Driven Development tasks."
+          },
+          {
+            "name": "superpowers-re-reviewer",
+            "source": "skills/subagent-driven-development/re-review-prompt.md",
+            "description": "Follow-up verification reviewer subagent checking fixes against prior review findings without regressions."
+          },
+          {
+            "name": "superpowers-plan-reviewer",
+            "source": "skills/brainstorming/builder-check-prompt.md",
+            "description": "Design and implementation readiness checker ensuring specs and plans give a builder clear, unambiguous direction."
+          },
+          {
+            "name": "superpowers-session-diagnostician",
+            "source": "skills/diagnosing-superpowers/prompts/analyst-common.md",
+            "description": "Session transcript analyst diagnosing skill adherence, repeated work, stumbles, and workflow bottlenecks."
+          }
+        ]
+      },
+      "hooks": [
+        {
+          "name": "superpowers-session-start",
+          "event": "SessionStart",
+          "matcher": "startup|clear|compact",
+          "command": "node -e \"console.log('Superpowers active: check applicable skills (using-superpowers, brainstorming, writing-plans, subagent-driven-development, test-driven-development, systematic-debugging, verification-before-completion) before acting.')\"",
+          "timeout": 5
+        }
+      ],
       "preserve": [
-        "agents",
-        "hooks",
         "rules",
         "AGENTS.md"
       ]
@@ -150,11 +406,28 @@
         "prefix": "speckit-",
         "templatesDir": "templates"
       },
+      "mcp": {
+        "mode": "multi",
+        "inline": {
+          "specify": {
+            "command": "specify",
+            "args": [
+              "mcp"
+            ]
+          }
+        },
+        "defaultEnabled": []
+      },
       "rules": {
         "mode": "single-file",
         "source": "spec-driven.md",
         "target": "speckit-sdd-principles",
         "description": "GitHub Spec-Kit Specification-Driven Development (SDD) principles and phase gates."
+      },
+      "env": {
+        "SPECIFY_FEATURE": "",
+        "SPECIFY_INIT_DIR": "",
+        "SPECIFY_FEATURE_NO_PERSIST": "0"
       },
       "preserve": [
         "agents",
@@ -172,13 +445,32 @@
       "agents": {
         "mode": "nested-skill-agents",
         "skillsDir": "skills",
-        "prefix": "ce-"
+        "prefix": "ce-",
+        "subpaths": [
+          "references/agents",
+          "references/personas"
+        ]
       },
       "rules": {
-        "mode": "single-file",
-        "source": "CODING_STANDARDS.md",
-        "target": "ce-coding-standards",
-        "description": "EveryInc Compound Engineering coding standards and maintainability guidelines."
+        "mode": "files",
+        "items": [
+          {
+            "source": "CODING_STANDARDS.md",
+            "target": "ce-coding-standards",
+            "description": "EveryInc Compound Engineering coding standards and maintainability guidelines."
+          },
+          {
+            "source": "skills/CODING_STANDARDS.md",
+            "target": "ce-skill-authoring-standards",
+            "description": "EveryInc standards for authoring portable skills, references, and agent prompts.",
+            "paths": "**/skills/**, **/SKILL.md"
+          },
+          {
+            "source": ".cursor/BUGBOT.md",
+            "target": "ce-pr-review-rules",
+            "description": "Compound Engineering PR review scoping rules across root, skills, and test standards."
+          }
+        ]
       },
       "instructions": {
         "source": "AGENTS.md"
@@ -189,13 +481,62 @@
       "mode": "suite",
       "repo": "garrytan/gstack",
       "skills": {
-        "mode": "root-scan"
+        "mode": "root-scan",
+        "extraSkillDirs": [
+          {
+            "path": "browser-skills",
+            "mode": "dir"
+          },
+          {
+            "path": "openclaw/skills",
+            "mode": "dir"
+          }
+        ]
       },
+      "mcp": {
+        "mode": "multi",
+        "inline": {
+          "gbrain": {
+            "command": "gbrain",
+            "args": [
+              "serve"
+            ]
+          }
+        },
+        "defaultEnabled": []
+      },
+      "hooks": [
+        {
+          "name": "gstack-careful-guard",
+          "event": "PreToolUse",
+          "matcher": "Bash",
+          "command": "node -e \"if(process.env.GSTACK_CAREFUL==='0')process.exit(0);let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const cmd=String((j.tool_input&&j.tool_input.command)||'');if(/\\brm\\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\\s+(\\/|~|\\$HOME)(\\s|$)/i.test(cmd)){console.error('[gstack careful] Catastrophic rm -rf root/home blocked: '+cmd);process.exit(2);}if(/\\b(DROP\\s+(DATABASE|TABLE)|TRUNCATE\\s+TABLE|terraform\\s+destroy|kubectl\\s+delete\\s+(ns|namespace|deployment)|git\\s+push\\s+.*--force|git\\s+reset\\s+--hard)\\b/i.test(cmd)){console.error('[gstack careful] Destructive command detected — verify target carefully: '+cmd);}}catch{}})\"",
+          "timeout": 5
+        },
+        {
+          "name": "gstack-freeze-guard",
+          "event": "PreToolUse",
+          "matcher": "Edit|Write|MultiEdit",
+          "command": "node -e \"const fs=require('fs'),path=require('path');let freeze=(process.env.GSTACK_FREEZE_DIR||'').trim();if(!freeze&&fs.existsSync('.gstack/freeze-dir.txt'))freeze=fs.readFileSync('.gstack/freeze-dir.txt','utf8').trim();if(!freeze)process.exit(0);let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const p=String((j.tool_input&&(j.tool_input.file_path||j.tool_input.path))||'');if(!p)return;const abs=path.resolve(p),allowed=path.resolve(freeze);if(abs!==allowed&&!abs.startsWith(allowed+path.sep)){console.error('[gstack freeze] Edit blocked outside frozen directory ('+allowed+'): '+p);process.exit(2);}}catch{}})\"",
+          "timeout": 5
+        },
+        {
+          "name": "gstack-session-start",
+          "event": "SessionStart",
+          "matcher": "startup|clear|compact",
+          "command": "node -e \"const fs=require('fs');const f=(process.env.GSTACK_FREEZE_DIR||'').trim()||(fs.existsSync('.gstack/freeze-dir.txt')?fs.readFileSync('.gstack/freeze-dir.txt','utf8').trim():'');if(f)console.log('[gstack] Active /freeze edit boundary: '+f);\"",
+          "timeout": 5
+        }
+      ],
       "rules": {
         "mode": "single-file",
         "source": "ETHOS.md",
         "target": "gstack-ethos",
         "description": "Garry Tan gstack Boil-the-Lake engineering ethos and shipping principles."
+      },
+      "env": {
+        "GSTACK_CAREFUL": "1",
+        "GSTACK_FREEZE_DIR": ""
       },
       "preserve": [
         "agents",
@@ -210,7 +551,7 @@
     },
     "mattpocock/skills": {
       "branch": "main",
-      "sha": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d"
+      "sha": "5863806dd4e15c63174bee4e7515a4256792ecfa"
     },
     "obra/superpowers": {
       "branch": "main",
@@ -226,7 +567,7 @@
     },
     "garrytan/gstack": {
       "branch": "main",
-      "sha": "b9bbc31c5c9b36ff4fe8e85493fd86491602b846"
+      "sha": "990315df00f749ae380cc8869c51c8e864dd2f32"
     },
     "qingyuna/answer-me-with-html": {
       "branch": "main",
@@ -257,7 +598,7 @@
       "sha": "a766623b062331fdde53467001379b4ddf3acc2f"
     },
     "safishamsi/graphify": {
-      "branch": "v8",
+      "branch": "main",
       "sha": "06aa51be050170675912781ad8a2be2b20439d39"
     },
     "anthropics/skills": {

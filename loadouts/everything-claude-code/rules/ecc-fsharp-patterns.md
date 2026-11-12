@@ -1,7 +1,7 @@
 ---
 name: ecc-fsharp-patterns
 description: 'ECC fsharp rule: patterns'
-paths: '**/*.fs, **/*.fsx'
+paths: - "**/*.fs"
 ---
 
 # F# Patterns
