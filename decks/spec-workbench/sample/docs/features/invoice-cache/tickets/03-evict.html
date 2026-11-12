@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh" data-doc-id="invoice-cache-03" data-doc-type="ticket" data-doc-status="confirmed" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 写后删除</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">ticket</span><span class="pill s-confirmed">confirmed</span><span class="pill">2026-11-12</span><code class="docid">invoice-cache-03</code></div>
+<h1>03 写后删除</h1></div>
+<header class="summary" data-doc-summary>改金额、作废、退款三个写入口提交后删缓存。依赖：工单 02。</header>
+<section class="lumzel-block" id="slice" data-doc-block="slice" data-doc-kind="architecture">
+<h2>切片结构</h2>
+<div class="card arch"><div class="layer" data-doc-layer="这张工单"><div class="layer-label">这张工单</div><div class="nodes"><div class="card node st st-planned" data-doc-node="m-write" data-doc-status="planned"><div class="t"><span data-doc-label>InvoiceWrite</span> <span class="pill s-planned">planned</span></div><div class="s">三个写入口提交后调 evict</div><div class="meta"><code class="lk">src/services/invoice-write.ts</code></div></div><div class="card node st st-planned" data-doc-node="m-evict" data-doc-status="planned"><div class="t"><span data-doc-label>InvoiceCache.evict</span> <span class="pill s-planned">planned</span></div><div class="s">删 invoice:&lt;id&gt;</div><div class="meta"><code class="lk">src/services/invoice-cache.ts</code></div></div></div></div></div>
+</section>
+<section class="lumzel-block" id="done-when" data-doc-block="done-when" data-doc-kind="checklist">
+<h2>验收</h2>
+<p class="lead" data-doc-lead>全部 done，工单即 done。</p>
+<div class="check"><div class="card item st st-planned" data-doc-node="dw-1" data-doc-status="planned"><span class="box"></span><div><span data-doc-label>改金额后下一次读到新金额</span></div><span class="pill s-planned">planned</span></div><div class="card item st st-planned" data-doc-node="dw-2" data-doc-status="planned"><span class="box"></span><div><span data-doc-label>作废后下一次读到作废状态</span></div><span class="pill s-planned">planned</span></div><div class="card item st st-planned" data-doc-node="dw-3" data-doc-status="planned"><span class="box"></span><div><span data-doc-label>事务回滚时不删缓存</span></div><span class="pill s-planned">planned</span></div></div>
+</section>
+<section class="lumzel-block" id="delivers" data-doc-block="delivers" data-doc-kind="checklist">
+<h2>交付的 Node</h2>
+<div class="check"><div class="card item st st-planned" data-doc-node="n-evict" data-doc-status="planned" data-doc-delivers="docs/features/invoice-cache/design.html#evict"><span class="box"></span><div><span data-doc-label>写后删除</span></div><span class="pill s-planned">planned</span></div></div>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../../../runtime/worktree.js"></script>
+</body>
+</html>

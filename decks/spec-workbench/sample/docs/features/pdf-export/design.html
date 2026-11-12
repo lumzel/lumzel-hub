@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh" data-doc-id="pdf-export" data-doc-type="design" data-doc-status="draft" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>发票导出 PDF</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">design</span><span class="pill s-draft">draft</span><span class="pill">2026-11-12</span><code class="docid">pdf-export</code></div>
+<h1>发票导出 PDF</h1></div>
+<header class="summary" data-doc-summary>财务要把一批发票打成一个 PDF 发给客户。这份设计还在问问题，没到切工单的时候。</header>
+<section class="lumzel-block" id="decisions" data-doc-block="decisions" data-doc-kind="decisions">
+<h2>待决问题</h2>
+<p class="lead" data-doc-lead>答完才进入方案。</p>
+<div class="dec">
+  <div class="card d open st" data-doc-node="where" data-doc-recommend="后台任务" style="margin-left:0px">
+    <div class="q">❓ <span data-doc-label>在哪里生成？</span></div>
+    <div class="opts"><span class="opt">请求里同步生成</span><span class="opt rec">后台任务</span></div>
+    <div class="a">推荐：后台任务</div><div class="why">为什么：200 张发票要 40 秒，超过网关的 30 秒上限。</div>
+  </div>
+  <div class="card d open st" data-doc-node="limit" data-doc-recommend="500 张" data-doc-depends="where" style="margin-left:28px">
+    <div class="q">❓ <span data-doc-label>一次最多几张？</span></div>
+    <div class="opts"><span class="opt">100 张</span><span class="opt rec">500 张</span><span class="opt">不限</span></div>
+    <div class="a">推荐：500 张</div>
+  </div>
+</div>
+</section>
+<section class="lumzel-block" id="flow" data-doc-block="flow" data-doc-kind="flow">
+<h2>主流程</h2>
+<ol class="flow">
+  <li class="card step st" data-doc-node="pick"><div class="n">01</div><div class="t" data-doc-label>勾选发票</div></li>
+  <li class="card step st" data-doc-node="job"><div class="n">02</div><div class="t" data-doc-label>排一个导出任务</div></li>
+  <li class="card step gate st" data-doc-node="confirm" data-doc-gate><div class="n">03</div><div class="t" data-doc-label>确认方案</div></li>
+</ol>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../../runtime/worktree.js"></script>
+</body>
+</html>

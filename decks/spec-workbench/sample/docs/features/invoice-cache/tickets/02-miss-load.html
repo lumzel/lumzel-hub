@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh" data-doc-id="invoice-cache-02" data-doc-type="ticket" data-doc-status="confirmed" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 没命中：查库回填，并发只查一次</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">ticket</span><span class="pill s-confirmed">confirmed</span><span class="pill">2026-11-12</span><code class="docid">invoice-cache-02</code></div>
+<h1>02 没命中：查库回填，并发只查一次</h1></div>
+<header class="summary" data-doc-summary>缓存没命中时查库并回填；同一个 id 的并发请求共用一次查询。依赖：工单 01。</header>
+<section class="lumzel-block" id="slice" data-doc-block="slice" data-doc-kind="architecture">
+<h2>切片结构</h2>
+<div class="card arch"><div class="layer" data-doc-layer="这张工单"><div class="layer-label">这张工单</div><div class="nodes"><div class="card node st st-in-progress" data-doc-node="m-load" data-doc-status="in-progress"><div class="t"><span data-doc-label>InvoiceCache.load</span> <span class="pill s-in-progress">in-progress</span></div><div class="s">查库、写回、返回</div><div class="meta"><code class="lk">src/services/invoice-cache.ts</code></div></div><div class="card node st st-planned" data-doc-node="m-flight" data-doc-status="planned"><div class="t"><span data-doc-label>单飞锁</span> <span class="pill s-planned">planned</span></div><div class="s">同一个 id 只有一个查询在跑</div><div class="meta"><code class="lk">src/services/single-flight.ts</code></div></div></div></div></div>
+</section>
+<section class="lumzel-block" id="done-when" data-doc-block="done-when" data-doc-kind="checklist">
+<h2>验收</h2>
+<p class="lead" data-doc-lead>全部 done，工单即 done。</p>
+<div class="check"><div class="card item st st-done" data-doc-node="dw-1" data-doc-status="done"><span class="box"></span><div><span data-doc-label>没命中时查一次库并写回缓存</span></div><span class="pill s-done">done</span></div><div class="card item st st-in-progress" data-doc-node="dw-2" data-doc-status="in-progress"><span class="box"></span><div><span data-doc-label>100 个并发请求同一个 id，库只被查 1 次</span></div><span class="pill s-in-progress">in-progress</span></div><div class="card item st st-planned" data-doc-node="dw-3" data-doc-status="planned"><span class="box"></span><div><span data-doc-label>查库失败不写缓存</span></div><span class="pill s-planned">planned</span></div></div>
+</section>
+<section class="lumzel-block" id="delivers" data-doc-block="delivers" data-doc-kind="checklist">
+<h2>交付的 Node</h2>
+<div class="check"><div class="card item st st-in-progress" data-doc-node="n-miss-load" data-doc-status="in-progress" data-doc-delivers="docs/features/invoice-cache/design.html#miss-load"><span class="box"></span><div><span data-doc-label>没命中：查库回填</span></div><span class="pill s-in-progress">in-progress</span></div><div class="card item st st-in-progress" data-doc-node="n-cache-service" data-doc-status="in-progress" data-doc-delivers="docs/features/invoice-cache/design.html#cache-service"><span class="box"></span><div><span data-doc-label>InvoiceCache</span></div><span class="pill s-in-progress">in-progress</span></div></div>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../../../runtime/worktree.js"></script>
+</body>
+</html>

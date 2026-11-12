@@ -111,7 +111,9 @@
       "description": "从想法到技术方案、工单、可点击原型，再到按工单实现与评审的研发工作台：在任意项目里用可视化文档推进一个功能的交付。自带 9 个技能与 4 个子代理，不依赖项目脚手架。",
       "category": "Engineering",
       "author": "Lumzel",
-      "source": "./decks/spec-workbench"
+      "source": "./decks/spec-workbench",
+      "cover": { "light": "preview/cover-light.webp", "dark": "preview/cover-dark.webp" },
+      "coverViewport": [1200, 750]
     },
     {
       "id": "release-readiness",
@@ -120,7 +122,8 @@
       "description": "版本发布检查清单、变更摘要与风险门禁可视化工作台，支持一键唤起 Agent 核验。",
       "category": "DevOps",
       "author": "Lumzel",
-      "source": "./decks/release-readiness"
+      "source": "./decks/release-readiness",
+      "cover": { "light": "preview/cover-light.webp", "dark": "preview/cover-dark.webp" }
     },
     {
       "id": "architecture-radar",
@@ -129,7 +132,8 @@
       "description": "模块边界、核心依赖与技术债健康度面板，配合 Agent 实时梳理项目结构演进。",
       "category": "Architecture",
       "author": "Lumzel",
-      "source": "./decks/architecture-radar"
+      "source": "./decks/architecture-radar",
+      "cover": { "light": "preview/cover-light.webp", "dark": "preview/cover-dark.webp" }
     },
     {
       "id": "pr-review-board",
@@ -138,7 +142,8 @@
       "description": "围绕编码规范与需求规格双轴展开的结构化 Code Review 交互面板。",
       "category": "Engineering",
       "author": "Lumzel",
-      "source": "./decks/pr-review-board"
+      "source": "./decks/pr-review-board",
+      "cover": { "light": "preview/cover-light.webp", "dark": "preview/cover-dark.webp" }
     }
   ]
 }

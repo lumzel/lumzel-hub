@@ -3,6 +3,7 @@
 // (read-only route). The Deck draws the frame (rail, tabs, ticket list); each doc renders itself with the
 // Deck's own runtime (runtime/worktree.js, which Lumzel appends to every Worktree page the Deck frames).
 import { t, applyI18n } from './i18n.js';
+import { SAMPLE_INDEX } from './sample.js';
 
 const $ = id => document.getElementById(id);
 const app = $('app');
@@ -10,6 +11,7 @@ const app = $('app');
 const state = {
   index: { features: [], docs: [] },
   theme: 'light',
+  preview: false, // shown from a market, not installed: the sample project, and no Session can start
   view: 'feature', // 'feature' | 'hub'
   featureId: '',
   tab: 'design',
@@ -51,8 +53,9 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
+// In a market preview there is no Worktree: the pages come from the sample project this Deck ships.
 const worktreeUrl = (path, { hash = '', query = '' } = {}) =>
-  `worktree/${path.split('/').map(encodeURIComponent).join('/')}?${query ? `${query}&` : ''}theme=${state.theme}${
+  `${state.preview ? 'sample' : 'worktree'}/${path.split('/').map(encodeURIComponent).join('/')}?${query ? `${query}&` : ''}theme=${state.theme}${
     hash ? `#${hash}` : ''
   }`;
 
@@ -346,7 +349,10 @@ async function load({ reload = false } = {}) {
   $('refresh').classList.add('spin');
   loading = (async () => {
     try {
-      const [ctx, index] = await Promise.all([deck.context(), deck.docs.index()]);
+      const [ctx, listed] = await Promise.all([deck.context(), deck.docs.index().catch(error => ({ error }))]);
+      state.preview = Boolean(ctx.preview);
+      if (listed.error && !state.preview) throw listed.error;
+      const index = state.preview ? SAMPLE_INDEX : listed;
       if (ctx.theme !== state.theme) {
         state.theme = ctx.theme;
         document.documentElement.dataset.theme = ctx.theme;
@@ -412,6 +418,7 @@ window.addEventListener('message', event => {
 // ---------- agent actions
 
 async function run(skill, prompt, actionId) {
+  if (state.preview) return toast(t('previewOnly'));
   try {
     const result = await deck.agent.run({ skill, prompt, actionId });
     toast(t('sessionOpened', { id: result.sessionId }));

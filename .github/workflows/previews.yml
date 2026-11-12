@@ -1,0 +1,35 @@
+# Renders the market cover of every Deck after a change to a Deck or to the renderer, and commits
+# the images back. macOS + WebKit: the engine and the fonts Lumzel itself shows Decks with.
+name: Deck previews
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'decks/**'
+      - 'tools/**'
+      - '!decks/*/preview/**'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: deck-previews
+  cancel-in-progress: true
+jobs:
+  render:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save playwright@1
+      - run: npx playwright install webkit
+      - run: brew install webp
+      - run: node tools/render-previews.mjs --browser webkit
+      - name: Commit the covers that changed
+        run: |
+          git add 'decks/*/preview/cover-*.webp'
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m 'chore(previews): render Deck covers [skip ci]'
+          git push

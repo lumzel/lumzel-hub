@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh" data-doc-id="invoice-cache-01" data-doc-type="ticket" data-doc-status="confirmed" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 读路径：命中不查库</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">ticket</span><span class="pill s-confirmed">confirmed</span><span class="pill">2026-11-12</span><code class="docid">invoice-cache-01</code></div>
+<h1>01 读路径：命中不查库</h1></div>
+<header class="summary" data-doc-summary>GET /invoices/:id 先查 Redis，命中直接返回；依赖：无。</header>
+<section class="lumzel-block" id="slice" data-doc-block="slice" data-doc-kind="architecture">
+<h2>切片结构</h2>
+<div class="card arch"><div class="layer" data-doc-layer="这张工单"><div class="layer-label">这张工单</div><div class="nodes"><div class="card node st st-done" data-doc-node="m-api" data-doc-status="done"><div class="t"><span data-doc-label>GET /invoices/:id</span> <span class="pill s-done">done</span></div><div class="s">接上 InvoiceCache.get</div><div class="meta"><code class="lk">src/api/invoice.ts</code></div></div><div class="card node st st-done" data-doc-node="m-get" data-doc-status="done"><div class="t"><span data-doc-label>InvoiceCache.get</span> <span class="pill s-done">done</span></div><div class="s">读 invoice:&lt;id&gt;</div><div class="meta"><code class="lk">src/services/invoice-cache.ts</code></div></div></div></div></div>
+</section>
+<section class="lumzel-block" id="done-when" data-doc-block="done-when" data-doc-kind="checklist">
+<h2>验收</h2>
+<p class="lead" data-doc-lead>全部 done，工单即 done。</p>
+<div class="check"><div class="card item st st-done" data-doc-node="dw-1" data-doc-status="done"><span class="box"></span><div><span data-doc-label>命中时不查库</span></div><span class="pill s-done">done</span></div><div class="card item st st-done" data-doc-node="dw-2" data-doc-status="done"><span class="box"></span><div><span data-doc-label>Redis 连不上时退回查库，不报错</span></div><span class="pill s-done">done</span></div><div class="card item st st-done" data-doc-node="dw-3" data-doc-status="done"><span class="box"></span><div><span data-doc-label>p95 从 120 ms 降到 18 ms（压测 500 rps）</span></div><span class="pill s-done">done</span></div></div>
+</section>
+<section class="lumzel-block" id="delivers" data-doc-block="delivers" data-doc-kind="checklist">
+<h2>交付的 Node</h2>
+<div class="check"><div class="card item st st-done" data-doc-node="n-read" data-doc-status="done" data-doc-delivers="docs/features/invoice-cache/design.html#read"><span class="box"></span><div><span data-doc-label>读缓存</span></div><span class="pill s-done">done</span></div><div class="card item st st-done" data-doc-node="n-get-invoice" data-doc-status="done" data-doc-delivers="docs/features/invoice-cache/design.html#get-invoice"><span class="box"></span><div><span data-doc-label>GET /invoices/:id</span></div><span class="pill s-done">done</span></div><div class="card item st st-done" data-doc-node="n-redis" data-doc-status="done" data-doc-delivers="docs/features/invoice-cache/design.html#redis"><span class="box"></span><div><span data-doc-label>Redis</span></div><span class="pill s-done">done</span></div></div>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../../../runtime/worktree.js"></script>
+</body>
+</html>

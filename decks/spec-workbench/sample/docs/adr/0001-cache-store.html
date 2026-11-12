@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh" data-doc-id="0001-cache-store" data-doc-type="adr" data-doc-status="confirmed" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>缓存用 Redis，不用进程内</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">adr</span><span class="pill s-confirmed">confirmed</span><span class="pill">2026-11-12</span><code class="docid">0001-cache-store</code></div>
+<h1>缓存用 Redis，不用进程内</h1></div>
+<header class="summary" data-doc-summary>发票读取缓存放在 Redis。</header>
+<section class="lumzel-block" id="context" data-doc-block="context" data-doc-kind="callout">
+<h2>背景</h2>
+<div class="callout info">发票服务跑四个实例。读多写少，但金额一旦改了，哪个实例都不能再回旧值。</div>
+</section>
+<section class="lumzel-block" id="decision" data-doc-block="decision" data-doc-kind="decisions">
+<h2>决定</h2>
+<div class="dec">
+  <div class="card d st" data-doc-node="store" data-doc-answer="Redis" data-doc-recommend="Redis" style="margin-left:0px">
+    <div class="q">✓ <span data-doc-label>缓存放哪？</span></div>
+    <div class="opts"><span class="opt chosen">Redis</span><span class="opt">进程内</span></div>
+    <div class="a">→ Redis</div><div class="why">为什么：一次删除对四个实例都生效。</div>
+  </div>
+</div>
+</section>
+<section class="lumzel-block" id="consequences" data-doc-block="consequences" data-doc-kind="table">
+<h2>后果</h2>
+<table class="grid"><thead><tr><th>后果</th><th>怎么接住</th></tr></thead><tbody>
+<tr data-doc-node="c-hop"><td>每次读多一跳网络，约 1 ms</td><td>可以接受，目标是 20 ms</td></tr>
+<tr data-doc-node="c-down"><td>Redis 挂了读路径不能跟着挂</td><td>连不上时退回查库，工单 01 有测试</td></tr>
+</tbody></table>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../runtime/worktree.js"></script>
+</body>
+</html>

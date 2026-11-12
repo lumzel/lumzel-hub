@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh" data-doc-id="invoice-cache" data-doc-type="design" data-doc-status="confirmed" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>发票读取缓存</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">design</span><span class="pill s-confirmed">confirmed</span><span class="pill">2026-11-12</span><code class="docid">invoice-cache</code></div>
+<h1>发票读取缓存</h1></div>
+<header class="summary" data-doc-summary>发票详情页每次都查库，高峰期 p95 到 120 ms。读路径前面加一层 Redis 缓存，写后删除，目标 p95 低于 20 ms。</header>
+<section class="lumzel-block" id="scope" data-doc-block="scope" data-doc-kind="kpi">
+<h2>规模</h2>
+<div class="kpi">
+  <div class="card"><div class="label">Node</div><div class="value">6</div><div class="note">3 done · 1 in-progress · 2 planned</div></div>
+  <div class="card"><div class="label">接口</div><div class="value">2</div><div class="note">读一个，写一个</div></div>
+  <div class="card"><div class="label">工单</div><div class="value">3</div><div class="note">1 done · 1 in-progress</div></div>
+  <div class="card"><div class="label">p95 目标</div><div class="value">20 ms</div><div class="note">现在 120 ms</div></div>
+</div>
+</section>
+
+<section class="lumzel-block" id="flow" data-doc-block="flow" data-doc-kind="flow">
+<h2>读一张发票</h2>
+<p class="lead" data-doc-lead>命中直接回；没命中查库、回填、再回。</p>
+<ol class="flow">
+  <li class="card step st st-done" data-doc-node="read" data-doc-status="done" data-doc-links="src/services/invoice-cache.ts">
+    <div class="n">01 <span class="pill s-done">done</span></div><div class="t" data-doc-label>读缓存</div><div class="s">按发票 id 查 Redis</div>
+    <div class="meta"><code class="lk">src/services/invoice-cache.ts</code></div>
+  </li>
+  <li class="card step st st-in-progress" data-doc-node="miss-load" data-doc-status="in-progress" data-doc-links="src/services/invoice-cache.ts">
+    <div class="n">02 <span class="pill s-in-progress">in-progress</span></div><div class="t" data-doc-label>没命中：查库回填</div><div class="s">同一个 id 并发只查一次库</div>
+    <div class="meta"><code class="lk">src/services/invoice-cache.ts</code> <code class="lk">table:invoices</code></div>
+  </li>
+  <li class="card step gate st" data-doc-node="confirm-ttl" data-doc-gate>
+    <div class="n">03</div><div class="t" data-doc-label>确认 TTL 与失效策略</div>
+  </li>
+  <li class="card step st st-planned" data-doc-node="evict" data-doc-status="planned" data-doc-links="src/services/invoice-write.ts">
+    <div class="n">04 <span class="pill s-planned">planned</span></div><div class="t" data-doc-label>写后删除</div><div class="s">改金额、作废都删缓存</div>
+    <div class="meta"><code class="lk">src/services/invoice-write.ts</code></div>
+  </li>
+</ol>
+</section>
+
+<section class="lumzel-block" id="parts" data-doc-block="parts" data-doc-kind="architecture">
+<h2>组成</h2>
+<div class="card arch">
+  <div class="layer" data-doc-layer="API"><div class="layer-label">API</div><div class="nodes">
+    <div class="card node st st-done" data-doc-node="get-invoice" data-doc-status="done" data-doc-links="src/api/invoice.ts">
+      <div class="t"><span data-doc-label>GET /invoices/:id</span> <span class="pill s-done">done</span></div><div class="s">读发票，先走缓存</div>
+      <div class="meta"><code class="lk">src/api/invoice.ts</code></div>
+    </div>
+  </div></div>
+  <div class="layer" data-doc-layer="服务"><div class="layer-label">服务</div><div class="nodes">
+    <div class="card node st st-in-progress" data-doc-node="cache-service" data-doc-status="in-progress" data-doc-links="src/services/invoice-cache.ts">
+      <div class="t"><span data-doc-label>InvoiceCache</span> <span class="pill s-in-progress">in-progress</span></div><div class="s">读、回填、删除三个入口</div>
+      <div class="meta"><code class="lk">src/services/invoice-cache.ts</code> <code class="lk">test:tests/invoice-cache.test.ts</code></div>
+    </div>
+  </div></div>
+  <div class="layer" data-doc-layer="存储"><div class="layer-label">存储</div><div class="nodes">
+    <div class="card node st st-done" data-doc-node="redis" data-doc-status="done" data-doc-links="src/infra/redis.ts">
+      <div class="t"><span data-doc-label>Redis</span> <span class="pill s-done">done</span></div><div class="s">invoice:&lt;id&gt; → JSON，TTL 10 分钟</div>
+      <div class="meta"><code class="lk">src/infra/redis.ts</code></div>
+    </div>
+    <div class="card node st st-done" data-doc-node="invoices" data-doc-status="done" data-doc-links="table:invoices">
+      <div class="t"><span data-doc-label>invoices 表</span> <span class="pill s-done">done</span></div><div class="s">金额与状态的唯一真相</div>
+      <div class="meta"><code class="lk">table:invoices</code></div>
+    </div>
+  </div></div>
+  <ul class="edges">
+    <li data-doc-from="get-invoice" data-doc-to="cache-service"><span>GET /invoices/:id</span> <i>→</i> <span>InvoiceCache</span> <em data-doc-label>get(id)</em></li>
+    <li data-doc-from="cache-service" data-doc-to="redis"><span>InvoiceCache</span> <i>→</i> <span>Redis</span> <em data-doc-label>读 / 写 / 删</em></li>
+    <li data-doc-from="cache-service" data-doc-to="invoices"><span>InvoiceCache</span> <i>→</i> <span>invoices 表</span> <em data-doc-label>没命中才查</em></li>
+  </ul>
+</div>
+</section>
+
+<section class="lumzel-block" id="decisions" data-doc-block="decisions" data-doc-kind="decisions">
+<h2>决定</h2>
+<div class="dec">
+  <div class="card d st" data-doc-node="store" data-doc-answer="Redis" data-doc-recommend="Redis" data-doc-adr="docs/adr/0001-cache-store.html" style="margin-left:0px">
+    <div class="q">✓ <span data-doc-label>缓存放哪？</span></div>
+    <div class="opts"><span class="opt chosen">Redis</span><span class="opt">进程内</span></div>
+    <div class="a">→ Redis</div><div class="why">为什么：服务有四个实例，进程内缓存各算各的，写后删除删不干净。</div>
+  </div>
+  <div class="card d st" data-doc-node="ttl" data-doc-answer="10 分钟" data-doc-recommend="10 分钟" data-doc-depends="store" style="margin-left:28px">
+    <div class="q">✓ <span data-doc-label>TTL 多长？</span></div>
+    <div class="opts"><span class="opt">1 分钟</span><span class="opt chosen">10 分钟</span><span class="opt">60 分钟</span></div>
+    <div class="a">→ 10 分钟</div><div class="why">为什么：漏删一次最多错 10 分钟；再短命中率掉到 60% 以下。</div>
+  </div>
+</div>
+</section>
+
+<section class="lumzel-block" id="risk" data-doc-block="risk" data-doc-kind="callout">
+<h2>风险</h2>
+<div class="callout risk">写路径只要漏删一处缓存，用户就会看到旧金额。工单 03 给每个写入口各配一条测试。</div>
+</section>
+
+<section class="lumzel-block" id="tickets" data-doc-block="tickets" data-doc-kind="checklist">
+<h2>工单</h2>
+<div class="check">
+  <div class="card item st st-done" data-doc-node="t01" data-doc-status="done" data-doc-ticket="docs/features/invoice-cache/tickets/01-read-path.html"><span class="box"></span><div><span data-doc-label>01 读路径：命中不查库</span></div><span class="pill s-done">done</span></div>
+  <div class="card item st st-in-progress" data-doc-node="t02" data-doc-status="in-progress" data-doc-ticket="docs/features/invoice-cache/tickets/02-miss-load.html" data-doc-blocked-by="t01"><span class="box"></span><div><span data-doc-label>02 没命中：查库回填，并发只查一次</span></div><span class="pill s-in-progress">in-progress</span></div>
+  <div class="card item st st-planned" data-doc-node="t03" data-doc-status="planned" data-doc-ticket="docs/features/invoice-cache/tickets/03-evict.html" data-doc-blocked-by="t02"><span class="box"></span><div><span data-doc-label>03 写后删除</span><div class="meta">blocked by t02</div></div><span class="pill s-planned">planned</span></div>
+</div>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../../runtime/worktree.js"></script>
+</body>
+</html>

@@ -68,6 +68,31 @@ Lumzel supports browsing repositories directly in the **Loadout** and **Deck** p
 
 ---
 
+## Previews in Lumzel
+
+A card in the Lumzel market opens a detail page before anything is installed.
+
+- **A Deck runs for real.** Its entry page loads in a sandbox (`sandbox="allow-scripts"`, no network) on a bridge that answers `deck.context()` and refuses every other call. `context().preview` is `true` there: a Deck that needs data draws sample data of its own when it sees it.
+- **A Loadout is shown read only**: its instructions and every skill, subagent, rule, hook and MCP server it brings, each one openable.
+- **Covers and screenshots are optional.** An entry in `marketplace.json` may name them, as paths inside the item's folder (`png`, `jpg`, `webp` or `gif`, at most 1 MB for a cover):
+
+```json
+{
+  "id": "release-readiness",
+  "source": "./decks/release-readiness",
+  "cover": { "light": "preview/cover-light.webp", "dark": "preview/cover-dark.webp" },
+  "screenshots": ["preview/board.webp"]
+}
+```
+
+`cover` and each `screenshots` item is one path, or `{ "light": …, "dark": … }`.
+
+Deck covers in this repository are rendered, not drawn by hand: `node tools/render-previews.mjs` loads every Deck the way the preview does and writes `decks/<id>/preview/cover-{light,dark}.webp` (1600×1000, WebP quality 80, about 25 KB each). It needs `playwright` and `cwebp`. The `Deck previews` workflow runs it on macOS with WebKit after a push that changes a Deck, and commits the images. `tools/sdk.js` is a copy of the SDK Lumzel serves at `/sdk.js`.
+
+A Deck that needs a project to show anything ships a sample one. `spec-workbench` does: when `context().preview` is true it lists `src/sample.js` instead of asking for the Worktree's docs, and opens the pages under `sample/docs/` from its own folder. Those pages end with a `<script>` for `runtime/worktree.js`, which Lumzel appends by itself to the pages of a real project. An entry whose Deck needs a larger window for its cover names it: `"coverViewport": [1200, 750]`.
+
+---
+
 ## Creating Your Own Repository
 
 1. Create a GitHub repository with `marketplace.json` at the root (or `.lumzel-plugin/marketplace.json`).
