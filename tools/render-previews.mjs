@@ -67,7 +67,8 @@ const deckCsp = origin =>
     "default-src 'none'",
     `script-src 'self' ${origin}`,
     `style-src 'self' ${origin} 'unsafe-inline'`,
-    `img-src 'self' ${origin} data:`,
+    `img-src 'self' ${origin} data: blob:`,
+    `media-src 'self' ${origin} data: blob:`,
     `font-src 'self' ${origin}`,
     `frame-src 'self' ${origin}`,
     "connect-src 'none'",
@@ -84,7 +85,10 @@ const server = http.createServer(async (request, response) => {
     return response.end(hostPage(url.searchParams.get('theme'), url.searchParams.get('title') ?? ''));
   }
   const relative = path.normalize(decodeURIComponent(url.pathname)).replace(/^[/\\]+/, '');
-  const file = relative === 'sdk.js' ? path.join(root, 'tools/sdk.js') : path.join(root, 'decks', relative);
+  const file =
+    relative === 'sdk.js' || relative.startsWith('lib/')
+      ? path.join(root, 'tools', relative)
+      : path.join(root, 'decks', relative);
   if (!file.startsWith(root + path.sep)) return response.writeHead(403).end();
   try {
     const body = await readFile(file);

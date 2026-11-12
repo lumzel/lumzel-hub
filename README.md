@@ -14,24 +14,18 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 | :--- | :--- | :--- | :--- | :--- |
 | `daily-workflow` | `Workflow` | 🧠 Daily Engineering Workflow / 日常全能研发工作流 | Curated Multi-Repo (`upstreams.json`) | Curated Skills (`answer-me-with-html`, `visual-plan`, `show-me`, `excalidraw-diagram-generator`, `git-commit`, `humanizer`, `humanizer-zh`, `eli5`, `code-review`, `tdd`, `graphify`, `skill-creator`), `graphify` MCP (`uvx`), `graphify-memory` Rule |
 | `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | Full-stack & domain Skills, Specialist Subagents, Common & Multi-Language Rules, Hooks, MCP Configs |
-| `tdd-engineer` | `Engineering` | 🧪 TDD Craft Engineer / TDD 测试驱动工程师 | Lumzel Official | Public Seam Red-Green-Refactor Instructions |
 | `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow / 研发工作流 | [`mattpocock/skills`](https://github.com/mattpocock/skills) | Upstream Skills (with companion testing/architecture docs), Review/Explorer Subagents, Rule |
 | `superpowers` | `Workflow` | 🦸 Obra Superpowers / 工程纪律套件 | [`obra/superpowers`](https://github.com/obra/superpowers) | Upstream Skills (with prompts, references & templates), Subagents, SessionStart Hook, Iron Laws Rule |
 | `compound-engineering` | `Workflow` | 🔄 Compound Engineering / 复利工程 | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | `ce-*` / `lfg` / `wtf` Workflow Skills, Specialist Research & Review Subagents, Coding Standards Rule |
 | `gstack` | `Workflow` | 🚀 Garry Tan gstack / 交付工作流 | [`garrytan/gstack`](https://github.com/garrytan/gstack) | Full-Lifecycle Delivery Skills, Specialist Subagents, Boil-the-Lake Ethos Rule |
 | `spec-kit` | `Architecture` | 📐 GitHub Spec-Kit (SDD) / 规格驱动开发 | [`github/spec-kit`](https://github.com/github/spec-kit) | `speckit-*` SDD Workflow Skills (bundled with official templates), Subagents, Principles Rule |
-| `fullstack-architect` | `Architecture` | 🏛️ Fullstack Architect / 全栈系统架构师 | Lumzel Official | `architecture-adr` Skill + System Architecture & Boundary Instructions |
-| `security-auditor` | `Security` | 🛡️ Security & Reliability Auditor / 安全与可靠性审计师 | Lumzel Official | `owasp-security-audit` Skill + Threat Modeling & Concurrency Audit |
-| `frontend-craftsman` | `Frontend` | ✨ Frontend UI Craftsman / 前端与桌面界面工匠 | Lumzel Official | Design Tokens, Accessibility & Desktop-Grade UI Polish |
 
 ## Included Decks
 
 | ID | Category | Title (`en` / `zh-CN`) | Capabilities |
 | :--- | :--- | :--- | :--- |
 | `spec-workbench` | `Workflow` | Spec Workbench / 方案工作台 | Visual design docs, tickets, clickable prototypes + bundled `spec-workbench-*` skills & subagents |
-| `pr-review-board` | `Code Review` | PR Review Board / 代码审查面板 | Dual-axis Standards & Spec code review board + bundled `pr-review-board-*` skills |
-| `release-readiness` | `DevOps` | Release Readiness / 发版就绪看板 | Release checklist, changelog summary, and Agent verification gate + bundled `release-readiness-*` skills |
-| `architecture-radar` | `Architecture` | Architecture Radar / 架构与模块雷达 | Module boundaries, dependency health, and Agent structural analysis + bundled `architecture-radar-*` skills |
+
 
 ---
 
@@ -50,16 +44,16 @@ Every repository catalog (`marketplace.json`), Loadout (`loadout.yaml`), and Dec
 ### `loadout.yaml` Example
 
 ```yaml
-id: fullstack-architect
-name: Fullstack Architect
-description: "End-to-end system architect focused on domain modeling, ADR trade-off analysis, API contracts, and cross-layer refactoring."
+id: daily-workflow
+name: Daily Engineering Workflow
+description: "All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing."
 i18n:
   en:
-    name: Fullstack Architect
-    description: "End-to-end system architect focused on domain modeling, ADR trade-off analysis, API contracts, and cross-layer refactoring."
+    name: Daily Engineering Workflow
+    description: "All-in-one daily engineering companion: visual HTML explainers & diagrams, interactive planning, public-seam TDD, dual-axis code review, persistent Graphify knowledge graph memory, and natural human-sounding writing."
   zh-CN:
-    name: "全栈系统架构师"
-    description: "面向端到端系统设计：专注领域建模、ADR 方案权衡、接口契约设计与跨层重构。"
+    name: "日常全能研发工作流"
+    description: "面向日常开发与架构演进的通用全能套件：集成可视化单页解读与架构制图、交互式方案规划、公共边界 TDD、双轴代码审查、Graphify 知识图谱持久记忆与去 AI 腔自然表达。"
 ```
 
 ### `deck.json` Example
@@ -128,7 +122,7 @@ Lumzel supports browsing repositories directly in the **Loadout** and **Deck** p
    - **Lumzel URI Schema**:
      - `lumzel://loadout/lumzel/lumzel-hub/daily-workflow`
      - `lumzel://loadout/lumzel/lumzel-hub/everything-claude-code`
-     - `lumzel://deck/lumzel/lumzel-hub/release-readiness`
+     - `lumzel://deck/lumzel/lumzel-hub/spec-workbench`
      - `lumzel://repo/lumzel/lumzel-hub`
    - **Local Folder Path**: `/path/to/my-loadout-or-deck`
 
@@ -144,10 +138,10 @@ A card in the Lumzel market opens a detail page before anything is installed.
 
 ```json
 {
-  "id": "release-readiness",
-  "source": "./decks/release-readiness",
+  "id": "spec-workbench",
+  "source": "./decks/spec-workbench",
   "cover": { "light": "preview/cover-light.webp", "dark": "preview/cover-dark.webp" },
-  "screenshots": ["preview/board.webp"]
+  "coverViewport": [1200, 750]
 }
 ```
 
