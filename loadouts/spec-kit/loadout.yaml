@@ -1,20 +1,36 @@
 id: spec-kit
 name: GitHub Spec-Kit (SDD)
-icon: "📐"
-description: "基于 GitHub 官方开源项目改编（https://github.com/github/spec-kit）：沿着 Constitution → Specify → Plan → Tasks → Implement 完整链路推进规格驱动开发（SDD）。"
-author: "GitHub"
-homepage: "https://github.com/github/spec-kit"
+icon: 📐
+category: Architecture
+description: 'Complete GitHub Spec-Kit SDD suite (github/spec-kit): all 9 official speckit-* workflow skills (Constitution,
+  Specify, Clarify, Plan, Checklist, Tasks, Analyze, Implement, Converge) bundled with official templates & SDD principles.'
+i18n:
+  en:
+    name: GitHub Spec-Kit (SDD)
+    description: 'Complete GitHub Spec-Kit SDD suite (github/spec-kit): all 9 official speckit-* workflow skills (Constitution,
+      Specify, Clarify, Plan, Checklist, Tasks, Analyze, Implement, Converge) bundled with official templates & SDD principles.'
+  zh-CN:
+    name: GitHub Spec-Kit 规格驱动开发
+    description: 完整同步 GitHub 官方 Spec-Kit（github/spec-kit）：内置全部 9 个 speckit-* 规格驱动开发 Skill（Constitution / Specify / Clarify
+      / Plan / Checklist / Tasks / Analyze / Implement / Converge）及全套官方模板。
+author: GitHub
+homepage: https://github.com/github/spec-kit
 skills:
-  - speckit-constitution
-  - speckit-specify
-  - speckit-plan
-  - speckit-tasks
+- speckit-analyze
+- speckit-checklist
+- speckit-clarify
+- speckit-constitution
+- speckit-converge
+- speckit-implement
+- speckit-plan
+- speckit-specify
+- speckit-tasks
 agents:
-  spec-analyst: {}
-  contract-architect: {}
+  speckit-analyst: {}
+  speckit-contract-architect: {}
 mcp: []
 hooks: []
 rules:
-  - spec-first-gate
+- speckit-sdd-principles
 plugins: []
 env: {}

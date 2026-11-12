@@ -1,22 +1,43 @@
 id: superpowers
 name: Obra Superpowers
-icon: "🦸"
-description: "基于 Jesse Vincent (obra) 开源项目改编（https://github.com/obra/superpowers）：以苏格拉底设计风暴、微粒度计划、子代理两阶段审查与三大铁律（TDD / 根因调试 / 实证交付）保障工程质量。"
-author: "Jesse Vincent (obra)"
-homepage: "https://github.com/obra/superpowers"
+icon: 🦸
+category: Workflow
+description: 'Complete Obra Superpowers v7 suite (obra/superpowers): all 15 upstream skills with companion prompts & references,
+  3 review/implementation subagents, SessionStart hook, and the three Iron Laws.'
+i18n:
+  en:
+    name: Obra Superpowers
+    description: 'Complete Obra Superpowers v7 suite (obra/superpowers): all 15 upstream skills with companion prompts & references,
+      3 review/implementation subagents, SessionStart hook, and the three Iron Laws.'
+  zh-CN:
+    name: Obra Superpowers 工程纪律套件
+    description: 完整同步 Jesse Vincent 开源项目（obra/superpowers）：内置全部 15 个官方 Skill 与配套提示词模板、3 个实现与审查子代理、SessionStart 启动 Hook 及三大工程铁律。
+author: Jesse Vincent (obra)
+homepage: https://github.com/obra/superpowers
 skills:
-  - brainstorming
-  - writing-plans
-  - subagent-driven-development
-  - systematic-debugging
-  - verification-before-completion
+- brainstorming
+- diagnosing-superpowers
+- dispatching-parallel-agents
+- executing-plans
+- finishing-a-development-branch
+- receiving-code-review
+- requesting-code-review
+- subagent-driven-development
+- systematic-debugging
+- test-driven-development
+- using-git-worktrees
+- using-superpowers
+- verification-before-completion
+- writing-plans
+- writing-skills
 agents:
-  task-implementer: {}
-  spec-compliance-reviewer: {}
-  code-quality-reviewer: {}
+  superpowers-code-reviewer: {}
+  superpowers-implementer: {}
+  superpowers-task-reviewer: {}
 mcp: []
-hooks: []
+hooks:
+- superpowers-session-start
 rules:
-  - superpowers-iron-laws
+- superpowers-iron-laws
 plugins: []
 env: {}

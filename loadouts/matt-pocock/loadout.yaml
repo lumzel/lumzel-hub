@@ -1,31 +1,67 @@
 id: matt-pocock
 name: Matt Pocock Workflow
-icon: "🎯"
-description: "基于 Matt Pocock 开源项目改编（https://github.com/mattpocock/skills）：涵盖 grill-me 深度澄清、深模块设计、曳光弹垂直切片、公共边界 TDD 与 Standards/Spec 双轴代码审查。"
-author: "Matt Pocock"
-homepage: "https://github.com/mattpocock/skills"
+icon: 🎯
+category: Workflow
+description: 'Complete Matt Pocock skill suite (mattpocock/skills): 39 upstream skills covering grill-me design interviews,
+  deep module design, domain modeling, tracer-bullet specs/tickets, public-seam TDD, and dual-axis code review.'
+i18n:
+  en:
+    name: Matt Pocock Workflow
+    description: 'Complete Matt Pocock skill suite (mattpocock/skills): 39 upstream skills covering grill-me design interviews,
+      deep module design, domain modeling, tracer-bullet specs/tickets, public-seam TDD, and dual-axis code review.'
+  zh-CN:
+    name: Matt Pocock 研发工作流
+    description: 完整同步 Matt Pocock 开源项目（mattpocock/skills）：内置全部 39 个官方 Skill 与配套参考文档，涵盖 grill-me 深度澄清、深模块设计、领域建模、曳光弹规格与工单拆解、公共边界
+      TDD 及双轴代码审查。
+author: Matt Pocock
+homepage: https://github.com/mattpocock/skills
 skills:
-  - grill-me
-  - grill-with-docs
-  - domain-modeling
-  - codebase-design
-  - to-spec
-  - to-tickets
-  - wayfinder
-  - tdd
-  - prototype
-  - diagnosing-bugs
-  - code-review
-  - improve-codebase-architecture
-  - handoff
-  - teach
+- ask-matt
+- code-review
+- codebase-design
+- diagnosing-bugs
+- domain-modeling
+- grill-with-docs
+- implement
+- implement-spec
+- improve-codebase-architecture
+- pr
+- prototype
+- research
+- retro
+- setup-matt-pocock-skills
+- tdd
+- to-spec
+- to-tickets
+- triage
+- wayfinder
+- wizard
+- grill-me
+- grilling
+- handoff
+- teach
+- to-questionnaire
+- wait-what
+- writing-for-agents
+- git-guardrails-claude-code
+- migrate-to-shoehorn
+- scaffold-exercises
+- setup-pre-commit
+- chief-of-staff
+- claude-handoff
+- loop-me
+- setup-ts-deep-modules
+- software-factory
+- writing-beats
+- writing-fragments
+- writing-shape
 agents:
-  standards-reviewer: {}
-  spec-reviewer: {}
-  architecture-explorer: {}
+  mp-standards-reviewer: {}
+  mp-spec-reviewer: {}
+  mp-architecture-explorer: {}
 mcp: []
 hooks: []
 rules:
-  - deep-modules-and-seams
+- mp-deep-modules-and-seams
 plugins: []
 env: {}

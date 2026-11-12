@@ -1,10 +1,20 @@
 id: fullstack-architect
 name: Fullstack Architect
-icon: "🏛️"
-description: 端到端系统架构师：擅长领域建模、ADR 决策推演、接口契约设计与复杂跨层重构。
+icon: 🏛️
+category: Architecture
+description: End-to-end system architect focused on domain modeling, ADR trade-off analysis, API contracts, and cross-layer
+  refactoring.
+i18n:
+  en:
+    name: Fullstack Architect
+    description: End-to-end system architect focused on domain modeling, ADR trade-off analysis, API contracts, and cross-layer
+      refactoring.
+  zh-CN:
+    name: 全栈系统架构师
+    description: 面向端到端系统设计：专注领域建模、ADR 方案权衡、接口契约设计与跨层重构。
 author: Lumzel
 skills:
-  - architecture-adr
+- architecture-adr
 agents: {}
 mcp: []
 hooks: []

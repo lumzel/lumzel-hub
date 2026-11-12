@@ -1,0 +1,10 @@
+{
+  "command": "npx",
+  "args": [
+    "-y",
+    "@codescene/codehealth-mcp"
+  ],
+  "env": {
+    "CS_ACCESS_TOKEN": "${env:CS_ACCESS_TOKEN}"
+  }
+}

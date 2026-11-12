@@ -1,7 +1,17 @@
 id: frontend-craftsman
 name: Frontend UI Craftsman
-icon: "✨"
-description: 桌面级与 Web 界面工匠：打磨设计 Token、微交互动效、键盘可访问性与高性能渲染体验。
+icon: ✨
+category: Frontend
+description: Desktop and web UI specialist refining design tokens, micro-interactions, keyboard accessibility, and rendering
+  performance.
+i18n:
+  en:
+    name: Frontend UI Craftsman
+    description: Desktop and web UI specialist refining design tokens, micro-interactions, keyboard accessibility, and rendering
+      performance.
+  zh-CN:
+    name: 前端与桌面界面工匠
+    description: 专注桌面级与 Web 界面细节：打磨设计 Token、交互动效、键盘可访问性与渲染性能。
 author: Lumzel
 skills: []
 agents: {}

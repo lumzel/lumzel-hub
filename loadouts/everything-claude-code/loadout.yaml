@@ -1,26 +1,855 @@
 id: everything-claude-code
 name: Everything Claude Code (ECC)
-icon: "⚡"
-description: "基于 Affaan Mustafa (affaan-m) 开源项目改编（https://github.com/affaan-m/everything-claude-code）：集成架构规划、TDD 循环、AgentShield 安全扫描、分级代码审查与 6 阶交付验证门禁。"
-author: "Affaan Mustafa (affaan-m)"
-homepage: "https://github.com/affaan-m/everything-claude-code"
+icon: ⚡
+category: Engineering
+description: 'Complete Everything Claude Code suite (affaan-m/everything-claude-code): 271 skills, 67 specialist subagents,
+  113 common & language rules, 3 quality hooks, and 32 MCP server configs.'
+i18n:
+  en:
+    name: Everything Claude Code (ECC)
+    description: 'Complete Everything Claude Code suite (affaan-m/everything-claude-code): 271 skills, 67 specialist subagents,
+      113 common & language rules, 3 quality hooks, and 32 MCP server configs.'
+  zh-CN:
+    name: Everything Claude Code 全栈工程套件
+    description: 完整同步 Affaan Mustafa 开源项目（affaan-m/everything-claude-code）：内置 271 个全栈与领域 Skill、67 个专家子代理、113 条通用与多语言编码规则、3
+      个质量门禁 Hook 与 32 套 MCP 服务配置。
+author: Affaan Mustafa (affaan-m)
+homepage: https://github.com/affaan-m/everything-claude-code
 skills:
-  - ecc-plan
-  - ecc-tdd-workflow
-  - ecc-security-shield
-  - ecc-code-review
-  - ecc-verification-loop
+- accessibility
+- agent-architecture-audit
+- agent-eval
+- agent-harness-construction
+- agent-introspection-debugging
+- agent-payment-x402
+- agent-self-evaluation
+- agent-sort
+- agentic-engineering
+- agentic-os
+- ai-first-engineering
+- ai-regression-testing
+- android-clean-architecture
+- angular-developer
+- api-connector-builder
+- api-design
+- architecture-decision-records
+- article-writing
+- automation-audit-ops
+- autonomous-agent-harness
+- autonomous-loops
+- backend-patterns
+- benchmark
+- benchmark-methodology
+- benchmark-optimization-loop
+- blender-motion-state-inspection
+- blueprint
+- brand-discovery
+- brand-voice
+- browser-qa
+- bun-runtime
+- canary-watch
+- carrier-relationship-management
+- cisco-ios-patterns
+- ck
+- claude-devfleet
+- click-path-audit
+- clickhouse-io
+- code-tour
+- codebase-onboarding
+- codehealth-mcp
+- coding-standards
+- competitive-platform-analysis
+- competitive-report-structure
+- compose-multiplatform-patterns
+- config-gc
+- configure-ecc
+- connections-optimizer
+- content-engine
+- content-hash-cache-pattern
+- context-budget
+- continuous-agent-loop
+- continuous-learning
+- continuous-learning-v2
+- cost-aware-llm-pipeline
+- cost-tracking
+- council
+- cpp-coding-standards
+- cpp-testing
+- crosspost
+- csharp-testing
+- customer-billing-ops
+- customs-trade-compliance
+- dart-flutter-patterns
+- dashboard-builder
+- data-scraper-agent
+- data-throughput-accelerator
+- database-migrations
+- deep-research
+- defi-amm-security
+- deployment-patterns
+- design-system
+- django-celery
+- django-patterns
+- django-security
+- django-tdd
+- django-verification
+- dmux-workflows
+- docker-patterns
+- documentation-lookup
+- dotnet-patterns
+- dynamic-workflow-mode
+- e2e-testing
+- ecc-guide
+- ecc-tools-cost-audit
+- email-ops
+- energy-procurement
+- enterprise-agent-ops
+- error-handling
+- eval-harness
+- evm-token-decimals
+- exa-search
+- fal-ai-media
+- fastapi-patterns
+- finance-billing-ops
+- flox-environments
+- flutter-dart-code-review
+- foundation-models-on-device
+- frontend-a11y
+- frontend-design-direction
+- frontend-patterns
+- frontend-slides
+- fsharp-testing
+- gan-style-harness
+- gateguard
+- generating-python-installer
+- git-workflow
+- github-ops
+- golang-patterns
+- golang-testing
+- google-workspace-ops
+- healthcare-cdss-patterns
+- healthcare-emr-patterns
+- healthcare-eval-harness
+- healthcare-phi-compliance
+- hermes-imports
+- hexagonal-architecture
+- hipaa-compliance
+- homelab-network-readiness
+- homelab-network-setup
+- homelab-pihole-dns
+- homelab-vlan-segmentation
+- homelab-wireguard-vpn
+- hookify-rules
+- inherit-legacy-style
+- intent-driven-development
+- inventory-demand-planning
+- investor-materials
+- investor-outreach
+- ios-icon-gen
+- iterative-retrieval
+- ito-basket-compare
+- ito-data-atlas-agent
+- ito-market-intelligence
+- ito-trade-planner
+- java-coding-standards
+- jira-integration
+- jpa-patterns
+- knowledge-ops
+- kotlin-coroutines-flows
+- kotlin-exposed-patterns
+- kotlin-ktor-patterns
+- kotlin-patterns
+- kotlin-testing
+- kubernetes-patterns
+- laravel-patterns
+- laravel-plugin-discovery
+- laravel-security
+- laravel-tdd
+- laravel-verification
+- latency-critical-systems
+- lead-intelligence
+- liquid-glass-design
+- llm-trading-agent-security
+- logistics-exception-management
+- make-interfaces-feel-better
+- manim-video
+- market-research
+- marketing-campaign
+- mcp-server-patterns
+- messages-ops
+- ml-adoption-playbook
+- mle-workflow
+- motion-advanced
+- motion-foundations
+- motion-patterns
+- motion-ui
+- mysql-patterns
+- nanoclaw-repl
+- nestjs-patterns
+- netmiko-ssh-automation
+- network-bgp-diagnostics
+- network-config-validation
+- network-interface-health
+- nextjs-turbopack
+- nodejs-keccak256
+- nutrient-document-processing
+- nuxt4-patterns
+- openclaw-persona-forge
+- opensource-pipeline
+- orch-add-feature
+- orch-build-mvp
+- orch-change-feature
+- orch-fix-defect
+- orch-pipeline
+- orch-refine-code
+- parallel-execution-optimizer
+- perl-patterns
+- perl-security
+- perl-testing
+- plan-orchestrate
+- plankton-code-quality
+- postgres-patterns
+- prediction-market-oracle-research
+- prediction-market-risk-review
+- prisma-patterns
+- product-capability
+- product-lens
+- production-audit
+- production-scheduling
+- project-flow-ops
+- prompt-optimizer
+- python-patterns
+- python-testing
+- pytorch-patterns
+- quality-nonconformance
+- quarkus-patterns
+- quarkus-security
+- quarkus-tdd
+- quarkus-verification
+- ralphinho-rfc-pipeline
+- react-patterns
+- react-performance
+- react-testing
+- recsys-pipeline-architect
+- recursive-decision-ledger
+- redis-patterns
+- regex-vs-llm-structured-text
+- remotion-video-creation
+- repo-scan
+- research-ops
+- returns-reverse-logistics
+- rules-distill
+- rust-patterns
+- rust-testing
+- safety-guard
+- santa-method
+- scientific-db-pubmed-database
+- scientific-db-uspto-database
+- scientific-pkg-gget
+- scientific-thinking-literature-review
+- scientific-thinking-scholar-evaluation
+- search-first
+- security-bounty-hunter
+- security-review
+- security-scan
+- seo
+- skill-comply
+- skill-scout
+- skill-stocktake
+- social-graph-ranker
+- social-publisher
+- springboot-patterns
+- springboot-security
+- springboot-tdd
+- springboot-verification
+- strategic-compact
+- swift-actor-persistence
+- swift-concurrency-6-2
+- swift-protocol-di-testing
+- swiftui-patterns
+- taste
+- tdd-workflow
+- team-agent-orchestration
+- team-builder
+- terminal-ops
+- tinystruct-patterns
+- token-budget-advisor
+- ui-demo
+- ui-to-vue
+- uncloud
+- unified-notifications-ops
+- verification-loop
+- video-editing
+- videodb
+- visa-doc-translate
+- vite-patterns
+- vue-patterns
+- windows-desktop-e2e
+- workspace-surface-audit
+- x-api
 agents:
-  ecc-planner: {}
-  ecc-architect: {}
-  ecc-tdd-guide: {}
-  ecc-code-reviewer: {}
-  ecc-security-reviewer: {}
-  ecc-build-fixer: {}
-mcp: []
-hooks: []
+  a11y-architect:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Grep
+    - Glob
+  agent-evaluator:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  architect:
+    tools:
+    - Read
+    - Grep
+    - Glob
+  build-error-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  chief-of-staff:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+    - Edit
+    - Write
+  code-architect:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  code-explorer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+  code-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  code-simplifier:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  comment-analyzer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+  conversation-analyzer:
+    tools:
+    - Read
+    - Grep
+  cpp-build-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  cpp-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  csharp-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  dart-build-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  database-reviewer:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  django-build-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  django-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  doc-updater:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  docs-lookup:
+    tools:
+    - Read
+    - Grep
+    - mcp__context7__resolve-library-id
+    - mcp__context7__query-docs
+  e2e-runner:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  fastapi-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  flutter-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  fsharp-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  gan-evaluator:
+    tools:
+    - Read
+    - Write
+    - Bash
+    - Grep
+    - Glob
+  gan-generator:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  gan-planner:
+    tools:
+    - Read
+    - Write
+    - Grep
+    - Glob
+  go-build-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  go-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  harmonyos-app-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  harness-optimizer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+    - Edit
+  healthcare-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+  homelab-architect:
+    tools:
+    - Read
+    - Grep
+  java-build-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  java-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  kotlin-build-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  kotlin-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  loop-operator:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+    - Edit
+  marketing-agent:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - WebSearch
+    - WebFetch
+  mle-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  network-architect:
+    tools:
+    - Read
+    - Grep
+  network-config-reviewer:
+    tools:
+    - Read
+    - Grep
+  network-troubleshooter:
+    tools:
+    - Read
+    - Bash
+    - Grep
+  opensource-forker:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  opensource-packager:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  opensource-sanitizer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  performance-optimizer:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  php-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  planner:
+    tools:
+    - Read
+    - Grep
+    - Glob
+  pr-test-analyzer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  python-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  pytorch-build-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  react-build-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  react-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  refactor-cleaner:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  rust-build-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  rust-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  security-reviewer:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  seo-specialist:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - WebSearch
+    - WebFetch
+  silent-failure-hunter:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  spec-miner:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+    - Write
+  swift-build-resolver:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+  swift-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  tdd-guide:
+    tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+  type-design-analyzer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+  typescript-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  vue-reviewer:
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+mcp:
+- context7
+- sequential-thinking
+- memory
+hooks:
+- ecc-block-linter-config-tamper
+- ecc-warn-console-log
+- ecc-git-push-review-gate
 rules:
-  - ecc-coding-standards
-  - ecc-security-policy
+- ecc-angular-coding-style
+- ecc-angular-hooks
+- ecc-angular-patterns
+- ecc-angular-security
+- ecc-angular-testing
+- ecc-arkts-coding-style
+- ecc-arkts-hooks
+- ecc-arkts-patterns
+- ecc-arkts-security
+- ecc-arkts-testing
+- ecc-common-agents
+- ecc-common-code-review
+- ecc-common-coding-style
+- ecc-common-development-workflow
+- ecc-common-git-workflow
+- ecc-common-hooks
+- ecc-common-patterns
+- ecc-common-performance
+- ecc-common-security
+- ecc-common-testing
+- ecc-cpp-coding-style
+- ecc-cpp-hooks
+- ecc-cpp-patterns
+- ecc-cpp-security
+- ecc-cpp-testing
+- ecc-csharp-coding-style
+- ecc-csharp-hooks
+- ecc-csharp-patterns
+- ecc-csharp-security
+- ecc-csharp-testing
+- ecc-dart-coding-style
+- ecc-dart-hooks
+- ecc-dart-patterns
+- ecc-dart-security
+- ecc-dart-testing
+- ecc-fsharp-coding-style
+- ecc-fsharp-hooks
+- ecc-fsharp-patterns
+- ecc-fsharp-security
+- ecc-fsharp-testing
+- ecc-golang-coding-style
+- ecc-golang-hooks
+- ecc-golang-patterns
+- ecc-golang-security
+- ecc-golang-testing
+- ecc-java-coding-style
+- ecc-java-hooks
+- ecc-java-patterns
+- ecc-java-security
+- ecc-java-testing
+- ecc-kotlin-coding-style
+- ecc-kotlin-hooks
+- ecc-kotlin-patterns
+- ecc-kotlin-security
+- ecc-kotlin-testing
+- ecc-nuxt-coding-style
+- ecc-nuxt-hooks
+- ecc-nuxt-patterns
+- ecc-nuxt-security
+- ecc-nuxt-testing
+- ecc-perl-coding-style
+- ecc-perl-hooks
+- ecc-perl-patterns
+- ecc-perl-security
+- ecc-perl-testing
+- ecc-php-coding-style
+- ecc-php-hooks
+- ecc-php-patterns
+- ecc-php-security
+- ecc-php-testing
+- ecc-python-coding-style
+- ecc-python-fastapi
+- ecc-python-hooks
+- ecc-python-patterns
+- ecc-python-security
+- ecc-python-testing
+- ecc-react-coding-style
+- ecc-react-hooks
+- ecc-react-patterns
+- ecc-react-security
+- ecc-react-testing
+- ecc-ruby-coding-style
+- ecc-ruby-hooks
+- ecc-ruby-patterns
+- ecc-ruby-security
+- ecc-ruby-testing
+- ecc-rust-coding-style
+- ecc-rust-hooks
+- ecc-rust-patterns
+- ecc-rust-security
+- ecc-rust-testing
+- ecc-swift-coding-style
+- ecc-swift-hooks
+- ecc-swift-patterns
+- ecc-swift-security
+- ecc-swift-testing
+- ecc-typescript-coding-style
+- ecc-typescript-hooks
+- ecc-typescript-patterns
+- ecc-typescript-security
+- ecc-typescript-testing
+- ecc-vue-coding-style
+- ecc-vue-hooks
+- ecc-vue-patterns
+- ecc-vue-security
+- ecc-vue-testing
+- ecc-web-coding-style
+- ecc-web-design-quality
+- ecc-web-hooks
+- ecc-web-patterns
+- ecc-web-performance
+- ecc-web-security
+- ecc-web-testing
 plugins: []
 env: {}

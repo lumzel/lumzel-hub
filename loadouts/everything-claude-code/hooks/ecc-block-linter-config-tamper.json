@@ -1,0 +1,6 @@
+{
+  "event": "PreToolUse",
+  "matcher": "Write|Edit|MultiEdit",
+  "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const p=String((j.tool_input&&(j.tool_input.file_path||j.tool_input.path))||'');const b=/(^|\\/)(\\.eslintrc|eslint\\.config\\.|biome\\.json|\\.prettierrc|tsconfig\\.json|pyproject\\.toml|ruff\\.toml)/i;if(b.test(p)){console.error('[ECC Hook] Review linter/compiler config edit carefully: '+p);}}catch{}})\"",
+  "timeout": 5
+}

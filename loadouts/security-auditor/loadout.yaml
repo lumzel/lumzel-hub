@@ -1,10 +1,20 @@
 id: security-auditor
 name: Security & Reliability Auditor
-icon: "🛡️"
-description: 安全与可靠性审计专家：专注权限边界、注入防护、密钥泄漏排查与并发竞态分析。
+icon: 🛡️
+category: Security
+description: Security and reliability specialist auditing permission boundaries, injection defenses, secret exposure, and
+  concurrency races.
+i18n:
+  en:
+    name: Security & Reliability Auditor
+    description: Security and reliability specialist auditing permission boundaries, injection defenses, secret exposure,
+      and concurrency races.
+  zh-CN:
+    name: 安全与可靠性审计师
+    description: 专注权限边界核查、注入防护、密钥泄漏排查与并发竞态分析。
 author: Lumzel
 skills:
-  - security-review
+- owasp-security-audit
 agents: {}
 mcp: []
 hooks: []

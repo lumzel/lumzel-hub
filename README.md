@@ -8,18 +8,98 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 
 ## Included Loadouts
 
-| ID | Name | Inspired By / Upstream | Bundled Capabilities |
+| ID | Category | Name (`en` / `zh-CN`) | Upstream | Bundled Capabilities |
+| :--- | :--- | :--- | :--- | :--- |
+| `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 271 Skills, 67 Subagents, 113 Common & Language Rules, 3 Hooks, 32 MCP Configs |
+| `tdd-engineer` | `Engineering` | 🧪 TDD Craft Engineer / TDD 测试驱动工程师 | Lumzel Official | Public Seam Red-Green-Refactor Instructions |
+| `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow / 研发工作流 | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 39 Skills (with companion testing/architecture docs), 3 Subagents, 1 Rule |
+| `superpowers` | `Workflow` | 🦸 Obra Superpowers / 工程纪律套件 | [`obra/superpowers`](https://github.com/obra/superpowers) | 15 Skills (with prompts, references & templates), 3 Subagents, 1 Hook, 1 Rule |
+| `compound-engineering` | `Workflow` | 🔄 Compound Engineering / 复利工程 | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | 37 `ce-*` / `lfg` / `wtf` Skills, 26 Specialist Subagents, 1 Rule |
+| `gstack` | `Workflow` | 🚀 Garry Tan gstack / 交付工作流 | [`garrytan/gstack`](https://github.com/garrytan/gstack) | 62 Full-Lifecycle Skills, 3 Subagents, 1 Ethos Rule |
+| `spec-kit` | `Architecture` | 📐 GitHub Spec-Kit (SDD) / 规格驱动开发 | [`github/spec-kit`](https://github.com/github/spec-kit) | 9 `speckit-*` Workflow Skills (bundled with official templates), 2 Subagents, 1 Rule |
+| `fullstack-architect` | `Architecture` | 🏛️ Fullstack Architect / 全栈系统架构师 | Lumzel Official | `architecture-adr` Skill + System Architecture & Boundary Instructions |
+| `security-auditor` | `Security` | 🛡️ Security & Reliability Auditor / 安全与可靠性审计师 | Lumzel Official | `owasp-security-audit` Skill + Threat Modeling & Concurrency Audit |
+| `frontend-craftsman` | `Frontend` | ✨ Frontend UI Craftsman / 前端与桌面界面工匠 | Lumzel Official | Design Tokens, Accessibility & Desktop-Grade UI Polish |
+
+## Included Decks
+
+| ID | Category | Title (`en` / `zh-CN`) | Capabilities |
 | :--- | :--- | :--- | :--- |
-| `everything-claude-code` | ⚡ Everything Claude Code (ECC) | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 5 Skills (`ecc-plan`, `ecc-tdd-workflow`, `ecc-security-shield`, `ecc-code-review`, `ecc-verification-loop`), 6 Subagents (`ecc-planner`, `ecc-architect`, `ecc-tdd-guide`, `ecc-code-reviewer`, `ecc-security-reviewer`, `ecc-build-fixer`), 2 Rules |
-| `matt-pocock` | 🎯 Matt Pocock Workflow | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 14 Skills (`grill-me`, `grill-with-docs`, `domain-modeling`, `codebase-design`, `to-spec`, `to-tickets`, `wayfinder`, `tdd`, `prototype`, `diagnosing-bugs`, `code-review`, `improve-codebase-architecture`, `handoff`, `teach`), 3 Subagents (`standards-reviewer`, `spec-reviewer`, `architecture-explorer`), 1 Rule |
-| `superpowers` | 🦸 Obra Superpowers | [`obra/superpowers`](https://github.com/obra/superpowers) | 5 Skills (`brainstorming`, `writing-plans`, `subagent-driven-development`, `systematic-debugging`, `verification-before-completion`), 3 Subagents (`task-implementer`, `spec-compliance-reviewer`, `code-quality-reviewer`), 1 Rule (`superpowers-iron-laws`) |
-| `spec-kit` | 📐 GitHub Spec-Kit (SDD) | [`github/spec-kit`](https://github.com/github/spec-kit) | 4 Skills (`speckit-constitution`, `speckit-specify`, `speckit-plan`, `speckit-tasks`), 2 Subagents (`spec-analyst`, `contract-architect`), 1 Rule (`spec-first-gate`) |
-| `compound-engineering` | 🔄 Compound Engineering | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | 3 Skills (`compound-plan`, `compound-review`, `compound-codify`), 3 Subagents (`simplicity-reviewer`, `data-integrity-reviewer`, `performance-oracle`), 1 Rule (`compound-knowledge`) |
-| `gstack` | 🚀 Garry Tan gstack | [`garrytan/gstack`](https://github.com/garrytan/gstack) | 3 Skills (`gstack-ceo-plan`, `gstack-eng-plan`, `gstack-paranoid-review`), 2 Subagents (`staff-paranoid-reviewer`, `release-ship-captain`) |
-| `fullstack-architect` | 🏛️ Fullstack Architect | Lumzel Official | `architecture-adr` Skill + System Architecture & Boundary Instructions |
-| `tdd-engineer` | 🧪 TDD Craft Engineer | Lumzel Official | Public Seam Red-Green-Refactor Instructions |
-| `security-auditor` | 🛡️ Security & Reliability Auditor | Lumzel Official | `security-review` Skill + Threat Modeling & Concurrency Audit |
-| `frontend-craftsman` | ✨ Frontend UI Craftsman | Lumzel Official | Design Tokens, Accessibility & Desktop-Grade UI Polish |
+| `spec-workbench` | `Workflow` | Spec Workbench / 方案工作台 | Visual design docs, tickets, clickable prototypes, and 9 `deck-*` skills + 4 subagents |
+| `pr-review-board` | `Code Review` | PR Review Board / 代码审查面板 | Dual-axis Standards & Spec code review board |
+| `release-readiness` | `DevOps` | Release Readiness / 发版就绪看板 | Release checklist, changelog summary, and Agent verification gate |
+| `architecture-radar` | `Architecture` | Architecture Radar / 架构与模块雷达 | Module boundaries, dependency health, and Agent structural analysis |
+
+--- | :--- | :--- | :--- |
+| `everything-claude-code` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 5 Skills (`ecc-plan`, `ecc-tdd-workflow`, `ecc-security-shield`, `ecc-code-review`, `ecc-verification-loop`), 6 Subagents (`ecc-planner`, `ecc-architect`, `ecc-tdd-guide`, `ecc-code-reviewer`, `ecc-security-reviewer`, `ecc-build-fixer`), 2 Rules |
+| `matt-pocock` | 🎯 Matt Pocock Workflow / 研发工作流 | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 14 Skills (`grill-me`, `grill-with-docs`, `domain-modeling`, `codebase-design`, `to-spec`, `to-tickets`, `wayfinder`, `tdd`, `prototype`, `diagnosing-bugs`, `code-review`, `improve-codebase-architecture`, `handoff`, `teach`), 3 Subagents (`standards-reviewer`, `spec-reviewer`, `architecture-explorer`), 1 Rule |
+| `superpowers` | 🦸 Obra Superpowers / 工程纪律套件 | [`obra/superpowers`](https://github.com/obra/superpowers) | 5 Skills (`brainstorming`, `writing-plans`, `subagent-driven-development`, `systematic-debugging`, `verification-before-completion`), 3 Subagents (`task-implementer`, `spec-compliance-reviewer`, `code-quality-reviewer`), 1 Rule (`superpowers-iron-laws`) |
+| `spec-kit` | 📐 GitHub Spec-Kit (SDD) / 规格驱动开发 | [`github/spec-kit`](https://github.com/github/spec-kit) | 4 Skills (`speckit-constitution`, `speckit-specify`, `speckit-plan`, `speckit-tasks`), 2 Subagents (`spec-analyst`, `contract-architect`), 1 Rule (`spec-first-gate`) |
+| `compound-engineering` | 🔄 Compound Engineering / 复利工程 | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | 3 Skills (`compound-plan`, `compound-review`, `compound-codify`), 3 Subagents (`simplicity-reviewer`, `data-integrity-reviewer`, `performance-oracle`), 1 Rule (`compound-knowledge`) |
+| `gstack` | 🚀 Garry Tan gstack / 交付工作流 | [`garrytan/gstack`](https://github.com/garrytan/gstack) | 3 Skills (`gstack-ceo-plan`, `gstack-eng-plan`, `gstack-paranoid-review`), 2 Subagents (`staff-paranoid-reviewer`, `release-ship-captain`) |
+| `fullstack-architect` | 🏛️ Fullstack Architect / 全栈系统架构师 | Lumzel Official | `architecture-adr` Skill + System Architecture & Boundary Instructions |
+| `tdd-engineer` | 🧪 TDD Craft Engineer / TDD 测试驱动工程师 | Lumzel Official | Public Seam Red-Green-Refactor Instructions |
+| `security-auditor` | 🛡️ Security & Reliability Auditor / 安全与可靠性审计师 | Lumzel Official | `security-review` Skill + Threat Modeling & Concurrency Audit |
+| `frontend-craftsman` | ✨ Frontend UI Craftsman / 前端与桌面界面工匠 | Lumzel Official | Design Tokens, Accessibility & Desktop-Grade UI Polish |
+
+## Included Decks
+
+| ID | Title (`en` / `zh-CN`) | Category | Capabilities |
+| :--- | :--- | :--- | :--- |
+| `spec-workbench` | Spec Workbench / 方案工作台 | Engineering | Visual design docs, tickets, clickable prototypes, and 9 `deck-*` skills + 4 subagents |
+| `release-readiness` | Release Readiness / 发版就绪看板 | DevOps | Release checklist, changelog summary, and Agent verification gate |
+| `architecture-radar` | Architecture Radar / 架构与模块雷达 | Architecture | Module boundaries, dependency health, and Agent structural analysis |
+| `pr-review-board` | PR Review Board / 代码审查面板 | Engineering | Dual-axis Standards & Spec code review board |
+
+---
+
+## Multi-Language (`i18n`) Convention
+
+Every repository catalog (`marketplace.json`), Loadout (`loadout.yaml`), and Deck (`deck.json`) supports multi-language names/titles and descriptions with automatic **English fallback**:
+
+1. **Base fields are English**: Set top-level `name` (or `title` on Decks) and `description` in English so older clients and unlocalized tools always see readable defaults.
+2. **Extensible `i18n` locale map**: Add any BCP-47 language tag (`"en"`, `"zh-CN"`, `"ja"`, `"ko"`, `"fr"`, etc.) under `i18n`. No schema migration is required when adding new languages in the future.
+3. **Resolution order in Lumzel**:
+   - Exact locale match (e.g. `zh-CN` → `i18n["zh-CN"]`)
+   - Primary language subtag match (e.g. `zh-TW` → `zh` / `zh-CN`, `en-US` → `en`)
+   - English fallback (`i18n["en"]`)
+   - Base top-level field (`name` / `title` / `description`), then `id`
+
+### `loadout.yaml` Example
+
+```yaml
+id: fullstack-architect
+name: Fullstack Architect
+description: "End-to-end system architect focused on domain modeling, ADR trade-off analysis, API contracts, and cross-layer refactoring."
+i18n:
+  en:
+    name: Fullstack Architect
+    description: "End-to-end system architect focused on domain modeling, ADR trade-off analysis, API contracts, and cross-layer refactoring."
+  zh-CN:
+    name: "全栈系统架构师"
+    description: "面向端到端系统设计：专注领域建模、ADR 方案权衡、接口契约设计与跨层重构。"
+```
+
+### `deck.json` Example
+
+```json
+{
+  "id": "spec-workbench",
+  "title": "Spec Workbench",
+  "description": "Ship features from rough idea to design, tickets, and clickable prototype.",
+  "i18n": {
+    "en": {
+      "title": "Spec Workbench",
+      "description": "Ship features from rough idea to design, tickets, and clickable prototype."
+    },
+    "zh-CN": {
+      "title": "方案工作台",
+      "description": "从想法到技术方案、工单与可点击原型的可视化研发工作台。"
+    }
+  },
+  "entry": "index.html"
+}
+```
 
 ---
 
@@ -30,7 +110,7 @@ lumzel-hub/
 ├── marketplace.json                 # Index manifest for in-app Marketplace discovery
 ├── loadouts/
 │   └── <loadout-id>/
-│       ├── loadout.yaml             # Loadout metadata, runtime params, and library references
+│       ├── loadout.yaml             # Loadout metadata (with optional i18n), runtime params, and library references
 │       ├── AGENTS.md                # System instructions for the Loadout
 │       ├── skills/<name>/SKILL.md   # Optional bundled Skills (auto-installed into Library)
 │       ├── agents/<name>.md         # Optional bundled Subagents
@@ -39,7 +119,7 @@ lumzel-hub/
 │       └── mcp/<name>.json          # Optional bundled MCP server configs
 └── decks/
     └── <deck-id>/
-        ├── deck.json                # Deck manifest (id, title, icon, entry, uses, permissions)
+        ├── deck.json                # Deck manifest (id, title, description, i18n, icon, entry, uses, permissions)
         ├── index.html               # Entry HTML (uses /sdk.js)
         ├── style.css                # Stylesheet (supports light/dark theme tokens)
         ├── app.js                   # Module script interacting with window.deck
@@ -102,12 +182,26 @@ A Deck that needs a project to show anything ships a sample one. `spec-workbench
 {
   "name": "My Team Hub",
   "owner": { "name": "Acme Eng" },
+  "i18n": {
+    "en": { "name": "My Team Hub", "description": "Internal Loadouts and Decks" },
+    "zh-CN": { "name": "团队内部仓库", "description": "团队共享的 Loadout 与 Deck" }
+  },
   "loadouts": [
     {
       "id": "backend-go",
       "name": "Go Microservices Loadout",
       "icon": "🐹",
       "description": "Go service conventions, protobuf rules, and gRPC debugging skills.",
+      "i18n": {
+        "en": {
+          "name": "Go Microservices Loadout",
+          "description": "Go service conventions, protobuf rules, and gRPC debugging skills."
+        },
+        "zh-CN": {
+          "name": "Go 微服务开发套件",
+          "description": "包含 Go 服务编码规范、Protobuf 约束与 gRPC 排障技能。"
+        }
+      },
       "category": "Backend",
       "author": "Acme Eng",
       "source": "./loadouts/backend-go"
@@ -119,6 +213,16 @@ A Deck that needs a project to show anything ships a sample one. `spec-workbench
       "title": "Incident Triage Deck",
       "icon": "zap",
       "description": "On-call runbook and service health check deck.",
+      "i18n": {
+        "en": {
+          "title": "Incident Triage Deck",
+          "description": "On-call runbook and service health check deck."
+        },
+        "zh-CN": {
+          "title": "故障排查看板",
+          "description": "值班应急手册与服务健康状态检查工作台。"
+        }
+      },
       "category": "SRE",
       "author": "Acme Eng",
       "source": "./decks/incident-triage"

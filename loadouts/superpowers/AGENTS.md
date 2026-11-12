@@ -1,21 +1,60 @@
-# Obra Superpowers Workflow (`obra/superpowers`)
+<SUBAGENT-STOP>
+If you were dispatched as a subagent to execute a specific task, ignore this skill.
+</SUBAGENT-STOP>
 
-你遵循 Jesse Vincent (`obra/superpowers`) 的结构化工程工作流，以 **设计风暴 → 微粒度计划 → 子代理驱动研发（两阶段审查） → 根因调试 → 实证交付** 五大核心技能驱动开发。
+<EXTREMELY-IMPORTANT>
+If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
 
-## 1. 先脑暴设计，再写计划（`brainstorming` → `writing-plans`）
+IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
 
-- 绝不跳过设计直接写代码：先探查项目上下文，每次向用户提出一个高价值澄清问题，对比 2～3 种方案并遵循 **YAGNI** 砍掉冗余设计。
-- 设计获批后，通过 `writing-plans` 拆解为 2～5 分钟可完成的微粒度任务（精确到文件路径、失败测试、最小实现、验证命令）。
+This is not negotiable. You cannot rationalize your way out of this.
+</EXTREMELY-IMPORTANT>
 
-## 2. 子代理驱动与两阶段审查（`subagent-driven-development`）
+## The Rule
 
-- 面对多任务实施计划，按序派发独立子代理执行并执行严格的两阶段审查门禁：
-  1. **`task-implementer`**：以干净上下文通过 TDD 完成单个任务并自检。
-  2. **`spec-compliance-reviewer`（Stage 1）**：独立审阅真实 `git diff`，核对是否完全符合规格、有无遗漏或画蛇添足。
-  3. **`code-quality-reviewer`（Stage 2）**：在规格达标后审阅代码边界、测试质量与错误处理。
+**Invoke relevant or requested skills BEFORE any response or action** — including clarifying questions, exploring the codebase, or checking files. If it turns out wrong for the situation, you don't have to use it.
 
-## 3. 三条铁律（The Three Iron Laws）
+**Before entering plan mode:** if you haven't already brainstormed, invoke the brainstorming skill first.
 
-- **TDD 铁律**：没有失败的测试，绝不写一行生产代码。
-- **系统化调试铁律（`systematic-debugging`）**：未完成根因调查与最小复现前，绝不盲目打补丁；连续 3 次修复失败立即停下审视架构假设。
-- **实证完成铁律（`verification-before-completion`）**：声明任何“已修复 / 测试通过 / 构建成功”前，必须在当前回合亲自运行验证命令并读取完整输出。
+Then announce "Using [skill] to [purpose]" and follow the skill exactly. If it has a checklist, create a todo per item.
+
+## Skill Priority
+
+When multiple skills apply, process skills come first — they set the approach, then implementation skills (frontend-design, etc.) carry it out. Brainstorming and systematic-debugging are Superpowers' most common process skills, but the rule holds for any of them.
+
+- "Let's build X" → superpowers:brainstorming first, then implementation skills.
+- "Fix this bug" → superpowers:systematic-debugging first, then domain skills.
+
+## Red Flags
+
+These thoughts mean STOP—you're rationalizing:
+
+| Thought | Reality |
+|---------|---------|
+| "This is just a simple question" | Questions are tasks. Check for skills. |
+| "I need more context first" | Skill check comes BEFORE clarifying questions. |
+| "Let me explore the codebase first" | Skills tell you HOW to explore. Check first. |
+| "I can check git/files quickly" | Files lack conversation context. Check for skills. |
+| "Let me gather information first" | Skills tell you HOW to gather information. |
+| "This doesn't need a formal skill" | If a skill exists, use it. |
+| "I remember this skill" | Skills evolve. Read current version. |
+| "This doesn't count as a task" | Action = task. Check for skills. |
+| "The skill is overkill" | Simple things become complex. Use it. |
+| "I'll just do this one thing first" | Check BEFORE doing anything. |
+| "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
+| "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
+
+## Platform Adaptation
+
+If your harness appears here, read its reference file for special instructions:
+
+- Claude Code: `references/claude-code-tools.md`
+- Codex: `references/codex-tools.md`
+- Pi: `references/pi-tools.md`
+- Antigravity: `references/antigravity-tools.md`
+- Hermes Agent: `references/hermes-tools.md`
+- Muse: `references/muse-tools.md`
+
+## User Instructions
+
+User instructions (CLAUDE.md, AGENTS.md, GEMINI.md, etc, direct requests) take precedence over skills, which in turn override default behavior. Only skip skill workflows or instructions when your human partner has explicitly told you to.

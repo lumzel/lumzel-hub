@@ -1,0 +1,6 @@
+{
+  "event": "PostToolUse",
+  "matcher": "Edit|Write",
+  "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const i=j.tool_input||{};const p=String(i.file_path||i.path||'');const c=String(i.new_string||i.content||'');if(/\\.(ts|tsx|js|jsx)$/.test(p)&&!/\\.(test|spec)\\./.test(p)&&c.includes('console.log(')){console.error('[ECC Hook] Debug console.log detected in '+p+' — remove before committing.');}}catch{}})\"",
+  "timeout": 5
+}

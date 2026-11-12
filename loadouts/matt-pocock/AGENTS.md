@@ -1,34 +1,37 @@
-# Matt Pocock Engineering Workflow (`mattpocock/skills`)
+# Matt Pocock Engineering & Planning Workflow
 
-你遵循 Matt Pocock 开源技能工作流（`mattpocock/skills`），围绕 **Plan → Build → Review** 三阶段推进软件设计、垂直切片研发与双轴代码审查。
+Use `grill-me` / `grill-with-docs` to stress-test requirements before design, `domain-modeling` and `codebase-design` to shape deep modules, `to-spec` and `to-tickets` to slice tracer-bullet deliverables, `tdd` to test at public seams, and `code-review` to audit changes along Standards + Spec axes.
 
-## 1. 规划与澄清阶段（Plan）
+Skills are organized into bucket folders under `skills/`:
 
-- **苏格拉底式深挖（`grill-me` / `grill-with-docs`）**：
-  - 面对模糊需求或复杂设计，不要直接猜测实现。沿着决策树逐一追问关键分支，每次只聚焦 1～2 个高杠杆问题。
-  - 代码库或文档能直接查到的事实先自行阅读确认，绝不把代码探查推给用户。
-- **领域建模与深模块设计（`domain-modeling` / `codebase-design`）**：
-  - 遵循《软件设计哲学》（*A Philosophy of Software Design*）的**深模块（Deep Modules）**原则：用极简的公共接口（Seam）隐藏内部复杂性，消除浅层透传包装。
-  - 关键设计分歧采用 **Design It Twice** 对比至少两种截然不同的接口方案。
-- **固化规格与曳光弹拆解（`to-spec` / `to-tickets` / `wayfinder`）**：
-  - 将达成共识的方案沉淀为独立 Spec（问题陈述、用户故事、接口契约、测试边界），不把易过期的具体行号塞进规格。
-  - 将实现拆分为端到端可独立验证的**垂直切面（Tracer Bullets）**，显式声明阻塞边（`Blocked by`）；大规模机械重构则采用 **Expand–Contract** 分批演进。
+- `engineering/`: daily code work
+- `productivity/`: daily non-code workflow tools
+- `misc/`: kept around but rarely used, not promoted
+- `in-progress/`: beta: public on purpose, feedback wanted, not shipped in the plugin
+- `deprecated/`: no longer used
 
-## 2. 垂直切片研发阶段（Build）
+Every skill in `engineering/` or `productivity/` (the **promoted** buckets) must have a reference in the top-level `README.md` and an entry in `.claude-plugin/plugin.json`'s `skills` array (the Claude Code plugin ships exactly the promoted set). Skills in `misc/`, `in-progress/`, and `deprecated/` must not appear in either.
 
-- **公共边界 TDD（`tdd`）**：
-  - 严格执行 **Red → Green** 垂直切片循环：每次只在一个预先约定的公共边界（Seam）上写一个失败测试，再用最简代码使其通过。
-  - 拒绝脆弱测试：不 Mock 内部协作细节，不写与实现公式同构的同义反复断言（Tautological Assertions）。
-- **快速原型探路（`prototype`）**：
-  - 当 UI 形态或状态机逻辑存在不确定性时，先构建隔离、零持久化的轻量原型验证假设。
-- **并行假设排障（`diagnosing-bugs`）**：
-  - 排查复杂缺陷时，先列出全部可证伪假设，按可能性派发独立子代理并行验证，用真实复现证据说话。
+Install commands are copied verbatim from [.agents/install-block.md](./.agents/install-block.md). `.claude-plugin/marketplace.json` is the repo's own marketplace. Every agent except Claude Code installs from it to get automatic updates, and Claude Code uses `claude-plugins-official`. Run `claude plugin validate . --strict` after touching either manifest. [ADR 0002](./.agents/adr/0002-ship-as-a-claude-code-plugin.md) records why.
 
-## 3. 双轴审查与架构演进阶段（Review）
+Each skill entry in the top-level `README.md` must link the skill name to its `SKILL.md`.
 
-- **双轴独立审查（`code-review`）**：
-  - 并行启动 `standards-reviewer` 与 `spec-reviewer` 两个独立子代理：
-    1. **Standards 轴**：对照项目编码规范与 Fowler 代码坏味道基线（Mysterious Name、Feature Envy、Shotgun Surgery、Speculative Generality 等）。
-    2. **Spec 轴**：对照原始规格与验收标准，排查遗漏需求、范围蔓延（Scope Creep）与契约偏差。
-- **架构加深演进（`improve-codebase-architecture`）**：
-  - 识别紧耦合的浅模块簇，通过提取深模块边界让系统更易测试、更易演进。
+Each bucket folder has a `README.md` that lists every skill in the bucket with a one-line description, with the skill name linked to its `SKILL.md`. The promoted buckets' `README.md`s and the top-level `README.md` group entries into **User-invoked** and **Model-invoked**; non-promoted bucket `README.md`s (`misc/`, `in-progress/`) use a flat list.
+
+Skills in `engineering/` and `productivity/` also have a human-facing docs page at `docs/<bucket>/<skill-name>.md` (the docs tree mirrors those two bucket folders under `skills/`). The published URL is `https://aihero.dev/skills-<skill-name>` regardless of bucket: the docs path is repo organisation only. When you add, rename, or change the behaviour of a skill in `engineering/` or `productivity/`, create or re-sync its docs page following [.agents/writing-docs.md](./.agents/writing-docs.md). A finished page carries four sections: **What it does**, **When to reach for it**, **Common questions**, and **It's working if**. `writing-docs.md` holds the template, the section order, and where to hunt for the questions. Skills in the non-promoted buckets (`misc/`, `in-progress/`, `deprecated/`) get **no** docs page. The one exception is a promoted skill removed outright: its page stays, marked archived (see `writing-docs.md`).
+
+Every `SKILL.md` is either user-invoked (`disable-model-invocation: true` plus `policy.allow_implicit_invocation: false` in `agents/openai.yaml`, reachable only by the human) or model-invoked (model- or user-reachable). See [.agents/invocation.md](./.agents/invocation.md).
+
+[`ask-matt`](./skills/engineering/ask-matt/SKILL.md) is the router that maps every user-reachable skill and how they relate. The same trigger that re-syncs a docs page applies to it: whenever you add, rename, remove, or change how a user-reachable skill fits the flows, re-read `ask-matt`'s `SKILL.md` and update it so the map stays accurate: a new skill it never mentions, or a stale one it still routes to, is a router that lies.
+
+To (re)link every skill outside `deprecated/` and `misc/` into the local harness skill directories (`~/.claude/skills`, `~/.agents/skills`), run `scripts/link-skills.sh`. Each entry is a symlink into this repo, so a `git pull` keeps installed skills current; re-run the script after adding, removing, or renaming a skill.
+
+No em-dashes anywhere in this repo's prose (`SKILL.md` files, docs, `README.md`, `CHANGELOG.md`, ADRs, changesets, code comments). Where a sentence reaches for one, rewrite it instead with a comma, colon, period, parentheses, or a conjunction, whichever the sentence actually wants; never do a blind character substitution.
+
+Every skill that dispatches a subagent says to start it with a fresh context window. Some harnesses (Codex, for one) fork the parent conversation by default, and a fork inherits the parent's context, which is what the subagent was meant to escape.
+
+## Agent skills
+
+### Triage labels
+
+Canonical names, unchanged. See `docs/agents/triage-labels.md`. Issues are judged against [`SCOPE.md`](./SCOPE.md).

@@ -1,7 +1,16 @@
 id: tdd-engineer
 name: TDD Craft Engineer
-icon: "🧪"
-description: 测试驱动研发专家：严格遵循 Red-Green-Refactor 循环，在公共边界（Seam）编写高信噪比测试。
+icon: 🧪
+category: Engineering
+description: Test-driven engineer practicing strict Red-Green-Refactor cycles with high-signal tests at public module seams.
+i18n:
+  en:
+    name: TDD Craft Engineer
+    description: Test-driven engineer practicing strict Red-Green-Refactor cycles with high-signal tests at public module
+      seams.
+  zh-CN:
+    name: TDD 测试驱动工程师
+    description: 严格执行 Red-Green-Refactor 循环，在模块公共边界（Seam）编写高信噪比测试。
 author: Lumzel
 skills: []
 agents: {}

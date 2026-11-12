@@ -1,20 +1,87 @@
 id: compound-engineering
 name: Compound Engineering
-icon: "🔄"
-description: "基于 EveryInc 开源项目改编（https://github.com/EveryInc/compound-engineering-plugin）：遵循 Plan → Work → Review → Compound 闭环，内置极简性、数据一致性与性能多维子代理审查。"
-author: "EveryInc"
-homepage: "https://github.com/EveryInc/compound-engineering-plugin"
+icon: 🔄
+category: Workflow
+description: 'Complete EveryInc Compound Engineering v3 suite (EveryInc/compound-engineering-plugin): all 37 ce-* / lfg /
+  wtf skills, 26 specialist research & review subagents, and coding standards.'
+i18n:
+  en:
+    name: Compound Engineering
+    description: 'Complete EveryInc Compound Engineering v3 suite (EveryInc/compound-engineering-plugin): all 37 ce-* / lfg
+      / wtf skills, 26 specialist research & review subagents, and coding standards.'
+  zh-CN:
+    name: Compound Engineering 复利工程
+    description: 完整同步 EveryInc 复利工程套件（EveryInc/compound-engineering-plugin）：内置全部 37 个 ce-* / lfg / wtf 官方 Skill、26 个多维研究与审查子代理及编码规范。
+author: EveryInc
+homepage: https://github.com/EveryInc/compound-engineering-plugin
 skills:
-  - compound-plan
-  - compound-review
-  - compound-codify
+- ce-babysit-pr
+- ce-bakeoff
+- ce-brainstorm
+- ce-code-review
+- ce-commit
+- ce-commit-push-pr
+- ce-compound
+- ce-compound-refresh
+- ce-debug
+- ce-doc-review
+- ce-dogfood
+- ce-explain
+- ce-handoff
+- ce-help
+- ce-ideate
+- ce-noslop
+- ce-optimize
+- ce-plan
+- ce-polish
+- ce-pov
+- ce-product-pulse
+- ce-promote
+- ce-proof
+- ce-prototype
+- ce-resolve-pr-feedback
+- ce-retune
+- ce-riffrec-feedback-analysis
+- ce-setup
+- ce-simplify-code
+- ce-strategy
+- ce-sweep
+- ce-test-browser
+- ce-test-xcode
+- ce-work
+- ce-worktree
+- lfg
+- wtf
 agents:
-  simplicity-reviewer: {}
-  data-integrity-reviewer: {}
-  performance-oracle: {}
+  ce-agent-native-planning-strategist: {}
+  ce-architecture-strategist: {}
+  ce-behavior-trace-scout: {}
+  ce-best-practices-researcher: {}
+  ce-data-integrity-guardian: {}
+  ce-external-evidence-researcher: {}
+  ce-figma-design-sync: {}
+  ce-framework-docs-researcher: {}
+  ce-git-history-analyzer: {}
+  ce-implementation-worker: {}
+  ce-issue-intelligence-analyst: {}
+  ce-learnings-researcher: {}
+  ce-media-analyzer: {}
+  ce-pattern-recognition-specialist: {}
+  ce-performance-oracle: {}
+  ce-pov-peer: {}
+  ce-pr-comment-resolver: {}
+  ce-precedent-activity-scout: {}
+  ce-project-grounding-scout: {}
+  ce-repo-research-analyst: {}
+  ce-security-sentinel: {}
+  ce-session-historian: {}
+  ce-slack-researcher: {}
+  ce-spec-flow-analyzer: {}
+  ce-web-researcher: {}
+  ce-work-recap-scout: {}
 mcp: []
 hooks: []
 rules:
-  - compound-knowledge
+- ce-coding-standards
 plugins: []
 env: {}

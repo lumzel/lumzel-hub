@@ -1,9 +1,10 @@
 ---
 name: superpowers-iron-laws
-description: The three Iron Laws of Obra Superpowers—no production code without a failing test, no fixes without root-cause investigation, no completion claims without fresh verification output.
+description: 'Obra Superpowers three iron laws: test-first TDD, root-cause debugging, and fresh verification evidence.'
 ---
 
-1. **Iron Law of TDD**: No production code without a failing test first. If code was written before the test, delete it and start with the test.
-2. **Iron Law of Debugging**: No fixes without root-cause investigation first. Never stack symptom patches; if 3 fixes fail, stop and question the architecture.
-3. **Iron Law of Verification**: No completion claims without running the verification command in the current turn and reading its full output.
-4. **Ruthless YAGNI & DRY**: Build only what the current spec requires; eliminate duplication without inventing premature frameworks.
+# Superpowers Three Iron Laws
+
+1. **TDD Iron Law (`test-driven-development`)**: No production code without a failing test first — watch it fail for the right reason before writing minimal passing code.
+2. **Debugging Iron Law (`systematic-debugging`)**: No fixes without root-cause investigation first — reproduce, trace data flow, and prove the root cause before patching.
+3. **Verification Iron Law (`verification-before-completion`)**: No completion claims without fresh verification evidence — run the actual test/build command and read its output in this turn.

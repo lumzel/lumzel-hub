@@ -1,0 +1,11 @@
+{
+  "command": "uvx",
+  "args": [
+    "mcp-atlassian==0.21.0"
+  ],
+  "env": {
+    "JIRA_URL": "${env:JIRA_URL}",
+    "JIRA_EMAIL": "${env:JIRA_EMAIL}",
+    "JIRA_API_TOKEN": "${env:JIRA_API_TOKEN}"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "command": "npx",
+  "args": [
+    "-y",
+    "fal-ai-mcp-server"
+  ],
+  "env": {
+    "FAL_KEY": "${env:FAL_KEY}"
+  }
+}

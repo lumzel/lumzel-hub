@@ -1,0 +1,6 @@
+{
+  "event": "PreToolUse",
+  "matcher": "Bash",
+  "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d||'{}');const cmd=String((j.tool_input&&j.tool_input.command)||'');if(/\\bgit\\s+push\\b/.test(cmd)&&/--force|-f\\b/.test(cmd)){console.error('[ECC Hook] Force push detected — confirm branch target before pushing.');}}catch{}})\"",
+  "timeout": 5
+}

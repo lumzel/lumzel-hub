@@ -1,0 +1,7 @@
+{
+  "type": "http",
+  "url": "https://api.browser-use.com/mcp",
+  "headers": {
+    "x-browser-use-api-key": "${env:X_BROWSER_USE_API_KEY}"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "command": "nexus",
+  "args": [
+    "mcp"
+  ]
+}
