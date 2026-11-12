@@ -49,6 +49,7 @@ const STRINGS = {
     loadFailed: "读不到文档：{reason}",
     previewOnly: "这是市场里的预览，用的是样例项目。安装后才能开会话。",
     sessionOpened: "已开会话 {id}，在左侧会话里看进度",
+    sessionFocused: "该任务仍在运行，已定位到会话 {id}",
     idInvalid: "Feature id 只能是小写字母、数字和 -，且不能以 - 开头",
     idTaken: "Feature {id} 已经有了",
   },
@@ -101,12 +102,21 @@ const STRINGS = {
     loadFailed: "Cannot read the docs: {reason}",
     previewOnly: "This is a market preview on a sample project. Install the Deck to open a Session.",
     sessionOpened: "Session {id} opened; follow it in the Session list",
+    sessionFocused: "Session {id} is still running; switched to it",
     idInvalid: "A Feature id uses lowercase letters, digits and -, and does not start with -",
     idTaken: "Feature {id} already exists",
   },
 };
 
-const locale = (navigator.language || 'en').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+let locale = (navigator.language || 'en').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+
+export function setLocale(next) {
+  if (!next || typeof next !== 'string') return false;
+  const resolved = next.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+  if (resolved === locale) return false;
+  locale = resolved;
+  return true;
+}
 
 /** `t('ticketTotal', { n: 3 })`: the string for the current locale, with `{name}` filled in. */
 export function t(key, vars = {}) {
@@ -117,6 +127,7 @@ export function t(key, vars = {}) {
 /** Fills every `data-i18n` (text), `data-i18n-title`, `data-i18n-aria` and `data-i18n-placeholder` element. */
 export function applyI18n(root = document) {
   document.documentElement.lang = locale;
+  document.title = locale === 'zh' ? '方案工作台' : 'Spec Workbench';
   for (const node of root.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
   for (const node of root.querySelectorAll('[data-i18n-title]')) node.title = t(node.dataset.i18nTitle);
   for (const node of root.querySelectorAll('[data-i18n-aria]')) node.setAttribute('aria-label', t(node.dataset.i18nAria));

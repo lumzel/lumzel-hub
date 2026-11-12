@@ -1,9 +1,23 @@
 {
   "id": "architecture-radar",
-  "title": "架构与模块雷达",
+  "title": "Architecture Radar",
   "icon": "dia",
-  "description": "模块边界、核心依赖与技术债健康度面板，配合 Agent 实时梳理项目结构演进。",
+  "category": "Architecture",
+  "description": "Module boundaries, core dependencies, and technical debt radar paired with Agent-assisted structural analysis.",
+  "i18n": {
+    "en": {
+      "title": "Architecture Radar",
+      "description": "Module boundaries, core dependencies, and technical debt radar paired with Agent-assisted structural analysis."
+    },
+    "zh-CN": {
+      "title": "架构与模块雷达",
+      "description": "展示模块边界、核心依赖与技术债健康度，配合 Agent 梳理项目结构演进。"
+    }
+  },
   "author": "Lumzel",
   "entry": "index.html",
-  "permissions": ["agent", "files"]
+  "permissions": [
+    "agent",
+    "files"
+  ]
 }

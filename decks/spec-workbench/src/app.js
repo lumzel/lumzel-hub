@@ -2,11 +2,12 @@
 // for any project. The list comes from deck.docs.index(); every page opens in a frame at worktree/<path>
 // (read-only route). The Deck draws the frame (rail, tabs, ticket list); each doc renders itself with the
 // Deck's own runtime (runtime/worktree.js, which Lumzel appends to every Worktree page the Deck frames).
-import { t, applyI18n } from './i18n.js';
+import { t, applyI18n, setLocale } from './i18n.js';
 import { SAMPLE_INDEX } from './sample.js';
 
 const $ = id => document.getElementById(id);
 const app = $('app');
+applyI18n();
 
 const state = {
   index: { features: [], docs: [] },
@@ -21,9 +22,9 @@ const state = {
   screen: '', // current prototype screen, reported by lumzel-prototype.js
 };
 
-const STATUS = { done: t('done'), 'in-progress': t('inProgress'), planned: t('planned') };
-const DOC_STATUS = { confirmed: t('confirmed'), draft: t('draft') };
-const FILTERS = [
+const statusLabel = key => ({ done: t('done'), 'in-progress': t('inProgress'), planned: t('planned') })[key] || key || '';
+const docStatusLabel = key => ({ confirmed: t('confirmed'), draft: t('draft') })[key] || key || '';
+const ticketFilters = () => [
   ['all', t('all'), () => true],
   ['ready', t('ready'), x => x.ready],
   ['in-progress', t('inProgress'), x => x.status === 'in-progress'],
@@ -145,7 +146,7 @@ function renderFeature() {
   $('f-title').textContent = f.title || f.id;
   $('f-id').textContent = f.title && f.title !== f.id ? f.id : '';
   const status = $('f-status');
-  status.textContent = DOC_STATUS[f.status] || f.status || '';
+  status.textContent = docStatusLabel(f.status);
   status.dataset.status = f.status || '';
   $('f-summary').textContent = f.summary || '';
   $('t-count').textContent = f.tickets.length ? String(f.tickets.length) : '';
@@ -234,8 +235,9 @@ function renderTickets(f) {
     );
     return;
   }
+  const filters = ticketFilters();
   $('filters').replaceChildren(
-    ...FILTERS.map(([key, label, match]) =>
+    ...filters.map(([key, label, match]) =>
       el(
         'button',
         { type: 'button', class: state.filter === key ? 'on' : '', onclick: () => ((state.filter = key), render()) },
@@ -244,7 +246,7 @@ function renderTickets(f) {
       ),
     ),
   );
-  const match = FILTERS.find(([key]) => key === state.filter)[2];
+  const match = (filters.find(([key]) => key === state.filter) || filters[0])[2];
   const rows = f.tickets.filter(match);
   $('rows').replaceChildren(
     ...(rows.length
@@ -253,7 +255,7 @@ function renderTickets(f) {
           return el(
             'button',
             { type: 'button', class: 'req', title: row.path, onclick: () => openTicket(row.path) },
-            el('span', { class: `dot ${kind}`, title: STATUS[row.status] || row.status }),
+            el('span', { class: `dot ${kind}`, title: statusLabel(row.status) }),
             el('span', { class: 't' }, el('span', { class: 'mono' }, row.n), row.title.replace(/^\d+\s+/, '')),
             el('span', { class: `state ${kind}` }, label),
           );
@@ -294,7 +296,7 @@ function renderHub() {
               { class: 'ct' },
               el('span', {}, d.title),
               d.status
-                ? el('span', { class: 'pill', dataset: { status: d.status } }, DOC_STATUS[d.status] || d.status)
+                ? el('span', { class: 'pill', dataset: { status: d.status } }, docStatusLabel(d.status))
                 : null,
             ),
             d.summary ? el('p', {}, d.summary) : null,
@@ -353,6 +355,7 @@ async function load({ reload = false } = {}) {
       state.preview = Boolean(ctx.preview);
       if (listed.error && !state.preview) throw listed.error;
       const index = state.preview ? SAMPLE_INDEX : listed;
+      if (setLocale(ctx.locale)) applyI18n();
       if (ctx.theme !== state.theme) {
         state.theme = ctx.theme;
         document.documentElement.dataset.theme = ctx.theme;
@@ -378,8 +381,7 @@ async function load({ reload = false } = {}) {
 
 // Coming back to the drawer re-reads the index (Agents write docs meanwhile). No polling while hidden.
 const freshen = () => {
-  if (Date.now() - lastLoad > 2000) applyI18n();
-void load();
+  if (Date.now() - lastLoad > 2000) void load();
 };
 window.addEventListener('focus', freshen);
 document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && freshen());
@@ -421,7 +423,7 @@ async function run(skill, prompt, actionId) {
   if (state.preview) return toast(t('previewOnly'));
   try {
     const result = await deck.agent.run({ skill, prompt, actionId });
-    toast(t('sessionOpened', { id: result.sessionId }));
+    toast(t(result.reused ? 'sessionFocused' : 'sessionOpened', { id: result.sessionId }));
   } catch (error) {
     toast(error.message, true);
   }

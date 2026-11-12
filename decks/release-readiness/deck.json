@@ -1,9 +1,23 @@
 {
   "id": "release-readiness",
-  "title": "发版就绪看板",
+  "title": "Release Readiness",
   "icon": "rocket",
-  "description": "版本发布检查清单、变更摘要与风险门禁可视化工作台，支持一键唤起 Agent 核验。",
+  "category": "DevOps",
+  "description": "Release checklist, changelog summary, and risk gate board with one-click Agent verification.",
+  "i18n": {
+    "en": {
+      "title": "Release Readiness",
+      "description": "Release checklist, changelog summary, and risk gate board with one-click Agent verification."
+    },
+    "zh-CN": {
+      "title": "发版就绪看板",
+      "description": "版本发布检查清单、变更摘要与风险门禁工作台，支持一键唤起 Agent 核验。"
+    }
+  },
   "author": "Lumzel",
   "entry": "index.html",
-  "permissions": ["agent", "files"]
+  "permissions": [
+    "agent",
+    "files"
+  ]
 }

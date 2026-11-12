@@ -1,8 +1,19 @@
 {
   "id": "spec-workbench",
-  "title": "方案工作台",
+  "title": "Spec Workbench",
   "icon": "dia",
-  "description": "从想法到技术方案、工单、可点击原型，再到按工单实现与评审的研发工作台：在任意项目里用可视化文档推进一个功能的交付。",
+  "category": "Workflow",
+  "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project.",
+  "i18n": {
+    "en": {
+      "title": "Spec Workbench",
+      "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project."
+    },
+    "zh-CN": {
+      "title": "方案工作台",
+      "description": "从想法到技术方案、工单、可点击原型，再到按工单实现与评审的研发工作台：在任意项目里用可视化文档推进功能交付。"
+    }
+  },
   "entry": "index.html",
   "uses": {
     "skills": [
