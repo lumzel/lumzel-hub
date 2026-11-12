@@ -10,23 +10,38 @@
     <main class="board">
       <header class="head">
         <div>
-          <h1>架构与模块雷达</h1>
-          <p class="sub">可视化追踪核心模块职责、调用链路与循环依赖风险</p>
+          <h1 data-i18n="title">架构与模块雷达</h1>
+          <p class="sub" data-i18n="sub">追踪核心模块职责、调用链路与循环依赖风险</p>
         </div>
-        <button id="scan-btn" class="primary">扫描模块架构</button>
+        <button type="button" id="scan-btn" class="primary" data-action="scan" data-i18n="scanBtn">
+          扫描模块架构
+        </button>
       </header>
+      <p class="banner" id="banner" hidden></p>
       <section class="grid">
         <article class="card">
-          <b>核心领域边界</b>
-          <p>梳理各子包与目录职责，定位跨层耦合点。</p>
+          <div class="card-top">
+            <b data-i18n="scanTitle">核心领域边界</b>
+            <code class="skill-tag">architecture-radar-scan</code>
+          </div>
+          <p data-i18n="scanDesc">梳理子包与目录职责，检测分层越界与循环依赖风险。</p>
+          <button type="button" class="ghost" data-action="scan" data-i18n="scanRun">扫描模块边界</button>
         </article>
         <article class="card">
-          <b>关键数据流转</b>
-          <p>追踪从输入入口到持久化存储的完整调用路径。</p>
+          <div class="card-top">
+            <b data-i18n="dataflowTitle">关键数据流转</b>
+            <code class="skill-tag">architecture-radar-dataflow</code>
+          </div>
+          <p data-i18n="dataflowDesc">追踪从入口接口经领域层到持久化与外部服务的完整调用路径。</p>
+          <button type="button" class="ghost" data-action="dataflow" data-i18n="dataflowRun">追踪数据流</button>
         </article>
         <article class="card">
-          <b>演进与重构建议</b>
-          <p>识别高复杂度热点文件并生成可落地的拆分方案。</p>
+          <div class="card-top">
+            <b data-i18n="refactorTitle">演进与重构建议</b>
+            <code class="skill-tag">architecture-radar-refactor</code>
+          </div>
+          <p data-i18n="refactorDesc">识别高复杂度耦合热点文件，规划渐进式边界拆分方案。</p>
+          <button type="button" class="ghost" data-action="refactor" data-i18n="refactorRun">生成重构方案</button>
         </article>
       </section>
     </main>

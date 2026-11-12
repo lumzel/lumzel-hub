@@ -3,19 +3,26 @@
   "title": "PR Review Board",
   "icon": "check",
   "category": "Code Review",
-  "description": "Structured code review board organized along coding standards and specification compliance.",
+  "description": "Structured code review board along coding standards and specification compliance, powered by 3 bundled review skills.",
   "i18n": {
     "en": {
       "title": "PR Review Board",
-      "description": "Structured code review board organized along coding standards and specification compliance."
+      "description": "Structured code review board along coding standards and specification compliance, powered by 3 bundled review skills."
     },
     "zh-CN": {
       "title": "代码审查面板",
-      "description": "围绕编码规范与需求规格双轴展开的结构化 Code Review 面板。"
+      "description": "围绕编码规范与需求规格双轴展开的结构化 Code Review 面板，自带 3 个代码审查技能。"
     }
   },
   "author": "Lumzel",
   "entry": "index.html",
+  "uses": {
+    "skills": [
+      "pr-review-board-review",
+      "pr-review-board-standards",
+      "pr-review-board-spec"
+    ]
+  },
   "permissions": [
     "agent",
     "files"

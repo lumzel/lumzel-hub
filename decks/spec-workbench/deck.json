@@ -17,21 +17,21 @@
   "entry": "index.html",
   "uses": {
     "skills": [
-      "deck-html",
-      "deck-grilling",
-      "deck-to-design",
-      "deck-to-tickets",
-      "deck-to-prototype",
-      "deck-implement",
-      "deck-tdd",
-      "deck-review",
-      "deck-guide"
+      "spec-workbench-html",
+      "spec-workbench-grilling",
+      "spec-workbench-to-design",
+      "spec-workbench-to-tickets",
+      "spec-workbench-to-prototype",
+      "spec-workbench-implement",
+      "spec-workbench-tdd",
+      "spec-workbench-review",
+      "spec-workbench-guide"
     ],
     "agents": [
-      "deck-scout",
-      "deck-writer",
-      "deck-reviewer",
-      "deck-builder"
+      "spec-workbench-scout",
+      "spec-workbench-writer",
+      "spec-workbench-reviewer",
+      "spec-workbench-builder"
     ]
   },
   "permissions": [

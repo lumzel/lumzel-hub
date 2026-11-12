@@ -10,23 +10,38 @@
     <main class="board">
       <header class="head">
         <div>
-          <h1 id="title">发版就绪看板</h1>
-          <p class="sub">核对测试、构建、变更日志与安全门禁状态</p>
+          <h1 data-i18n="title">发版就绪看板</h1>
+          <p class="sub" data-i18n="sub">核对测试构建、变更说明与安全门禁状态</p>
         </div>
-        <button id="audit-btn" class="primary">让 Agent 执行发版核验</button>
+        <button type="button" id="audit-btn" class="primary" data-action="audit" data-i18n="auditBtn">
+          执行全量发版核验
+        </button>
       </header>
+      <p class="banner" id="banner" hidden></p>
       <section class="grid" id="checks">
         <article class="card">
-          <b>自动化测试与构建</b>
-          <p>确认全部单元与集成测试通过，生产构建无警告。</p>
+          <div class="card-top">
+            <b data-i18n="auditTitle">自动化测试与构建门禁</b>
+            <code class="skill-tag">release-readiness-audit</code>
+          </div>
+          <p data-i18n="auditDesc">核查未提交改动、测试套件、生产构建与兼容性状态，给出门禁结论。</p>
+          <button type="button" class="ghost" data-action="audit" data-i18n="auditRun">运行核验</button>
         </article>
         <article class="card">
-          <b>破坏性变更与迁移</b>
-          <p>检查数据库 Schema、配置格式与公开 API 兼容性。</p>
+          <div class="card-top">
+            <b data-i18n="changelogTitle">变更摘要与迁移说明</b>
+            <code class="skill-tag">release-readiness-changelog</code>
+          </div>
+          <p data-i18n="changelogDesc">汇总最近标签以来的功能、修复与破坏性变更，生成可发布的 Changelog。</p>
+          <button type="button" class="ghost" data-action="changelog" data-i18n="changelogRun">生成变更日志</button>
         </article>
         <article class="card">
-          <b>安全与凭据扫描</b>
-          <p>排查硬编码密钥、高危依赖漏洞与权限新增项。</p>
+          <div class="card-top">
+            <b data-i18n="securityTitle">安全与凭据扫描</b>
+            <code class="skill-tag">release-readiness-security</code>
+          </div>
+          <p data-i18n="securityDesc">排查硬编码密钥、依赖供应链变更与新增权限边界风险。</p>
+          <button type="button" class="ghost" data-action="security" data-i18n="securityRun">执行安全扫描</button>
         </article>
       </section>
     </main>

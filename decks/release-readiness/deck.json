@@ -3,19 +3,26 @@
   "title": "Release Readiness",
   "icon": "rocket",
   "category": "DevOps",
-  "description": "Release checklist, changelog summary, and risk gate board with one-click Agent verification.",
+  "description": "Release checklist, changelog summary, and security gate board powered by 3 bundled release skills.",
   "i18n": {
     "en": {
       "title": "Release Readiness",
-      "description": "Release checklist, changelog summary, and risk gate board with one-click Agent verification."
+      "description": "Release checklist, changelog summary, and security gate board powered by 3 bundled release skills."
     },
     "zh-CN": {
       "title": "发版就绪看板",
-      "description": "版本发布检查清单、变更摘要与风险门禁工作台，支持一键唤起 Agent 核验。"
+      "description": "版本发布检查清单、变更摘要与安全门禁工作台，自带 3 个发版核验技能。"
     }
   },
   "author": "Lumzel",
   "entry": "index.html",
+  "uses": {
+    "skills": [
+      "release-readiness-audit",
+      "release-readiness-changelog",
+      "release-readiness-security"
+    ]
+  },
   "permissions": [
     "agent",
     "files"

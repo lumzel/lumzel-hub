@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- spec-workbench-html template: answer. Question → conclusion → evidence → next step.
+     Use for explanations, investigations, "how does X work". Scaffold with `scaffold result <id>`, then paste these blocks. -->
+<html lang="zh" data-doc-id="tpl-answer" data-doc-type="result" data-doc-status="draft" data-doc-date="2026-10-28">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent 运行时怎么接新 Provider</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">result</span><span class="pill s-draft">draft</span><span class="pill">2026-10-28</span><code class="docid">tpl-answer</code></div>
+<h1>Agent 运行时怎么接新 Provider</h1></div>
+<header class="summary" data-doc-summary>一句话结论：先回答，再给证据。读者只看这一行也能走。</header>
+
+<section class="lumzel-block" id="answer" data-doc-block="answer" data-doc-kind="callout">
+<h2>结论</h2>
+<div class="callout ok"><b>可以扩展，但不是零改动。</b> 新增 Provider 要改 3 处：AgentHost 分发、能力表、模型目录。</div>
+</section>
+
+<section class="lumzel-block" id="shape" data-doc-block="shape" data-doc-kind="architecture">
+<h2>现在的结构</h2>
+<p class="lead" data-doc-lead>一层一行；Node 链到代码。</p>
+<div class="card arch">
+  <div class="layer" data-doc-layer="会话"><div class="layer-label">会话</div><div class="nodes">
+    <div class="card node st st-done" data-doc-node="session" data-doc-status="done" data-doc-links="apps/desktop/src-tauri/src/session.rs">
+      <div class="t"><span data-doc-label>Session</span> <span class="pill s-done">done</span></div>
+      <div class="s">start / prompt / interrupt</div>
+      <div class="meta"><a class="lk" href="../../../../../../apps/desktop/src-tauri/src/session.rs">apps/desktop/src-tauri/src/session.rs</a></div>
+    </div>
+  </div></div>
+  <div class="layer" data-doc-layer="运行时"><div class="layer-label">运行时</div><div class="nodes">
+    <div class="card node st st-done" data-doc-node="agent-host" data-doc-status="done" data-doc-links="crates/lumzel-agent/src/agent_host.rs">
+      <div class="t"><span data-doc-label>AgentHost</span> <span class="pill s-done">done</span></div>
+      <div class="s">按 Provider 分发</div>
+    </div>
+  </div></div>
+  <ul class="edges"><li data-doc-from="session" data-doc-to="agent-host"><span>Session</span> <i>→</i> <span>AgentHost</span> <em data-doc-label>JSON-RPC</em></li></ul>
+</div>
+</section>
+
+<section class="lumzel-block" id="evidence" data-doc-block="evidence" data-doc-kind="table">
+<h2>证据</h2>
+<table class="grid"><thead><tr><th>位置</th><th>看到什么</th><th>说明</th></tr></thead><tbody>
+<tr><td><code>crates/lumzel-agent/src/agent_host.rs:40</code></td><td>每个方法一个 match</td><td>新 Provider 要加分支</td></tr>
+</tbody></table>
+</section>
+
+<section class="lumzel-block" id="next" data-doc-block="next" data-doc-kind="checklist">
+<h2>下一步</h2>
+<div class="check">
+  <div class="card item st st-planned" data-doc-node="next-adapter" data-doc-status="planned"><span class="box"></span><div><span data-doc-label>把分发收进 Adapter trait</span><div class="meta">约 2 小时</div></div><span class="pill s-planned">planned</span></div>
+</div>
+</section>
+</main>
+</body>
+</html>

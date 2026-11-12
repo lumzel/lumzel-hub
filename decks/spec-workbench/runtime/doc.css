@@ -1568,8 +1568,8 @@ html.pt-full .pt-exit {
   cursor: pointer;
 }
 
-/* Visual Doc page: the one look every Agent writes (lumzel:deck-html, .agents/skills/deck-html/STYLE.md).
-   Canonical markup comes from renderDoc and the deck-html templates; the :where() rules below are a
+/* Visual Doc page: the one look every Agent writes (lumzel:spec-workbench-html, .agents/skills/spec-workbench-html/STYLE.md).
+   Canonical markup comes from renderDoc and the spec-workbench-html templates; the :where() rules below are a
    low-specificity fallback so a hand-written page with bare markup still reads as the same system. */
 body:has(> .lumzel-doc),
 body:has(> section[data-doc-block]) {

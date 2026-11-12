@@ -25,10 +25,10 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 
 | ID | Category | Title (`en` / `zh-CN`) | Capabilities |
 | :--- | :--- | :--- | :--- |
-| `spec-workbench` | `Workflow` | Spec Workbench / 方案工作台 | Visual design docs, tickets, clickable prototypes, and 9 `deck-*` skills + 4 subagents |
-| `pr-review-board` | `Code Review` | PR Review Board / 代码审查面板 | Dual-axis Standards & Spec code review board |
-| `release-readiness` | `DevOps` | Release Readiness / 发版就绪看板 | Release checklist, changelog summary, and Agent verification gate |
-| `architecture-radar` | `Architecture` | Architecture Radar / 架构与模块雷达 | Module boundaries, dependency health, and Agent structural analysis |
+| `spec-workbench` | `Workflow` | Spec Workbench / 方案工作台 | Visual design docs, tickets, clickable prototypes, and 9 `spec-workbench-*` skills + 4 `spec-workbench-*` subagents |
+| `pr-review-board` | `Code Review` | PR Review Board / 代码审查面板 | Dual-axis Standards & Spec code review board + 3 `pr-review-board-*` skills |
+| `release-readiness` | `DevOps` | Release Readiness / 发版就绪看板 | Release checklist, changelog summary, and Agent verification gate + 3 `release-readiness-*` skills |
+| `architecture-radar` | `Architecture` | Architecture Radar / 架构与模块雷达 | Module boundaries, dependency health, and Agent structural analysis + 3 `architecture-radar-*` skills |
 
 --- | :--- | :--- | :--- |
 | `everything-claude-code` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 5 Skills (`ecc-plan`, `ecc-tdd-workflow`, `ecc-security-shield`, `ecc-code-review`, `ecc-verification-loop`), 6 Subagents (`ecc-planner`, `ecc-architect`, `ecc-tdd-guide`, `ecc-code-reviewer`, `ecc-security-reviewer`, `ecc-build-fixer`), 2 Rules |
@@ -46,10 +46,10 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 
 | ID | Title (`en` / `zh-CN`) | Category | Capabilities |
 | :--- | :--- | :--- | :--- |
-| `spec-workbench` | Spec Workbench / 方案工作台 | Engineering | Visual design docs, tickets, clickable prototypes, and 9 `deck-*` skills + 4 subagents |
-| `release-readiness` | Release Readiness / 发版就绪看板 | DevOps | Release checklist, changelog summary, and Agent verification gate |
-| `architecture-radar` | Architecture Radar / 架构与模块雷达 | Architecture | Module boundaries, dependency health, and Agent structural analysis |
-| `pr-review-board` | PR Review Board / 代码审查面板 | Engineering | Dual-axis Standards & Spec code review board |
+| `spec-workbench` | Spec Workbench / 方案工作台 | Engineering | Visual design docs, tickets, clickable prototypes, and 9 `spec-workbench-*` skills + 4 `spec-workbench-*` subagents |
+| `release-readiness` | Release Readiness / 发版就绪看板 | DevOps | Release checklist, changelog summary, and Agent verification gate + 3 `release-readiness-*` skills |
+| `architecture-radar` | Architecture Radar / 架构与模块雷达 | Architecture | Module boundaries, dependency health, and Agent structural analysis + 3 `architecture-radar-*` skills |
+| `pr-review-board` | PR Review Board / 代码审查面板 | Engineering | Dual-axis Standards & Spec code review board + 3 `pr-review-board-*` skills |
 
 ---
 

@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- spec-workbench-html template: compare. Options side by side → recommendation → open decisions.
+     Use for "A or B", trade-offs, technology choice. Scaffold with `scaffold result <id>`, then paste these blocks. -->
+<html lang="zh" data-doc-id="tpl-compare" data-doc-type="result" data-doc-status="draft" data-doc-date="2026-10-28">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>缓存放 Redis 还是进程内</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">result</span><span class="pill s-draft">draft</span><span class="pill">2026-10-28</span><code class="docid">tpl-compare</code></div>
+<h1>缓存放 Redis 还是进程内</h1></div>
+<header class="summary" data-doc-summary>推荐 Redis：多实例共享，失效一次到位。</header>
+
+<section class="lumzel-block" id="options" data-doc-block="options" data-doc-kind="table">
+<h2>选项一览</h2>
+<p class="lead" data-doc-lead>每列一个选项，每行一个维度；赢的格子加粗。</p>
+<table class="grid"><thead><tr><th>维度</th><th>Redis</th><th>进程内 LRU</th></tr></thead><tbody>
+<tr><td>多实例一致</td><td><b>共享</b></td><td>各自一份</td></tr>
+<tr><td>延迟</td><td>~1 ms</td><td><b>~0.01 ms</b></td></tr>
+<tr><td>运维</td><td>多一个服务</td><td><b>无</b></td></tr>
+</tbody></table>
+</section>
+
+<section class="lumzel-block" id="pick" data-doc-block="pick" data-doc-kind="decisions">
+<h2>决策</h2>
+<div class="dec">
+  <div class="card d st" data-doc-node="store" data-doc-answer="Redis" data-doc-recommend="Redis" style="margin-left:0px">
+    <div class="q">✓ <span data-doc-label>缓存放哪？</span></div>
+    <div class="opts"><span class="opt chosen">Redis</span><span class="opt">进程内</span></div>
+    <div class="a">→ Redis</div><div class="why">为什么：多实例共享，写后删除一次即可。</div>
+  </div>
+  <div class="card d open st" data-doc-node="ttl" data-doc-recommend="10 分钟" data-doc-depends="store" style="margin-left:28px">
+    <div class="q">❓ <span data-doc-label>TTL 多长？</span></div>
+    <div class="opts"><span class="opt">1 分钟</span><span class="opt rec">10 分钟</span><span class="opt">60 分钟</span></div>
+    <div class="a">推荐：10 分钟</div><div class="why">为什么：命中率与脏读窗口的平衡点。</div>
+  </div>
+</div>
+</section>
+
+<section class="lumzel-block" id="risk" data-doc-block="risk" data-doc-kind="callout">
+<h2>选错的代价</h2>
+<div class="callout risk">进程内缓存在多实例下会让用户看到旧金额。</div>
+</section>
+</main>
+</body>
+</html>

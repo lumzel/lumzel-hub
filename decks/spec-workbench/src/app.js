@@ -431,15 +431,15 @@ async function run(skill, prompt, actionId) {
 
 // Each header button opens a Session on one skill of this Deck. The prompt names paths, never file contents.
 const ACTIONS = {
-  tickets: f => ['deck-to-tickets', `Cut tickets for ${f.design} (Feature ${f.id} "${f.title}").`, 'cut-tickets'],
-  prototype: f => ['deck-to-prototype', `Prototype ${f.design} (Feature ${f.id} "${f.title}").`, 'create-prototype'],
+  tickets: f => ['spec-workbench-to-tickets', `Cut tickets for ${f.design} (Feature ${f.id} "${f.title}").`, 'cut-tickets'],
+  prototype: f => ['spec-workbench-to-prototype', `Prototype ${f.design} (Feature ${f.id} "${f.title}").`, 'create-prototype'],
   implement: f => [
-    'deck-implement',
+    'spec-workbench-implement',
     `Implement the next ready ticket of Feature ${f.id} "${f.title}" (tickets in docs/features/${f.id}/tickets/).`,
     'implement-next',
   ],
   review: f => [
-    'deck-review',
+    'spec-workbench-review',
     `Review the current changes against Feature ${f.id} "${f.title}" (${f.design}).`,
     'review-changes',
   ],
@@ -478,11 +478,11 @@ async function submitNew() {
   if (state.index.features.some(f => f.id === id)) return ($('new-err').textContent = t('idTaken', { id }));
   $('new-ok').disabled = true;
   await run(
-    'deck-grilling',
+    'spec-workbench-grilling',
     [
       `New Feature ${id} "${title}".`,
       brief && `What it is for: ${brief}`,
-      `Scaffold docs/features/${id}/design.html (deck-html: \`scaffold design ${id}\`) and set the doc's <title> and <h1> to "${title}".`,
+      `Scaffold docs/features/${id}/design.html (spec-workbench-html: \`scaffold design ${id}\`) and set the doc's <title> and <h1> to "${title}".`,
     ]
       .filter(Boolean)
       .join('\n'),

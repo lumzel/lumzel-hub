@@ -218,15 +218,15 @@
       "id": "spec-workbench",
       "title": "Spec Workbench",
       "icon": "dia",
-      "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project. Includes 9 skills and 4 subagents.",
+      "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project. Includes 9 spec-workbench-* skills and 4 subagents.",
       "i18n": {
         "en": {
           "title": "Spec Workbench",
-          "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project. Includes 9 skills and 4 subagents."
+          "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project. Includes 9 spec-workbench-* skills and 4 subagents."
         },
         "zh-CN": {
           "title": "方案工作台",
-          "description": "从想法到技术方案、工单、可点击原型，再到按工单实现与评审的研发工作台：在任意项目里用可视化文档推进功能交付。自带 9 个技能与 4 个子代理，不依赖项目脚手架。"
+          "description": "从想法到技术方案、工单、可点击原型，再到按工单实现与评审的研发工作台：在任意项目里用可视化文档推进功能交付。自带 9 个 spec-workbench-* 技能与 4 个子代理，不依赖项目脚手架。"
         }
       },
       "category": "Workflow",
@@ -239,15 +239,15 @@
       "id": "release-readiness",
       "title": "Release Readiness",
       "icon": "rocket",
-      "description": "Release checklist, changelog summary, and risk gate board with one-click Agent verification.",
+      "description": "Release checklist, changelog summary, and security gate board powered by 3 bundled release skills (release-readiness-audit, release-readiness-changelog, release-readiness-security).",
       "i18n": {
         "en": {
           "title": "Release Readiness",
-          "description": "Release checklist, changelog summary, and risk gate board with one-click Agent verification."
+          "description": "Release checklist, changelog summary, and security gate board powered by 3 bundled release skills (release-readiness-audit, release-readiness-changelog, release-readiness-security)."
         },
         "zh-CN": {
           "title": "发版就绪看板",
-          "description": "版本发布检查清单、变更摘要与风险门禁工作台，支持一键唤起 Agent 核验。"
+          "description": "版本发布检查清单、变更摘要与安全门禁工作台，自带 3 个发版核验技能（release-readiness-audit / changelog / security）。"
         }
       },
       "category": "DevOps",
@@ -262,15 +262,15 @@
       "id": "architecture-radar",
       "title": "Architecture Radar",
       "icon": "dia",
-      "description": "Module boundaries, core dependencies, and technical debt radar paired with Agent-assisted structural analysis.",
+      "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by 3 bundled architecture skills (architecture-radar-scan, architecture-radar-dataflow, architecture-radar-refactor).",
       "i18n": {
         "en": {
           "title": "Architecture Radar",
-          "description": "Module boundaries, core dependencies, and technical debt radar paired with Agent-assisted structural analysis."
+          "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by 3 bundled architecture skills (architecture-radar-scan, architecture-radar-dataflow, architecture-radar-refactor)."
         },
         "zh-CN": {
           "title": "架构与模块雷达",
-          "description": "展示模块边界、核心依赖与技术债健康度，配合 Agent 梳理项目结构演进。"
+          "description": "梳理模块边界、端到端数据流转与重构热点的架构工作台，自带 3 个架构分析技能（architecture-radar-scan / dataflow / refactor）。"
         }
       },
       "category": "Architecture",
@@ -285,15 +285,15 @@
       "id": "pr-review-board",
       "title": "PR Review Board",
       "icon": "check",
-      "description": "Structured code review board organized along coding standards and specification compliance.",
+      "description": "Structured code review board along coding standards and specification compliance, powered by 3 bundled review skills (pr-review-board-review, pr-review-board-standards, pr-review-board-spec).",
       "i18n": {
         "en": {
           "title": "PR Review Board",
-          "description": "Structured code review board organized along coding standards and specification compliance."
+          "description": "Structured code review board along coding standards and specification compliance, powered by 3 bundled review skills (pr-review-board-review, pr-review-board-standards, pr-review-board-spec)."
         },
         "zh-CN": {
           "title": "代码审查面板",
-          "description": "围绕编码规范与需求规格双轴展开的结构化 Code Review 面板。"
+          "description": "围绕编码规范与需求规格双轴展开的结构化 Code Review 面板，自带 3 个代码审查技能（pr-review-board-review / standards / spec）。"
         }
       },
       "category": "Code Review",

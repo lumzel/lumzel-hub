@@ -3,19 +3,26 @@
   "title": "Architecture Radar",
   "icon": "dia",
   "category": "Architecture",
-  "description": "Module boundaries, core dependencies, and technical debt radar paired with Agent-assisted structural analysis.",
+  "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by 3 bundled architecture skills.",
   "i18n": {
     "en": {
       "title": "Architecture Radar",
-      "description": "Module boundaries, core dependencies, and technical debt radar paired with Agent-assisted structural analysis."
+      "description": "Module boundaries, end-to-end dataflow tracing, and refactoring hotspot radar powered by 3 bundled architecture skills."
     },
     "zh-CN": {
       "title": "架构与模块雷达",
-      "description": "展示模块边界、核心依赖与技术债健康度，配合 Agent 梳理项目结构演进。"
+      "description": "梳理模块边界、端到端数据流转与重构热点的架构工作台，自带 3 个架构分析技能。"
     }
   },
   "author": "Lumzel",
   "entry": "index.html",
+  "uses": {
+    "skills": [
+      "architecture-radar-scan",
+      "architecture-radar-dataflow",
+      "architecture-radar-refactor"
+    ]
+  },
   "permissions": [
     "agent",
     "files"
