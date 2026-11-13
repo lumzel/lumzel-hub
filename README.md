@@ -10,22 +10,22 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 
 > Live component counts (`skills`, `agents`, `rules`, `hooks`, `mcp`, `plugins`, `env`) are computed automatically into `marketplace.json`'s `counts` field by `tools/sync-upstreams.mjs`.
 
-| ID | Category | Name (`en` / `zh-CN`) | Upstream | Bundled Capabilities |
+| ID | Category | Name | Upstream | Bundled Capabilities |
 | :--- | :--- | :--- | :--- | :--- |
-| `daily-driver` | `Workflow` | 🧠 Daily Driver / 日常主力研发工作流 | Curated Multi-Repo (`upstreams.json`) | 11 Curated Skills, 5 Review/Eval Subagents, 4 MCP Configs (`graphify`, `plan`, `agent-native-dispatch`, `github-agentic-workflows`), 3 Graphify Hooks, `graphify-memory` Rule, `GRAPHIFY_HOOK_STRICT` Env |
-| `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 314 Canonical Skills, 71 Subagents (with `model`/`tools` params), 121 Common & Multi-Language Rules, 8 Lifecycle Quality Hooks, 35 MCP Configs, 22 Runtime & MCP Env Vars |
-| `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow / 研发工作流 | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 39 Upstream Skills (with companion testing/architecture docs), 3 Review/Explorer Subagents, 2 Rules (`mp-engineering-philosophy`, `mp-domain-glossary`), `mp-git-guardrails` Hook |
-| `superpowers` | `Workflow` | 🦸 Obra Superpowers / 工程纪律套件 | [`obra/superpowers`](https://github.com/obra/superpowers) | 15 Upstream Skills (with prompts, references & templates), 6 Implementation/Review/Diagnostic Subagents, `superpowers-session-start` Hook, Iron Laws Rule |
-| `compound-engineering` | `Workflow` | 🔄 Compound Engineering / 复利工程 | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | 38 Canonical `ce-*` / `lfg` / `wtf` Skills, 55 Research/Review Subagents & Personas (with `model` params), 3 Coding/Authoring/PR Review Rules |
-| `gstack` | `Workflow` | 🚀 Garry Tan gstack / 交付工作流 | [`garrytan/gstack`](https://github.com/garrytan/gstack) | 66 Full-Lifecycle, Browser & OpenClaw Skills, 3 Specialist Subagents, 3 `careful`/`freeze`/SessionStart Hooks, `gbrain` MCP Config, Boil-the-Lake Rule, 2 Env Flags |
-| `spec-kit` | `Architecture` | 📐 GitHub Spec-Kit (SDD) / 规格驱动开发 | [`github/spec-kit`](https://github.com/github/spec-kit) | 9 Core `speckit-*` SDD Workflow Skills (with bundled templates), 2 Subagents, `specify` MCP Config, Principles Rule, 3 `SPECIFY_*` Env Vars |
-| `agent-native` | `Workflow` | 🧩 Builder.io Agent-Native / 应用工作流 | [`BuilderIO/agent-native`](https://github.com/BuilderIO/agent-native) | 10 Public Skills for workspace apps, visual plans, design editing, content, assets and turning workflows into apps; Dispatch, Design and Plans MCP Configs |
+| `daily-driver` | `Workflow` | 🧠 Daily Driver | Curated Multi-Repo (`upstreams.json`) | 11 Curated Skills, 5 Review/Eval Subagents, 4 MCP Configs (`graphify`, `plan`, `agent-native-dispatch`, `github-agentic-workflows`), 3 Graphify Hooks, `graphify-memory` Rule, `GRAPHIFY_HOOK_STRICT` Env |
+| `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 314 Canonical Skills, 71 Subagents (with `model`/`tools` params), 121 Common & Multi-Language Rules, 8 Lifecycle Quality Hooks, 35 MCP Configs, 22 Runtime & MCP Env Vars |
+| `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 39 Upstream Skills (with companion testing/architecture docs), 3 Review/Explorer Subagents, 2 Rules (`mp-engineering-philosophy`, `mp-domain-glossary`), `mp-git-guardrails` Hook |
+| `superpowers` | `Workflow` | 🦸 Obra Superpowers | [`obra/superpowers`](https://github.com/obra/superpowers) | 15 Upstream Skills (with prompts, references & templates), 6 Implementation/Review/Diagnostic Subagents, `superpowers-session-start` Hook, Iron Laws Rule |
+| `compound-engineering` | `Workflow` | 🔄 Compound Engineering | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | 38 Canonical `ce-*` / `lfg` / `wtf` Skills, 55 Research/Review Subagents & Personas (with `model` params), 3 Coding/Authoring/PR Review Rules |
+| `gstack` | `Workflow` | 🚀 Garry Tan gstack | [`garrytan/gstack`](https://github.com/garrytan/gstack) | 66 Full-Lifecycle, Browser & OpenClaw Skills, 3 Specialist Subagents, 3 `careful`/`freeze`/SessionStart Hooks, `gbrain` MCP Config, Boil-the-Lake Rule, 2 Env Flags |
+| `spec-kit` | `Architecture` | 📐 GitHub Spec-Kit (SDD) | [`github/spec-kit`](https://github.com/github/spec-kit) | 9 Core `speckit-*` SDD Workflow Skills (with bundled templates), 2 Subagents, `specify` MCP Config, Principles Rule, 3 `SPECIFY_*` Env Vars |
+| `agent-native` | `Workflow` | 🧩 Builder.io Agent-Native | [`BuilderIO/agent-native`](https://github.com/BuilderIO/agent-native) | 10 Public Skills for workspace apps, visual plans, design editing, content, assets and turning workflows into apps; Dispatch, Design and Plans MCP Configs |
 
 ## Included Decks
 
-| ID | Category | Title (`en` / `zh-CN`) | Capabilities |
+| ID | Category | Title | Capabilities |
 | :--- | :--- | :--- | :--- |
-| `spec-workbench` | `Workflow` | Spec Workbench / 方案工作台 | Visual design docs, tickets, clickable prototypes + bundled `spec-workbench-*` skills & subagents |
+| `spec-workbench` | `Workflow` | Spec Workbench | Visual design docs, tickets, clickable prototypes + bundled `spec-workbench-*` skills & subagents |
 
 
 ---
@@ -52,9 +52,9 @@ i18n:
   en:
     name: Daily Driver
     description: "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing."
-  zh-CN:
-    name: "日常主力研发工作流"
-    description: "轻量顺手的日常主力研发伴侣：开箱即用的可视化单页与架构图、方案规划、边界 TDD、双轴代码审查、Graphify 图谱持久记忆与去 AI 腔自然表达。"
+  es:
+    name: "Flujo de Desarrollo Diario"
+    description: "Un companero de ingenieria ligero para el dia a dia: explicaciones visuales, diagramas, planificacion iterativa y TDD de costuras publicas."
 ```
 
 ### `deck.json` Example
@@ -69,9 +69,9 @@ i18n:
       "title": "Spec Workbench",
       "description": "Ship features from rough idea to design, tickets, and clickable prototype."
     },
-    "zh-CN": {
-      "title": "方案工作台",
-      "description": "从想法到技术方案、工单与可点击原型的可视化研发工作台。"
+    "es": {
+      "title": "Mesa de Trabajo de Especificaciones",
+      "description": "Lleve las funciones desde una idea aproximada hasta el diseno, los tickets y el prototipo interactivo."
     }
   },
   "entry": "index.html"
@@ -195,7 +195,7 @@ The GitHub Actions workflow (`.github/workflows/sync-upstreams.yml`) runs daily 
   "owner": { "name": "Acme Eng" },
   "i18n": {
     "en": { "name": "My Team Hub", "description": "Internal Loadouts and Decks" },
-    "zh-CN": { "name": "团队内部仓库", "description": "团队共享的 Loadout 与 Deck" }
+    "es": { "name": "Repositorio Interno", "description": "Loadouts y Decks compartidos del equipo" }
   },
   "loadouts": [
     {
@@ -208,9 +208,9 @@ The GitHub Actions workflow (`.github/workflows/sync-upstreams.yml`) runs daily 
           "name": "Go Microservices Loadout",
           "description": "Go service conventions, protobuf rules, and gRPC debugging skills."
         },
-        "zh-CN": {
-          "name": "Go 微服务开发套件",
-          "description": "包含 Go 服务编码规范、Protobuf 约束与 gRPC 排障技能。"
+        "es": {
+          "name": "Suite de Microservicios Go",
+          "description": "Convenciones de servicios Go, reglas de protobuf y habilidades de depuracion gRPC."
         }
       },
       "category": "Backend",
@@ -233,9 +233,9 @@ The GitHub Actions workflow (`.github/workflows/sync-upstreams.yml`) runs daily 
           "title": "Incident Triage Deck",
           "description": "On-call runbook and service health check deck."
         },
-        "zh-CN": {
-          "title": "故障排查看板",
-          "description": "值班应急手册与服务健康状态检查工作台。"
+        "es": {
+          "title": "Panel de Triaje de Incidentes",
+          "description": "Manual de guardia y panel de verificacion del estado de los servicios."
         }
       },
       "category": "SRE",
