@@ -1,0 +1,34 @@
+id: agent-native
+name: Builder.io Agent-Native
+icon: 🧩
+category: Workflow
+description: 'Agent-Native workspace apps, visual plans, design exploration and editing, content and asset workflows, and turning workflows into apps, with Dispatch, Design and Plans MCP connections.'
+i18n:
+  en:
+    name: Builder.io Agent-Native
+    description: 'Agent-Native workspace apps, visual plans, design exploration and editing, content and asset workflows, and turning workflows into apps, with Dispatch, Design and Plans MCP connections.'
+  zh-CN:
+    name: Builder.io Agent-Native 应用工作流
+    description: '使用 Agent-Native 应用、编写可视化方案、探索与编辑设计、制作内容和素材，并将工作流转为应用；配套 Dispatch、Design 和 Plans MCP 连接。'
+author: Builder.io
+homepage: https://github.com/BuilderIO/agent-native
+skills:
+- an
+- assets
+- content
+- context-xray
+- design-exploration
+- turn-into-app
+- visual-edit
+- visual-plan
+- visual-recap
+- visualize-repo
+agents: {}
+mcp:
+- agent-native-design
+- agent-native-dispatch
+- plan
+hooks: []
+rules: []
+plugins: []
+env: {}

@@ -19,6 +19,7 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 | `compound-engineering` | `Workflow` | 🔄 Compound Engineering / 复利工程 | [`EveryInc/compound-engineering-plugin`](https://github.com/EveryInc/compound-engineering-plugin) | 38 Canonical `ce-*` / `lfg` / `wtf` Skills, 55 Research/Review Subagents & Personas (with `model` params), 3 Coding/Authoring/PR Review Rules |
 | `gstack` | `Workflow` | 🚀 Garry Tan gstack / 交付工作流 | [`garrytan/gstack`](https://github.com/garrytan/gstack) | 66 Full-Lifecycle, Browser & OpenClaw Skills, 3 Specialist Subagents, 3 `careful`/`freeze`/SessionStart Hooks, `gbrain` MCP Config, Boil-the-Lake Rule, 2 Env Flags |
 | `spec-kit` | `Architecture` | 📐 GitHub Spec-Kit (SDD) / 规格驱动开发 | [`github/spec-kit`](https://github.com/github/spec-kit) | 9 Core `speckit-*` SDD Workflow Skills (with bundled templates), 2 Subagents, `specify` MCP Config, Principles Rule, 3 `SPECIFY_*` Env Vars |
+| `agent-native` | `Workflow` | 🧩 Builder.io Agent-Native / 应用工作流 | [`BuilderIO/agent-native`](https://github.com/BuilderIO/agent-native) | 10 Public Skills for workspace apps, visual plans, design editing, content, assets and turning workflows into apps; Dispatch, Design and Plans MCP Configs |
 
 ## Included Decks
 
@@ -159,6 +160,7 @@ A Deck that needs a project to show anything ships a sample one. `spec-workbench
 Loadouts stay self-contained in `loadouts/<id>/` (enabling single-folder sparse checkout and instant in-app Market Previews) while tracking upstream GitHub repositories through `upstreams.json` and `tools/sync-upstreams.mjs`:
 
 - **`curated` mode** (e.g. `daily-driver`): Composes individual Skills from multiple upstream repositories (`repo` + `path` or `skillFile` + `extraDirs`) alongside Hub-maintained `AGENTS.md`, `rules/`, and portable `mcp/` configs.
+  - `agent-native` bundles the upstream's public `skills/` collection, preserving companion references and tracking its plugin MCP configs. `skills/visual-plans` is installed as `visual-plan` to match the skill's declared name. It includes the upstream MIT license. Service sign-in is required where prompted; importing the Loadout does not install the Agent-Native framework or run an app.
 - **`suite` mode** (e.g. `everything-claude-code`, `matt-pocock`, `superpowers`, `spec-kit`, `compound-engineering`, `gstack`): Mirrors complete upstream suites and adapts skills, subagents, rules, and MCP configs into Lumzel's standard Loadout layout while preserving Hub-specific hooks/rules listed in `preserve`.
 
 ```bash

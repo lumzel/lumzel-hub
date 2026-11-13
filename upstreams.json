@@ -542,6 +542,79 @@
         "agents",
         "AGENTS.md"
       ]
+    },
+    {
+      "id": "agent-native",
+      "mode": "curated",
+      "skills": [
+        {
+          "name": "an",
+          "repo": "BuilderIO/agent-native",
+          "path": "skills/an"
+        },
+        {
+          "name": "assets",
+          "repo": "BuilderIO/agent-native",
+          "path": "skills/assets"
+        },
+        {
+          "name": "content",
+          "repo": "BuilderIO/agent-native",
+          "path": "skills/content"
+        },
+        {
+          "name": "context-xray",
+          "repo": "BuilderIO/agent-native",
+          "path": "skills/context-xray"
+        },
+        {
+          "name": "design-exploration",
+          "repo": "BuilderIO/agent-native",
+          "path": "skills/design-exploration"
+        },
+        {
+          "name": "turn-into-app",
+          "repo": "BuilderIO/agent-native",
+          "path": "skills/turn-into-app"
+        },
+        {
+          "name": "visual-edit",
+          "repo": "BuilderIO/agent-native",
+          "path": "skills/visual-edit"
+        },
+        {
+          "name": "visual-plan",
+          "repo": "BuilderIO/agent-native",
+          "path": "skills/visual-plans"
+        },
+        {
+          "name": "visual-recap",
+          "repo": "BuilderIO/agent-native",
+          "path": "skills/visual-recap"
+        },
+        {
+          "name": "visualize-repo",
+          "repo": "BuilderIO/agent-native",
+          "path": "skills/visualize-repo"
+        }
+      ],
+      "mcp": {
+        "mode": "multi",
+        "sources": [
+          {
+            "repo": "BuilderIO/agent-native",
+            "source": ".agents/plugins/agent-native/mcp.json"
+          },
+          {
+            "repo": "BuilderIO/agent-native",
+            "source": ".agents/plugins/agent-native-design/mcp.json"
+          },
+          {
+            "repo": "BuilderIO/agent-native",
+            "source": ".agents/plugins/agent-native-visual-plans/mcp.json"
+          }
+        ]
+      }
     }
   ],
   "repos": {
@@ -604,6 +677,10 @@
     "anthropics/skills": {
       "branch": "main",
       "sha": "2c5958ecac7cee2b583967a2c4981d0f4a75c579"
+    },
+    "BuilderIO/agent-native": {
+      "branch": "main",
+      "sha": "8656de220a348855f21f4988927ee22efdb8a10c"
     }
   }
 }
