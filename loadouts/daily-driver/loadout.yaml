@@ -13,8 +13,6 @@ i18n:
 author: Lumzel
 skills:
 - answer-me-with-html
-- visual-plan
-- visual-recap
 - an
 - show-me
 - excalidraw-diagram-generator
@@ -40,8 +38,6 @@ hooks:
 - graphify-pre-search
 rules:
 - graphify-memory
-plugins:
-- rpi
-- visual-pr
+plugins: []
 env:
   GRAPHIFY_HOOK_STRICT: '0'

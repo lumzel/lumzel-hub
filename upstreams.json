@@ -12,16 +12,6 @@
           "path": "skills/answer-me-with-html"
         },
         {
-          "name": "visual-plan",
-          "repo": "builderio/skills",
-          "path": "skills/visual-plan"
-        },
-        {
-          "name": "visual-recap",
-          "repo": "builderio/skills",
-          "path": "skills/visual-recap"
-        },
-        {
           "name": "an",
           "repo": "builderio/skills",
           "path": "skills/an"
@@ -111,18 +101,6 @@
           }
         ]
       },
-      "plugins": [
-        {
-          "name": "rpi",
-          "repo": "humanlayer/skills",
-          "path": "plugins/rpi"
-        },
-        {
-          "name": "visual-pr",
-          "repo": "humanlayer/skills",
-          "path": "plugins/visual-pr"
-        }
-      ],
       "mcp": {
         "mode": "multi",
         "sources": [

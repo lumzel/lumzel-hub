@@ -20,26 +20,25 @@
       "id": "daily-driver",
       "name": "Daily Driver",
       "icon": "🧠",
-      "description": "Everyday engineering companion across all 7 Library categories: visual HTML explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, RPI & Visual PR plugins, Graphify memory + hooks, and portable MCP servers.",
+      "description": "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing.",
       "i18n": {
         "en": {
           "name": "Daily Driver",
-          "description": "Everyday engineering companion across all 7 Library categories: visual HTML explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, RPI & Visual PR plugins, Graphify memory + hooks, and portable MCP servers."
+          "description": "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing."
         },
         "zh-CN": {
           "name": "日常主力研发工作流",
-          "description": "覆盖全部 7 类资源的日常主力研发套件：可视化单页与架构制图、交互式方案规划、公共边界 TDD、双轴代码审查子代理、RPI 与 Visual PR 插件、Graphify 知识图谱记忆与自动 Hook 及多款便携 MCP 服务。"
+          "description": "轻量顺手的日常主力研发伴侣：开箱即用的可视化单页与架构图、方案规划、边界 TDD、双轴代码审查、Graphify 图谱持久记忆与去 AI 腔自然表达。"
         }
       },
       "category": "Workflow",
       "author": "Lumzel",
       "counts": {
-        "skills": 14,
+        "skills": 12,
         "agents": 5,
         "rules": 1,
         "hooks": 3,
         "mcp": 4,
-        "plugins": 2,
         "env": 1
       },
       "source": "./loadouts/daily-driver"

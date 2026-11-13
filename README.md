@@ -12,7 +12,7 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 
 | ID | Category | Name (`en` / `zh-CN`) | Upstream | Bundled Capabilities |
 | :--- | :--- | :--- | :--- | :--- |
-| `daily-driver` | `Workflow` | 🧠 Daily Driver / 日常主力研发工作流 | Curated Multi-Repo (`upstreams.json`) | 14 Curated Skills, 5 Review/Eval Subagents, 4 MCP Configs (`graphify`, `plan`, `agent-native-dispatch`, `github-agentic-workflows`), 2 Plugins (`rpi`, `visual-pr`), 3 Graphify Hooks, `graphify-memory` Rule, `GRAPHIFY_HOOK_STRICT` Env |
+| `daily-driver` | `Workflow` | 🧠 Daily Driver / 日常主力研发工作流 | Curated Multi-Repo (`upstreams.json`) | 12 Curated Skills, 5 Review/Eval Subagents, 4 MCP Configs (`graphify`, `plan`, `agent-native-dispatch`, `github-agentic-workflows`), 3 Graphify Hooks, `graphify-memory` Rule, `GRAPHIFY_HOOK_STRICT` Env |
 | `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) / 全栈工程套件 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 314 Canonical Skills, 71 Subagents (with `model`/`tools` params), 121 Common & Multi-Language Rules, 8 Lifecycle Quality Hooks, 35 MCP Configs, 22 Runtime & MCP Env Vars |
 | `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow / 研发工作流 | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 39 Upstream Skills (with companion testing/architecture docs), 3 Review/Explorer Subagents, 2 Rules (`mp-engineering-philosophy`, `mp-domain-glossary`), `mp-git-guardrails` Hook |
 | `superpowers` | `Workflow` | 🦸 Obra Superpowers / 工程纪律套件 | [`obra/superpowers`](https://github.com/obra/superpowers) | 15 Upstream Skills (with prompts, references & templates), 6 Implementation/Review/Diagnostic Subagents, `superpowers-session-start` Hook, Iron Laws Rule |
@@ -47,14 +47,14 @@ Every repository catalog (`marketplace.json`), Loadout (`loadout.yaml`), and Dec
 ```yaml
 id: daily-driver
 name: Daily Driver
-description: "Everyday engineering companion across all 7 Library categories: visual HTML explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, RPI & Visual PR plugins, Graphify memory + hooks, and portable MCP servers."
+description: "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing."
 i18n:
   en:
     name: Daily Driver
-    description: "Everyday engineering companion across all 7 Library categories: visual HTML explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, RPI & Visual PR plugins, Graphify memory + hooks, and portable MCP servers."
+    description: "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing."
   zh-CN:
     name: "日常主力研发工作流"
-    description: "覆盖全部 7 类资源的日常主力研发套件：可视化单页与架构制图、交互式方案规划、公共边界 TDD、双轴代码审查子代理、RPI 与 Visual PR 插件、Graphify 知识图谱记忆与自动 Hook 及多款便携 MCP 服务。"
+    description: "轻量顺手的日常主力研发伴侣：开箱即用的可视化单页与架构图、方案规划、边界 TDD、双轴代码审查、Graphify 图谱持久记忆与去 AI 腔自然表达。"
 ```
 
 ### `deck.json` Example
