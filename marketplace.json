@@ -41,7 +41,8 @@
         "mcp": 4,
         "env": 1
       },
-      "source": "./loadouts/daily-driver"
+      "source": "./loadouts/daily-driver",
+      "version": "1.0.0"
     },
     {
       "id": "everything-claude-code",
@@ -69,7 +70,8 @@
         "mcp": 35,
         "env": 22
       },
-      "source": "./loadouts/everything-claude-code"
+      "source": "./loadouts/everything-claude-code",
+      "version": "1.0.0"
     },
     {
       "id": "matt-pocock",
@@ -95,7 +97,8 @@
         "rules": 2,
         "hooks": 1
       },
-      "source": "./loadouts/matt-pocock"
+      "source": "./loadouts/matt-pocock",
+      "version": "1.0.0"
     },
     {
       "id": "superpowers",
@@ -121,7 +124,8 @@
         "rules": 1,
         "hooks": 1
       },
-      "source": "./loadouts/superpowers"
+      "source": "./loadouts/superpowers",
+      "version": "1.0.0"
     },
     {
       "id": "spec-kit",
@@ -148,7 +152,8 @@
         "mcp": 1,
         "env": 3
       },
-      "source": "./loadouts/spec-kit"
+      "source": "./loadouts/spec-kit",
+      "version": "1.0.0"
     },
     {
       "id": "compound-engineering",
@@ -173,7 +178,8 @@
         "agents": 55,
         "rules": 3
       },
-      "source": "./loadouts/compound-engineering"
+      "source": "./loadouts/compound-engineering",
+      "version": "1.0.0"
     },
     {
       "id": "gstack",
@@ -201,7 +207,8 @@
         "mcp": 1,
         "env": 2
       },
-      "source": "./loadouts/gstack"
+      "source": "./loadouts/gstack",
+      "version": "1.0.0"
     },
     {
       "id": "agent-native",
@@ -225,7 +232,8 @@
         "skills": 10,
         "mcp": 3
       },
-      "source": "./loadouts/agent-native"
+      "source": "./loadouts/agent-native",
+      "version": "1.0.0"
     }
   ],
   "decks": [
@@ -258,7 +266,8 @@
       "coverViewport": [
         1200,
         750
-      ]
+      ],
+      "version": "1.0.0"
     }
   ]
 }
