@@ -329,7 +329,7 @@ skills:
 - x-api
 agents:
   a11y-architect:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -337,26 +337,26 @@ agents:
     - Grep
     - Glob
   agent-evaluator:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   architect:
-    model: opus
+    model: deep
     tools:
     - Read
     - Grep
     - Glob
   bengali-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
   build-error-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -365,7 +365,7 @@ agents:
     - Grep
     - Glob
   chief-of-staff:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
@@ -374,27 +374,27 @@ agents:
     - Edit
     - Write
   code-architect:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   code-explorer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
   code-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   code-simplifier:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -403,25 +403,25 @@ agents:
     - Grep
     - Glob
   comment-analyzer:
-    model: haiku
+    model: fast
     tools:
     - Read
     - Grep
     - Glob
   commit-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   conversation-analyzer:
-    model: haiku
+    model: fast
     tools:
     - Read
     - Grep
   cpp-build-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -430,21 +430,21 @@ agents:
     - Grep
     - Glob
   cpp-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   csharp-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   dart-build-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -453,14 +453,14 @@ agents:
     - Grep
     - Glob
   database-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   django-build-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -469,14 +469,14 @@ agents:
     - Grep
     - Glob
   django-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   doc-updater:
-    model: haiku
+    model: fast
     tools:
     - Read
     - Write
@@ -485,14 +485,14 @@ agents:
     - Grep
     - Glob
   docs-lookup:
-    model: haiku
+    model: fast
     tools:
     - Read
     - Grep
     - mcp__context7__resolve-library-id
     - mcp__context7__query-docs
   e2e-runner:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -501,28 +501,28 @@ agents:
     - Grep
     - Glob
   fastapi-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   flutter-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   fsharp-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   gan-evaluator:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -538,7 +538,7 @@ agents:
     - mcp__playwright__browser_resize
     - mcp__playwright__browser_press_key
   gan-generator:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -547,14 +547,14 @@ agents:
     - Grep
     - Glob
   gan-planner:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
     - Grep
     - Glob
   go-build-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -563,14 +563,14 @@ agents:
     - Grep
     - Glob
   go-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   harmonyos-app-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -579,7 +579,7 @@ agents:
     - Grep
     - Glob
   harness-optimizer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
@@ -587,18 +587,18 @@ agents:
     - Bash
     - Edit
   healthcare-reviewer:
-    model: opus
+    model: deep
     tools:
     - Read
     - Grep
     - Glob
   homelab-architect:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
   java-build-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -607,14 +607,14 @@ agents:
     - Grep
     - Glob
   java-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   kotlin-build-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -623,14 +623,14 @@ agents:
     - Grep
     - Glob
   kotlin-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   loop-operator:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
@@ -638,7 +638,7 @@ agents:
     - Bash
     - Edit
   marketing-agent:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
@@ -646,30 +646,30 @@ agents:
     - WebSearch
     - WebFetch
   mle-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   network-architect:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
   network-config-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
   network-troubleshooter:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Bash
     - Grep
   opensource-forker:
-    model: haiku
+    model: fast
     tools:
     - Read
     - Write
@@ -678,7 +678,7 @@ agents:
     - Grep
     - Glob
   opensource-packager:
-    model: haiku
+    model: fast
     tools:
     - Read
     - Write
@@ -687,14 +687,14 @@ agents:
     - Grep
     - Glob
   opensource-sanitizer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   performance-optimizer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -703,34 +703,34 @@ agents:
     - Grep
     - Glob
   php-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   planner:
-    model: opus
+    model: deep
     tools:
     - Read
     - Grep
     - Glob
   pr-test-analyzer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   python-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   pytorch-build-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -739,14 +739,14 @@ agents:
     - Grep
     - Glob
   rag-pipeline-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   react-build-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -755,14 +755,14 @@ agents:
     - Grep
     - Glob
   react-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   refactor-cleaner:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -771,14 +771,14 @@ agents:
     - Grep
     - Glob
   ruby-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   rust-build-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -787,21 +787,21 @@ agents:
     - Grep
     - Glob
   rust-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   security-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   seo-specialist:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
@@ -809,14 +809,14 @@ agents:
     - WebSearch
     - WebFetch
   silent-failure-hunter:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   spec-miner:
-    model: opus
+    model: deep
     tools:
     - Read
     - Grep
@@ -824,7 +824,7 @@ agents:
     - Bash
     - Write
   swift-build-resolver:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -833,14 +833,14 @@ agents:
     - Grep
     - Glob
   swift-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   tdd-guide:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Write
@@ -848,20 +848,20 @@ agents:
     - Bash
     - Grep
   type-design-analyzer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
   typescript-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep
     - Glob
     - Bash
   vue-reviewer:
-    model: sonnet
+    model: balanced
     tools:
     - Read
     - Grep

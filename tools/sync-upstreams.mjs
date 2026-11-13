@@ -89,6 +89,87 @@ const LANG_PATHS_GLOB = {
 
 const VALID_TIERS = new Set(['ask', 'auto-edit', 'auto', 'bypass']);
 const VALID_EFFORTS = new Set(['low', 'medium', 'high', 'max']);
+const VALID_SUBAGENT_TIERS = new Set(['inherit', 'fast', 'balanced', 'deep']);
+
+function mapSubagentModelToTier(raw) {
+  const val = unquoteYamlScalar(raw || '').trim();
+  if (!val || val.startsWith('[') || val.includes(' ')) return null;
+  const lower = val.toLowerCase();
+  if (VALID_SUBAGENT_TIERS.has(lower)) return lower;
+  if (/haiku|luna|mini|nano|spark|flash|lite|fast|small|light|non-reasoning/.test(lower)) {
+    return 'fast';
+  }
+  if (/opus|deep|terra|astra|pro\b|max|heavy|reasoning/.test(lower)) {
+    return 'deep';
+  }
+  if (/sonnet|balanced|sol\b|medium/.test(lower)) {
+    return 'balanced';
+  }
+  if (/^(claude-|gpt-|codex|o[134]\b|grok-|gemini-|fable)/.test(lower)) {
+    return 'balanced';
+  }
+  return null;
+}
+
+function rewriteSubagentFrontmatter(mdText) {
+  const normalized = normalizeLf(mdText);
+  if (!normalized.startsWith('---\n')) return normalized;
+  const end = normalized.indexOf('\n---', 4);
+  if (end === -1) return normalized;
+  const front = normalized.slice(4, end);
+  const rest = normalized.slice(end);
+  let changed = false;
+  const nextLines = front.split('\n').map((line) => {
+    const m = line.match(/^model:\s*(.+)$/);
+    if (!m) return line;
+    const mapped = mapSubagentModelToTier(m[1]);
+    if (!mapped) return line;
+    const replacement = `model: ${mapped}`;
+    if (line !== replacement) changed = true;
+    return replacement;
+  });
+  if (!changed) return normalized;
+  return `---\n${nextLines.join('\n')}${rest}`;
+}
+
+function normalizeSubagentMarkdownInDir(dirPath) {
+  if (!fs.existsSync(dirPath)) return;
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    if (shouldSkipEntry(entry.name) || entry.isSymbolicLink()) continue;
+    const full = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      normalizeSubagentMarkdownInDir(full);
+    } else if (entry.isFile() && entry.name.endsWith('.md') && !/^readme\.md$/i.test(entry.name)) {
+      const prev = fs.readFileSync(full, 'utf8');
+      const next = rewriteSubagentFrontmatter(prev);
+      if (next !== prev) {
+        fs.writeFileSync(full, next);
+      }
+    }
+  }
+}
+
+function walkSubagentMarkdownDirs(loadoutDir, visitor) {
+  const topAgents = path.join(loadoutDir, 'agents');
+  if (fs.existsSync(topAgents)) visitor(topAgents);
+  for (const rootName of ['plugins', 'skills']) {
+    const base = path.join(loadoutDir, rootName);
+    if (!fs.existsSync(base)) continue;
+    const stack = [base];
+    while (stack.length > 0) {
+      const cur = stack.pop();
+      for (const entry of fs.readdirSync(cur, { withFileTypes: true })) {
+        if (shouldSkipEntry(entry.name) || entry.isSymbolicLink() || !entry.isDirectory()) continue;
+        const full = path.join(cur, entry.name);
+        if (entry.name === 'agents' || entry.name === 'subagents') {
+          visitor(full);
+        } else {
+          stack.push(full);
+        }
+      }
+    }
+  }
+}
 
 function parseArgs(argv) {
   const opts = {
@@ -476,13 +557,9 @@ function parseFrontmatterAgentParams(mdText) {
       continue;
     }
     if (key === 'model') {
-      const cleanModel = val.toLowerCase();
-      if (
-        cleanModel !== 'inherit' &&
-        !cleanModel.includes(' ') &&
-        /^[a-z0-9._:-]+$/i.test(val)
-      ) {
-        params.model = val;
+      const mapped = mapSubagentModelToTier(val);
+      if (mapped && mapped !== 'inherit') {
+        params.model = mapped;
       }
     } else if (key === 'effort') {
       const e = val.toLowerCase();
@@ -925,6 +1002,7 @@ function syncCuratedLoadout(spec, repoDirs) {
   syncRulesSpec(loadoutDir, spec, repoDirs);
   syncMcpSpec(loadoutDir, spec, repoDirs);
   syncHooksSpec(loadoutDir, spec);
+  walkSubagentMarkdownDirs(loadoutDir, normalizeSubagentMarkdownInDir);
 }
 
 function syncSuiteLoadout(spec, repoDirs) {
@@ -1056,6 +1134,7 @@ function syncSuiteLoadout(spec, repoDirs) {
       fs.writeFileSync(path.join(loadoutDir, 'AGENTS.md'), body.endsWith('\n') ? body : `${body}\n`);
     }
   }
+  walkSubagentMarkdownDirs(loadoutDir, normalizeSubagentMarkdownInDir);
 }
 
 const MANIFEST_SECTION_KEYS = new Set(['skills', 'agents', 'mcp', 'hooks', 'rules', 'plugins', 'env']);
@@ -1359,6 +1438,59 @@ function normalizeCountsJson(counts) {
   return Object.keys(ordered).length > 0 ? JSON.stringify(ordered) : 'null';
 }
 
+function checkLoadoutSubagentTiers(entryId, loadoutDir, yamlText, errors) {
+  let inAgents = false;
+  let currentAgent = '';
+  for (const line of normalizeLf(yamlText).split('\n')) {
+    const topMatch = line.match(/^([A-Za-z0-9_-]+):(?:\s*(.*))?$/);
+    if (topMatch) {
+      inAgents = topMatch[1] === 'agents' && (topMatch[2] || '').trim() === '';
+      currentAgent = '';
+      continue;
+    }
+    if (!inAgents) continue;
+    const agentMatch = line.match(/^\s{2}([^#\s][^:]*):/);
+    if (agentMatch) {
+      currentAgent = unquoteYamlScalar(agentMatch[1]);
+      continue;
+    }
+    const modelMatch = line.match(/^\s{4}model:\s*(.+)$/);
+    if (modelMatch && currentAgent) {
+      const val = unquoteYamlScalar(modelMatch[1]).trim().toLowerCase();
+      if (!VALID_SUBAGENT_TIERS.has(val)) {
+        errors.push(
+          `[${entryId}] loadout.yaml agents.${currentAgent}.model must be inherit|fast|balanced|deep (got: ${val})`,
+        );
+      }
+    }
+  }
+
+  walkSubagentMarkdownDirs(loadoutDir, (dirPath) => {
+    const visitDir = (cur) => {
+      for (const entry of fs.readdirSync(cur, { withFileTypes: true })) {
+        if (shouldSkipEntry(entry.name) || entry.isSymbolicLink()) continue;
+        const full = path.join(cur, entry.name);
+        if (entry.isDirectory()) {
+          visitDir(full);
+        } else if (entry.isFile() && entry.name.endsWith('.md') && !/^readme\.md$/i.test(entry.name)) {
+          const { front } = splitFrontmatter(fs.readFileSync(full, 'utf8'));
+          if (!front) continue;
+          const m = front.match(/^model:\s*(.+)$/m);
+          if (!m) continue;
+          const val = unquoteYamlScalar(m[1]).trim().toLowerCase();
+          if (!VALID_SUBAGENT_TIERS.has(val)) {
+            const rel = path.relative(loadoutDir, full);
+            errors.push(
+              `[${entryId}] ${rel} frontmatter model must be inherit|fast|balanced|deep (got: ${val})`,
+            );
+          }
+        }
+      }
+    };
+    visitDir(dirPath);
+  });
+}
+
 function verifyRepository() {
   const marketplace = JSON.parse(fs.readFileSync(MARKETPLACE_PATH, 'utf8'));
   const errors = [];
@@ -1416,6 +1548,7 @@ function verifyRepository() {
         `[${entry.id}] marketplace.json counts mismatch: have ${normalizeCountsJson(entry.counts)}, expected ${normalizeCountsJson(expectedCounts)} (run: node tools/sync-upstreams.mjs --counts)`,
       );
     }
+    checkLoadoutSubagentTiers(entry.id, loadoutDir, yamlText, errors);
   }
 
   for (const entry of marketplace.decks || []) {
