@@ -946,6 +946,35 @@ function syncPluginsSpec(loadoutDir, spec, repoDirs) {
   }
 }
 
+function syncInstructionsSpec(loadoutDir, spec, repoDirs) {
+  if (!spec.instructions?.source) return;
+  const repoKey = spec.instructions.repo || spec.repo;
+  const repoDir = repoKey ? repoDirs.get(repoKey) : null;
+  if (!repoDir) return;
+  const srcInstructions = path.join(repoDir, spec.instructions.source);
+  if (fs.existsSync(srcInstructions)) {
+    let body = normalizeLf(fs.readFileSync(srcInstructions, 'utf8')).trimStart();
+    if (spec.instructions.header && !body.startsWith(spec.instructions.header.trim())) {
+      if (spec.instructions.header.startsWith('# ') && body.startsWith('# ')) {
+        body = body.replace(/^# [^\n]+\n+/, '');
+      }
+      body = `${spec.instructions.header}${body}`;
+    }
+    fs.writeFileSync(path.join(loadoutDir, 'AGENTS.md'), body.endsWith('\n') ? body : `${body}\n`);
+  }
+}
+
+function syncLicenseSpec(loadoutDir, spec, repoDirs) {
+  if (!spec.license?.source) return;
+  const repoKey = spec.license.repo || spec.repo;
+  const repoDir = repoKey ? repoDirs.get(repoKey) : null;
+  if (!repoDir) return;
+  const srcLicense = path.join(repoDir, spec.license.source);
+  if (fs.existsSync(srcLicense)) {
+    copyTreeClean(srcLicense, path.join(loadoutDir, 'LICENSE'));
+  }
+}
+
 function syncCuratedLoadout(spec, repoDirs) {
   const loadoutDir = path.join(ROOT, 'loadouts', spec.id);
   const skillsRoot = path.join(loadoutDir, 'skills');
@@ -1002,6 +1031,8 @@ function syncCuratedLoadout(spec, repoDirs) {
   syncRulesSpec(loadoutDir, spec, repoDirs);
   syncMcpSpec(loadoutDir, spec, repoDirs);
   syncHooksSpec(loadoutDir, spec);
+  syncInstructionsSpec(loadoutDir, spec, repoDirs);
+  syncLicenseSpec(loadoutDir, spec, repoDirs);
   walkSubagentMarkdownDirs(loadoutDir, normalizeSubagentMarkdownInDir);
 }
 
@@ -1120,20 +1151,9 @@ function syncSuiteLoadout(spec, repoDirs) {
   // 6. Hooks
   syncHooksSpec(loadoutDir, spec);
 
-  // 7. AGENTS.md instructions
-  if (spec.instructions?.source && repoDir) {
-    const srcInstructions = path.join(repoDir, spec.instructions.source);
-    if (fs.existsSync(srcInstructions)) {
-      let body = normalizeLf(fs.readFileSync(srcInstructions, 'utf8')).trimStart();
-      if (spec.instructions.header && !body.startsWith(spec.instructions.header.trim())) {
-        if (spec.instructions.header.startsWith('# ') && body.startsWith('# ')) {
-          body = body.replace(/^# [^\n]+\n+/, '');
-        }
-        body = `${spec.instructions.header}${body}`;
-      }
-      fs.writeFileSync(path.join(loadoutDir, 'AGENTS.md'), body.endsWith('\n') ? body : `${body}\n`);
-    }
-  }
+  // 7. AGENTS.md instructions & License
+  syncInstructionsSpec(loadoutDir, spec, repoDirs);
+  syncLicenseSpec(loadoutDir, spec, repoDirs);
   walkSubagentMarkdownDirs(loadoutDir, normalizeSubagentMarkdownInDir);
 }
 
@@ -1693,7 +1713,16 @@ async function main() {
         if (m.repo && m.source) ensureRepo(m.repo).sparsePaths.add(m.source);
       }
       for (const r of spec.rules?.items || []) {
-        if (r.repo && r.source) ensureRepo(r.repo).sparsePaths.add(r.source);
+        const repoName = r.repo || spec.repo;
+        if (repoName && r.source) ensureRepo(repoName).sparsePaths.add(r.source);
+      }
+      if (spec.instructions?.source) {
+        const repoName = spec.instructions.repo || spec.repo;
+        if (repoName) ensureRepo(repoName).sparsePaths.add(spec.instructions.source);
+      }
+      if (spec.license?.source) {
+        const repoName = spec.license.repo || spec.repo;
+        if (repoName) ensureRepo(repoName).sparsePaths.add(spec.license.source);
       }
     } else if (spec.mode === 'suite') {
       const info = ensureRepo(spec.repo, spec.ref);

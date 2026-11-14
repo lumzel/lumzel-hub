@@ -327,6 +327,32 @@
       },
       "source": "./loadouts/archify",
       "version": "1.0.0"
+    },
+    {
+      "id": "lemo-opuscar",
+      "name": "Lemo-Opuscar",
+      "icon": "🎬",
+      "description": "A toolbox of film styles made entirely in code: 99 ready-to-use styles or your own, procedural visual rendering, Kokoro TTS narration, sound design, and ffmpeg mixing.",
+      "i18n": {
+        "en": {
+          "name": "Lemo-Opuscar",
+          "description": "A toolbox of film styles made entirely in code: 99 ready-to-use styles or your own, procedural visual rendering, Kokoro TTS narration, sound design, and ffmpeg mixing."
+        },
+        "zh-CN": {
+          "name": "Lemo-Opuscar 代码短片",
+          "description": "一套用代码做片的风格工具箱：99 种现成影片风格与自定义风格，纯代码动画渲染、Kokoro 语音解说、程序化音效与音乐、ffmpeg 混音成片。"
+        }
+      },
+      "category": "Design",
+      "author": "Lemomo (LemoLab)",
+      "homepage": "https://github.com/lemomo-ai/lemo-opuscar",
+      "counts": {
+        "skills": 1,
+        "rules": 3,
+        "env": 3
+      },
+      "source": "./loadouts/lemo-opuscar",
+      "version": "1.0.0"
     }
   ],
   "decks": [

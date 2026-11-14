@@ -24,6 +24,7 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 | `app-store-connect-cli` | `Release` | 🚀 App Store Connect CLI (asc) | [`rorkai/app-store-connect-cli-skills`](https://github.com/rorkai/app-store-connect-cli-skills) | 16 `asc-*` Skills for Builds, Signing, Notarization, TestFlight, Metadata, Screenshots, Submission Health & Crash Triage |
 | `visual-docs` | `Documentation` | 📐 Visual Docs | Curated Multi-Repo (`upstreams.json`) | 7 Diagram, HTML Doc, Wireframe, Prototype, Plan & PDF/PPT Skills |
 | `archify` | `Documentation` | 🗺️ Archify Diagrams | [`tt-a1i/archify`](https://github.com/tt-a1i/archify) | JSON-IR Architecture, Workflow, Sequence, Dataflow, ERD & Timeline Diagrams |
+| `lemo-opuscar` | `Design` | 🎬 Lemo-Opuscar | [`lemomo-ai/lemo-opuscar`](https://github.com/lemomo-ai/lemo-opuscar) | Code-rendered film directing skill (99 styles + custom), `opuscar-*` directing/technique/style rules, Kokoro TTS & audio synthesis env vars |
 
 ## Included Decks
 

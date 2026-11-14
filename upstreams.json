@@ -757,6 +757,51 @@
           "path": "archify"
         }
       ]
+    },
+    {
+      "id": "lemo-opuscar",
+      "mode": "curated",
+      "repo": "lemomo-ai/lemo-opuscar",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "lemo-opuscar",
+          "repo": "lemomo-ai/lemo-opuscar",
+          "path": "plugin/skills/lemo-opuscar"
+        }
+      ],
+      "rules": {
+        "mode": "files",
+        "items": [
+          {
+            "repo": "lemomo-ai/lemo-opuscar",
+            "source": "DIRECTOR.md",
+            "target": "opuscar-directing",
+            "description": "Lemo-Opuscar directing method: brief defaults, reference benchmarks, narrative arcs, camera grammar, audio mix, and delivery standards."
+          },
+          {
+            "repo": "lemomo-ai/lemo-opuscar",
+            "source": "TECHNIQUE.md",
+            "target": "opuscar-technique",
+            "description": "Lemo-Opuscar technical pipeline: frame-by-frame HTML/Canvas rendering, Kokoro TTS voice tier, procedural audio synthesis, sound design, and ffmpeg muxing."
+          },
+          {
+            "repo": "lemomo-ai/lemo-opuscar",
+            "source": "MY-STYLES.md",
+            "target": "opuscar-custom-styles",
+            "description": "Lemo-Opuscar custom style creation and adaptation: branching library styles or starting from a blank page with styleframes and demos."
+          }
+        ]
+      },
+      "instructions": {
+        "repo": "lemomo-ai/lemo-opuscar",
+        "source": "AGENTS.md"
+      },
+      "env": {
+        "LEMO_OPUSCAR_HOME": "",
+        "LEMO_FETCH": "1",
+        "HF_ENDPOINT": ""
+      }
     }
   ],
   "repos": {
@@ -847,6 +892,10 @@
     "tt-a1i/archify": {
       "branch": "main",
       "sha": "e37848822238e3a61b12739185cdadd49843a620"
+    },
+    "lemomo-ai/lemo-opuscar": {
+      "branch": "main",
+      "sha": "3a7132b996be0241c1ea0ab180d519f06e6f10b6"
     }
   }
 }
