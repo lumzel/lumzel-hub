@@ -12,7 +12,7 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 
 | ID | Category | Name | Upstream | Bundled Capabilities |
 | :--- | :--- | :--- | :--- | :--- |
-| `daily-driver` | `Workflow` | 🧠 Daily Driver | Curated Multi-Repo (`upstreams.json`) | 10 Curated Skills + Hub-maintained `maintain-lessons`, 2 Graphify CLI Hooks, `graphify-cli-workflow` Rule, no MCP servers |
+| `daily-driver` | `Workflow` | 🧠 Daily Driver | Curated Multi-Repo (`upstreams.json`) | 11 Curated Skills + Hub-maintained `maintain-lessons`, 2 Graphify CLI Hooks, `graphify-cli-workflow` Rule, no MCP servers |
 | `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 314 Canonical Skills, 71 Subagents (with `model`/`tools` params), 121 Common & Multi-Language Rules, 8 Lifecycle Quality Hooks, 35 MCP Configs, 22 Runtime & MCP Env Vars |
 | `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 39 Upstream Skills (with companion testing/architecture docs), 3 Review/Explorer Subagents, 2 Rules (`mp-engineering-philosophy`, `mp-domain-glossary`), `mp-git-guardrails` Hook |
 | `superpowers` | `Workflow` | 🦸 Obra Superpowers | [`obra/superpowers`](https://github.com/obra/superpowers) | 15 Upstream Skills (with prompts, references & templates), 6 Implementation/Review/Diagnostic Subagents, `superpowers-session-start` Hook, Iron Laws Rule |

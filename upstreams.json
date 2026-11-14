@@ -48,6 +48,11 @@
           "path": "skills/engineering/code-review"
         },
         {
+          "name": "improve-codebase-architecture",
+          "repo": "mattpocock/skills",
+          "path": "skills/engineering/improve-codebase-architecture"
+        },
+        {
           "name": "graphify",
           "repo": "safishamsi/graphify",
           "skillFile": "graphify/skill.md",
