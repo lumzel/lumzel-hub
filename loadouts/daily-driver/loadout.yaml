@@ -2,14 +2,14 @@ id: daily-driver
 name: Daily Driver
 icon: 🧠
 category: Workflow
-description: 'A daily engineering companion with visual explainers, code review, public-seam tests, Graphify CLI knowledge graphs, project lessons, and natural writing.'
+description: 'A daily engineering companion with visual explainers, code review, Graphify CLI knowledge graphs, project lessons, and natural writing.'
 i18n:
   en:
     name: Daily Driver
-    description: 'A daily engineering companion with visual explainers, code review, public-seam tests, Graphify CLI knowledge graphs, project lessons, and natural writing.'
+    description: 'A daily engineering companion with visual explainers, code review, Graphify CLI knowledge graphs, project lessons, and natural writing.'
   zh-CN:
     name: 日常主力研发工作流
-    description: 日常开发与工程工作流：结合可视化解释、代码审查、边界测试、Graphify CLI 项目知识图谱与项目经验，适合代码理解、设计规划、实现和维护。
+    description: 日常开发与工程工作流：结合可视化解释、代码审查、Graphify CLI 项目知识图谱与项目经验，适合代码理解、设计规划、实现和维护。
 author: Lumzel
 skills:
 - answer-me-with-html
@@ -20,7 +20,6 @@ skills:
 - humanizer-zh
 - eli5
 - code-review
-- tdd
 - graphify
 - skill-creator
 - maintain-lessons

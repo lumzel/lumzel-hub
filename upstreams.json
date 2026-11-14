@@ -48,11 +48,6 @@
           "path": "skills/engineering/code-review"
         },
         {
-          "name": "tdd",
-          "repo": "mattpocock/skills",
-          "path": "skills/engineering/tdd"
-        },
-        {
           "name": "graphify",
           "repo": "safishamsi/graphify",
           "skillFile": "graphify/skill.md",

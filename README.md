@@ -12,7 +12,7 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 
 | ID | Category | Name | Upstream | Bundled Capabilities |
 | :--- | :--- | :--- | :--- | :--- |
-| `daily-driver` | `Workflow` | 🧠 Daily Driver | Curated Multi-Repo (`upstreams.json`) | 11 Curated Skills + Hub-maintained `maintain-lessons`, 5 Review/Eval Subagents, 2 Graphify CLI Hooks, `graphify-cli-workflow` Rule, no MCP servers |
+| `daily-driver` | `Workflow` | 🧠 Daily Driver | Curated Multi-Repo (`upstreams.json`) | 10 Curated Skills + Hub-maintained `maintain-lessons`, 5 Review/Eval Subagents, 2 Graphify CLI Hooks, `graphify-cli-workflow` Rule, no MCP servers |
 | `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 314 Canonical Skills, 71 Subagents (with `model`/`tools` params), 121 Common & Multi-Language Rules, 8 Lifecycle Quality Hooks, 35 MCP Configs, 22 Runtime & MCP Env Vars |
 | `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 39 Upstream Skills (with companion testing/architecture docs), 3 Review/Explorer Subagents, 2 Rules (`mp-engineering-philosophy`, `mp-domain-glossary`), `mp-git-guardrails` Hook |
 | `superpowers` | `Workflow` | 🦸 Obra Superpowers | [`obra/superpowers`](https://github.com/obra/superpowers) | 15 Upstream Skills (with prompts, references & templates), 6 Implementation/Review/Diagnostic Subagents, `superpowers-session-start` Hook, Iron Laws Rule |
@@ -52,14 +52,14 @@ Every repository catalog (`marketplace.json`), Loadout (`loadout.yaml`), and Dec
 ```yaml
 id: daily-driver
 name: Daily Driver
-description: "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing."
+description: "A daily engineering companion with visual explainers, code review, Graphify CLI knowledge graphs, project lessons, and natural writing."
 i18n:
   en:
     name: Daily Driver
-    description: "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing."
+    description: "A daily engineering companion with visual explainers, code review, Graphify CLI knowledge graphs, project lessons, and natural writing."
   es:
     name: "Flujo de Desarrollo Diario"
-    description: "Un companero de ingenieria ligero para el dia a dia: explicaciones visuales, diagramas, planificacion iterativa y TDD de costuras publicas."
+    description: "Un companero de ingenieria para el dia a dia: explicaciones visuales, revision de codigo, grafos de conocimiento con Graphify CLI, lecciones del proyecto y redaccion natural."
 ```
 
 ### `deck.json` Example
