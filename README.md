@@ -12,7 +12,7 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 
 | ID | Category | Name | Upstream | Bundled Capabilities |
 | :--- | :--- | :--- | :--- | :--- |
-| `daily-driver` | `Workflow` | 🧠 Daily Driver | Curated Multi-Repo (`upstreams.json`) | 11 Curated Skills, 5 Review/Eval Subagents, 4 MCP Configs (`graphify`, `plan`, `agent-native-dispatch`, `github-agentic-workflows`), 3 Graphify Hooks, `graphify-memory` Rule, `GRAPHIFY_HOOK_STRICT` Env |
+| `daily-driver` | `Workflow` | 🧠 Daily Driver | Curated Multi-Repo (`upstreams.json`) | 11 Curated Skills + Hub-maintained `maintain-lessons`, 5 Review/Eval Subagents, 2 Graphify CLI Hooks, `graphify-cli-workflow` Rule, no MCP servers |
 | `everything-claude-code` | `Engineering` | ⚡ Everything Claude Code (ECC) | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | 314 Canonical Skills, 71 Subagents (with `model`/`tools` params), 121 Common & Multi-Language Rules, 8 Lifecycle Quality Hooks, 35 MCP Configs, 22 Runtime & MCP Env Vars |
 | `matt-pocock` | `Workflow` | 🎯 Matt Pocock Workflow | [`mattpocock/skills`](https://github.com/mattpocock/skills) | 39 Upstream Skills (with companion testing/architecture docs), 3 Review/Explorer Subagents, 2 Rules (`mp-engineering-philosophy`, `mp-domain-glossary`), `mp-git-guardrails` Hook |
 | `superpowers` | `Workflow` | 🦸 Obra Superpowers | [`obra/superpowers`](https://github.com/obra/superpowers) | 15 Upstream Skills (with prompts, references & templates), 6 Implementation/Review/Diagnostic Subagents, `superpowers-session-start` Hook, Iron Laws Rule |
@@ -20,6 +20,10 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 | `gstack` | `Workflow` | 🚀 Garry Tan gstack | [`garrytan/gstack`](https://github.com/garrytan/gstack) | 66 Full-Lifecycle, Browser & OpenClaw Skills, 3 Specialist Subagents, 3 `careful`/`freeze`/SessionStart Hooks, `gbrain` MCP Config, Boil-the-Lake Rule, 2 Env Flags |
 | `spec-kit` | `Architecture` | 📐 GitHub Spec-Kit (SDD) | [`github/spec-kit`](https://github.com/github/spec-kit) | 9 Core `speckit-*` SDD Workflow Skills (with bundled templates), 2 Subagents, `specify` MCP Config, Principles Rule, 3 `SPECIFY_*` Env Vars |
 | `agent-native` | `Workflow` | 🧩 Builder.io Agent-Native | [`BuilderIO/agent-native`](https://github.com/BuilderIO/agent-native) | 10 Public Skills for workspace apps, visual plans, design editing, content, assets and turning workflows into apps; Dispatch, Design and Plans MCP Configs |
+| `emil-kowalski` | `Design` | 🎨 Emil Kowalski Design | [`emilkowalski/skills`](https://github.com/emilkowalski/skills) | 12 Motion, Interaction & Apple-Platform Skills for interface judgment, animation review, performance, gestures and mobile-native details |
+| `app-store-connect-cli` | `Release` | 🚀 App Store Connect CLI (asc) | [`rorkai/app-store-connect-cli-skills`](https://github.com/rorkai/app-store-connect-cli-skills) | 16 `asc-*` Skills for Builds, Signing, Notarization, TestFlight, Metadata, Screenshots, Submission Health & Crash Triage |
+| `visual-docs` | `Documentation` | 📐 Visual Docs | Curated Multi-Repo (`upstreams.json`) | 7 Diagram, HTML Doc, Wireframe, Prototype, Plan & PDF/PPT Skills |
+| `archify` | `Documentation` | 🗺️ Archify Diagrams | [`tt-a1i/archify`](https://github.com/tt-a1i/archify) | JSON-IR Architecture, Workflow, Sequence, Dataflow, ERD & Timeline Diagrams |
 
 ## Included Decks
 
@@ -160,6 +164,7 @@ A Deck that needs a project to show anything ships a sample one. `spec-workbench
 Loadouts stay self-contained in `loadouts/<id>/` (enabling single-folder sparse checkout and instant in-app Market Previews) while tracking upstream GitHub repositories through `upstreams.json` and `tools/sync-upstreams.mjs`:
 
 - **`curated` mode** (e.g. `daily-driver`): Composes individual Skills from multiple upstream repositories (`repo` + `path` or `skillFile` + `extraDirs`) alongside Hub-maintained `AGENTS.md`, `rules/`, and portable `mcp/` configs.
+  - `daily-driver` uses Graphify through its CLI only. Its CLI Hooks and Hub-maintained rule are declared in `upstreams.json`; `preserveLocalSkills` retains the Hub-maintained `maintain-lessons` skill during upstream sync. Each project's `lesson.md` stays in that project and is not bundled into the Loadout.
   - `agent-native` bundles the upstream's public `skills/` collection, preserving companion references and tracking its plugin MCP configs. `skills/visual-plans` is installed as `visual-plan` to match the skill's declared name. It includes the upstream MIT license. Service sign-in is required where prompted; importing the Loadout does not install the Agent-Native framework or run an app.
 - **`suite` mode** (e.g. `everything-claude-code`, `matt-pocock`, `superpowers`, `spec-kit`, `compound-engineering`, `gstack`): Mirrors complete upstream suites and adapts skills, subagents, rules, and MCP configs into Lumzel's standard Loadout layout while preserving Hub-specific hooks/rules listed in `preserve`.
 

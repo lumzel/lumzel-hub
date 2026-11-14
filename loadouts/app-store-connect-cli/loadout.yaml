@@ -1,0 +1,37 @@
+id: app-store-connect-cli
+name: App Store Connect CLI (asc)
+icon: 🚀
+category: Release
+description: 'Ship Mac and iOS apps with the asc CLI: builds, signing, notarization, TestFlight, App Store metadata and localization, screenshots, submission health, crash triage, and analytics.'
+i18n:
+  en:
+    name: App Store Connect CLI (asc)
+    description: 'Ship Mac and iOS apps with the asc CLI: builds, signing, notarization, TestFlight, App Store metadata and localization, screenshots, submission health, crash triage, and analytics.'
+  zh-CN:
+    name: App Store Connect CLI 发布套件
+    description: '用 asc CLI 发布 Mac 与 iOS 应用：构建、签名、公证、TestFlight、App Store 元数据与本地化、截图、提审状态、崩溃分诊与数据分析。'
+author: Rork (rorkai)
+homepage: https://github.com/rorkai/app-store-connect-cli-skills
+skills:
+- asc-cli-usage
+- asc-id-resolver
+- asc-xcode-build
+- asc-signing-setup
+- asc-notarization
+- asc-release-flow
+- asc-submission-health
+- asc-build-lifecycle
+- asc-testflight-orchestration
+- asc-metadata-sync
+- asc-localize-metadata
+- asc-whats-new-writer
+- asc-shots-pipeline
+- asc-screenshot-resize
+- asc-crash-triage
+- asc-analytics-reports
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

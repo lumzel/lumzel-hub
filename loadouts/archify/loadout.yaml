@@ -1,0 +1,22 @@
+id: archify
+name: Archify Diagrams
+icon: 🗺️
+category: Documentation
+description: 'Author architecture, workflow, sequence, dataflow, lifecycle, ERD, class, tree, timeline, and waterfall diagrams as JSON, then render them to HTML with archify.'
+i18n:
+  en:
+    name: Archify Diagrams
+    description: 'Author architecture, workflow, sequence, dataflow, lifecycle, ERD, class, tree, timeline, and waterfall diagrams as JSON, then render them to HTML with archify.'
+  zh-CN:
+    name: Archify 架构图
+    description: '用 JSON 描述架构、工作流、时序、数据流、生命周期、ERD、类图、树形、时间线与瀑布图，再由 archify 渲染为 HTML。'
+author: tt-a1i
+homepage: https://github.com/tt-a1i/archify
+skills:
+- archify
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

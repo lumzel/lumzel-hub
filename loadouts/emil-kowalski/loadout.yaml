@@ -1,0 +1,33 @@
+id: emil-kowalski
+name: Emil Kowalski Design
+icon: 🎨
+category: Design
+description: 'Interface design and motion for Mac and iOS apps: motion judgment, animation review and performance, Apple interaction patterns, gestures, mobile-native details, adversarial UI checks, and a DESIGN.md feedback loop.'
+i18n:
+  en:
+    name: Emil Kowalski Design
+    description: 'Interface design and motion for Mac and iOS apps: motion judgment, animation review and performance, Apple interaction patterns, gestures, mobile-native details, adversarial UI checks, and a DESIGN.md feedback loop.'
+  zh-CN:
+    name: Emil Kowalski 设计工程
+    description: '面向 Mac 与 iOS 的界面设计与动效：动效判断、动画审查与性能、Apple 交互规范、手势、移动端原生细节、极端数据 UI 测试，以及写回 DESIGN.md 的反馈闭环。'
+author: Emil Kowalski
+homepage: https://github.com/emilkowalski/skills
+skills:
+- emil-design-eng
+- animate
+- choreograph
+- review-animations
+- improve-animations
+- animation-performance
+- apple-design
+- gestures
+- mobile-native
+- break-ui
+- learn-taste
+- pick-ui-library
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

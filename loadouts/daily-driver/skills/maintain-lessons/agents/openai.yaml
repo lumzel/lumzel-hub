@@ -1,0 +1,6 @@
+interface:
+  display_name: "Maintain Lessons"
+  short_description: "Reuse project lessons and record evidence from mistakes"
+  default_prompt: "Use $maintain-lessons to read relevant project lessons and record this mistake with evidence and a concrete prevention check."
+policy:
+  allow_implicit_invocation: true

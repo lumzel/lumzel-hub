@@ -5,6 +5,7 @@
       "id": "daily-driver",
       "mode": "curated",
       "keepSkillOrder": true,
+      "preserveLocalSkills": true,
       "skills": [
         {
           "name": "answer-me-with-html",
@@ -98,71 +99,31 @@
       },
       "mcp": {
         "mode": "multi",
-        "sources": [
-          {
-            "repo": "builderio/skills",
-            "source": ".mcp.json"
-          },
-          {
-            "repo": "github/awesome-copilot",
-            "source": "mcp.json"
-          }
-        ],
-        "inline": {
-          "graphify": {
-            "command": "sh",
-            "args": [
-              "-c",
-              "for cmd in graphify-mcp \"$HOME/.local/bin/graphify-mcp\" \"$HOME/Library/Python/3.12/bin/graphify-mcp\" \"$HOME/Library/Python/3.11/bin/graphify-mcp\" /opt/homebrew/bin/graphify-mcp; do if command -v \"$cmd\" >/dev/null 2>&1; then exec \"$cmd\" --graph graphify-out/graph.json; fi; done; for py in python3 /opt/homebrew/bin/python3 /usr/local/bin/python3; do if command -v \"$py\" >/dev/null 2>&1 && \"$py\" -c 'import graphify.serve' >/dev/null 2>&1; then exec \"$py\" -m graphify.serve graphify-out/graph.json; fi; done; echo 'graphify is not installed. Run: pipx install graphifyy or uv tool install graphifyy' >&2; exit 1"
-            ]
-          },
-          "plan": {
-            "type": "http",
-            "url": "https://plan.agent-native.com/mcp"
-          }
-        },
-        "defaultEnabled": [
-          "graphify"
-        ]
+        "sources": [],
+        "defaultEnabled": []
       },
       "hooks": [
         {
-          "name": "graphify-pre-search",
-          "event": "PreToolUse",
-          "matcher": "Bash|Grep",
-          "command": "sh -c 'if [ -f graphify-out/graph.json ] && command -v graphify >/dev/null 2>&1; then exec graphify hook-guard search; fi'",
-          "timeout": 5
-        },
-        {
-          "name": "graphify-pre-read",
-          "event": "PreToolUse",
-          "matcher": "Read|Glob",
-          "command": "sh -c 'if [ -f graphify-out/graph.json ] && command -v graphify >/dev/null 2>&1; then exec graphify hook-guard read; fi'",
-          "timeout": 5
-        },
-        {
-          "name": "graphify-post-compact",
+          "name": "graphify-cli-check",
           "event": "SessionStart",
-          "matcher": "compact",
-          "command": "sh -c 'if [ -f graphify-out/graph.json ] && command -v graphify >/dev/null 2>&1; then exec graphify hook-guard compact; fi'",
-          "timeout": 5
+          "matcher": "",
+          "command": "if command -v graphify >/dev/null 2>&1; then graphify --version || true; else printf '%s\\n' 'Graphify CLI unavailable; use targeted source inspection.' >&2; fi",
+          "timeout": 10
+        },
+        {
+          "name": "graphify-cli-sync-after-edit",
+          "event": "PostToolUse",
+          "matcher": "^(Edit|Write|MultiEdit|apply_patch|fs_write|str_replace|fs_append)$",
+          "command": "if [ -f graphify-out/graph.json ] && command -v graphify >/dev/null 2>&1; then if ! graphify update .; then printf '%s\\n' 'Graphify refresh failed; the existing graph may be stale. Continue the task.' >&2; fi; fi",
+          "timeout": 120
         }
       ],
       "rules": {
         "mode": "files",
         "preserveExisting": true,
-        "items": [
-          {
-            "repo": "safishamsi/graphify",
-            "source": "graphify/always_on/agents-md.md",
-            "target": "graphify-memory",
-            "description": "Persistent codebase architecture and module-relationship memory powered by Graphify (graphify-out/)."
-          }
-        ]
+        "items": []
       },
-      "env": {
-        "GRAPHIFY_HOOK_STRICT": "0"
-      }
+      "env": {}
     },
     {
       "id": "everything-claude-code",
@@ -588,6 +549,214 @@
           }
         ]
       }
+    },
+    {
+      "id": "emil-kowalski",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "emil-design-eng",
+          "repo": "emilkowalski/skills",
+          "path": "skills/emil-design-eng"
+        },
+        {
+          "name": "animate",
+          "repo": "emilkowalski/skills",
+          "path": "skills/animate"
+        },
+        {
+          "name": "choreograph",
+          "repo": "emilkowalski/skills",
+          "path": "skills/choreograph"
+        },
+        {
+          "name": "review-animations",
+          "repo": "emilkowalski/skills",
+          "path": "skills/review-animations"
+        },
+        {
+          "name": "improve-animations",
+          "repo": "emilkowalski/skills",
+          "path": "skills/improve-animations"
+        },
+        {
+          "name": "animation-performance",
+          "repo": "emilkowalski/skills",
+          "path": "skills/animation-performance"
+        },
+        {
+          "name": "apple-design",
+          "repo": "emilkowalski/skills",
+          "path": "skills/apple-design"
+        },
+        {
+          "name": "gestures",
+          "repo": "emilkowalski/skills",
+          "path": "skills/gestures"
+        },
+        {
+          "name": "mobile-native",
+          "repo": "emilkowalski/skills",
+          "path": "skills/mobile-native"
+        },
+        {
+          "name": "break-ui",
+          "repo": "emilkowalski/skills",
+          "path": "skills/break-ui"
+        },
+        {
+          "name": "learn-taste",
+          "repo": "emilkowalski/skills",
+          "path": "skills/learn-taste"
+        },
+        {
+          "name": "pick-ui-library",
+          "repo": "emilkowalski/skills",
+          "path": "skills/pick-ui-library"
+        }
+      ]
+    },
+    {
+      "id": "app-store-connect-cli",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "asc-cli-usage",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-cli-usage"
+        },
+        {
+          "name": "asc-id-resolver",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-id-resolver"
+        },
+        {
+          "name": "asc-xcode-build",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-xcode-build"
+        },
+        {
+          "name": "asc-signing-setup",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-signing-setup"
+        },
+        {
+          "name": "asc-notarization",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-notarization"
+        },
+        {
+          "name": "asc-release-flow",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-release-flow"
+        },
+        {
+          "name": "asc-submission-health",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-submission-health"
+        },
+        {
+          "name": "asc-build-lifecycle",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-build-lifecycle"
+        },
+        {
+          "name": "asc-testflight-orchestration",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-testflight-orchestration"
+        },
+        {
+          "name": "asc-metadata-sync",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-metadata-sync"
+        },
+        {
+          "name": "asc-localize-metadata",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-localize-metadata"
+        },
+        {
+          "name": "asc-whats-new-writer",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-whats-new-writer"
+        },
+        {
+          "name": "asc-shots-pipeline",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-shots-pipeline"
+        },
+        {
+          "name": "asc-screenshot-resize",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-screenshot-resize"
+        },
+        {
+          "name": "asc-crash-triage",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-crash-triage"
+        },
+        {
+          "name": "asc-analytics-reports",
+          "repo": "rorkai/app-store-connect-cli-skills",
+          "path": "skills/asc-analytics-reports"
+        }
+      ]
+    },
+    {
+      "id": "visual-docs",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "diagram-design",
+          "repo": "cathrynlavery/diagram-design",
+          "path": "skills/diagram-design"
+        },
+        {
+          "name": "html-diagram",
+          "repo": "plannotator/effective-html",
+          "path": "skills/html-diagram"
+        },
+        {
+          "name": "html-wireframe",
+          "repo": "plannotator/effective-html",
+          "path": "skills/html-wireframe"
+        },
+        {
+          "name": "html-prototype",
+          "repo": "plannotator/effective-html",
+          "path": "skills/html-prototype"
+        },
+        {
+          "name": "html-plan",
+          "repo": "plannotator/effective-html",
+          "path": "skills/html-plan"
+        },
+        {
+          "name": "design-artifact",
+          "repo": "plannotator/effective-html",
+          "path": "skills/design-artifact"
+        },
+        {
+          "name": "kami",
+          "repo": "tw93/Kami",
+          "path": "skills/kami"
+        }
+      ]
+    },
+    {
+      "id": "archify",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "archify",
+          "repo": "tt-a1i/archify",
+          "path": "archify"
+        }
+      ]
     }
   ],
   "repos": {
@@ -654,6 +823,30 @@
     "BuilderIO/agent-native": {
       "branch": "main",
       "sha": "8656de220a348855f21f4988927ee22efdb8a10c"
+    },
+    "emilkowalski/skills": {
+      "branch": "main",
+      "sha": "0f2e23b32bb1265e84cff8d3e75785fec953fb1b"
+    },
+    "rorkai/app-store-connect-cli-skills": {
+      "branch": "main",
+      "sha": "266d7ad357acd3a1c437668b0e77021bb0ff2f02"
+    },
+    "cathrynlavery/diagram-design": {
+      "branch": "main",
+      "sha": "f6db0decea96de66b901331a0f79a8d4b147ebae"
+    },
+    "plannotator/effective-html": {
+      "branch": "main",
+      "sha": "5ce160a3e76dc1c0f9301f8a1903704ec607636a"
+    },
+    "tw93/Kami": {
+      "branch": "main",
+      "sha": "381db257079980c138700d89b7565afaa792fa6b"
+    },
+    "tt-a1i/archify": {
+      "branch": "main",
+      "sha": "e37848822238e3a61b12739185cdadd49843a620"
     }
   }
 }

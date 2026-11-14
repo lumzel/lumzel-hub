@@ -1,0 +1,28 @@
+id: visual-docs
+name: Visual Docs
+icon: 📐
+category: Documentation
+description: 'Editorial diagrams, self-contained HTML docs, wireframes, clickable prototypes, implementation plans, and print-ready PDF/PPT export for feature and architecture documentation.'
+i18n:
+  en:
+    name: Visual Docs
+    description: 'Editorial diagrams, self-contained HTML docs, wireframes, clickable prototypes, implementation plans, and print-ready PDF/PPT export for feature and architecture documentation.'
+  zh-CN:
+    name: 可视化文档
+    description: '面向功能与架构文档的编辑级图表、自包含 HTML 文档、线框与可点击原型、实现计划，以及可印刷的 PDF/PPT 导出。'
+author: Lumzel
+homepage: https://github.com/lumzel/lumzel-hub
+skills:
+- diagram-design
+- html-diagram
+- html-wireframe
+- html-prototype
+- html-plan
+- design-artifact
+- kami
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

@@ -1,0 +1,6 @@
+{
+  "event": "PostToolUse",
+  "matcher": "^(Edit|Write|MultiEdit|apply_patch|fs_write|str_replace|fs_append)$",
+  "command": "if [ -f graphify-out/graph.json ] && command -v graphify >/dev/null 2>&1; then if ! graphify update .; then printf '%s\\n' 'Graphify refresh failed; the existing graph may be stale. Continue the task.' >&2; fi; fi",
+  "timeout": 120
+}

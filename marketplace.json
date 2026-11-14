@@ -20,26 +20,24 @@
       "id": "daily-driver",
       "name": "Daily Driver",
       "icon": "🧠",
-      "description": "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing.",
+      "description": "A daily engineering companion with visual explainers, code review, public-seam tests, Graphify CLI knowledge graphs, project lessons, and natural writing.",
       "i18n": {
         "en": {
           "name": "Daily Driver",
-          "description": "A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing."
+          "description": "A daily engineering companion with visual explainers, code review, public-seam tests, Graphify CLI knowledge graphs, project lessons, and natural writing."
         },
         "zh-CN": {
           "name": "日常主力研发工作流",
-          "description": "轻量顺手的日常主力研发伴侣：开箱即用的可视化单页与架构图、方案规划、边界 TDD、双轴代码审查、Graphify 图谱持久记忆与去 AI 腔自然表达。"
+          "description": "日常开发与工程工作流：结合可视化解释、代码审查、边界测试、Graphify CLI 项目知识图谱与项目经验，适合代码理解、设计规划、实现和维护。"
         }
       },
       "category": "Workflow",
       "author": "Lumzel",
       "counts": {
-        "skills": 11,
+        "skills": 12,
         "agents": 5,
         "rules": 1,
-        "hooks": 3,
-        "mcp": 4,
-        "env": 1
+        "hooks": 2
       },
       "source": "./loadouts/daily-driver",
       "version": "1.0.0"
@@ -233,6 +231,101 @@
         "mcp": 3
       },
       "source": "./loadouts/agent-native",
+      "version": "1.0.0"
+    },
+    {
+      "id": "emil-kowalski",
+      "name": "Emil Kowalski Design",
+      "icon": "🎨",
+      "description": "Interface design and motion for Mac and iOS apps: motion judgment, animation review and performance, Apple interaction patterns, gestures, mobile-native details, adversarial UI checks, and a DESIGN.md feedback loop.",
+      "i18n": {
+        "en": {
+          "name": "Emil Kowalski Design",
+          "description": "Interface design and motion for Mac and iOS apps: motion judgment, animation review and performance, Apple interaction patterns, gestures, mobile-native details, adversarial UI checks, and a DESIGN.md feedback loop."
+        },
+        "zh-CN": {
+          "name": "Emil Kowalski 设计工程",
+          "description": "面向 Mac 与 iOS 的界面设计与动效：动效判断、动画审查与性能、Apple 交互规范、手势、移动端原生细节、极端数据 UI 测试，以及写回 DESIGN.md 的反馈闭环。"
+        }
+      },
+      "category": "Design",
+      "author": "Emil Kowalski",
+      "homepage": "https://github.com/emilkowalski/skills",
+      "counts": {
+        "skills": 12
+      },
+      "source": "./loadouts/emil-kowalski",
+      "version": "1.0.0"
+    },
+    {
+      "id": "app-store-connect-cli",
+      "name": "App Store Connect CLI (asc)",
+      "icon": "🚀",
+      "description": "Ship Mac and iOS apps with the asc CLI: builds, signing, notarization, TestFlight, App Store metadata and localization, screenshots, submission health, crash triage, and analytics.",
+      "i18n": {
+        "en": {
+          "name": "App Store Connect CLI (asc)",
+          "description": "Ship Mac and iOS apps with the asc CLI: builds, signing, notarization, TestFlight, App Store metadata and localization, screenshots, submission health, crash triage, and analytics."
+        },
+        "zh-CN": {
+          "name": "App Store Connect CLI 发布套件",
+          "description": "用 asc CLI 发布 Mac 与 iOS 应用：构建、签名、公证、TestFlight、App Store 元数据与本地化、截图、提审状态、崩溃分诊与数据分析。"
+        }
+      },
+      "category": "Release",
+      "author": "Rork (rorkai)",
+      "homepage": "https://github.com/rorkai/app-store-connect-cli-skills",
+      "counts": {
+        "skills": 16
+      },
+      "source": "./loadouts/app-store-connect-cli",
+      "version": "1.0.0"
+    },
+    {
+      "id": "visual-docs",
+      "name": "Visual Docs",
+      "icon": "📐",
+      "description": "Editorial diagrams, self-contained HTML docs, wireframes, clickable prototypes, implementation plans, and print-ready PDF/PPT export for feature and architecture documentation.",
+      "i18n": {
+        "en": {
+          "name": "Visual Docs",
+          "description": "Editorial diagrams, self-contained HTML docs, wireframes, clickable prototypes, implementation plans, and print-ready PDF/PPT export for feature and architecture documentation."
+        },
+        "zh-CN": {
+          "name": "可视化文档",
+          "description": "面向功能与架构文档的编辑级图表、自包含 HTML 文档、线框与可点击原型、实现计划，以及可印刷的 PDF/PPT 导出。"
+        }
+      },
+      "category": "Documentation",
+      "author": "Lumzel",
+      "counts": {
+        "skills": 7
+      },
+      "source": "./loadouts/visual-docs",
+      "version": "1.0.0"
+    },
+    {
+      "id": "archify",
+      "name": "Archify Diagrams",
+      "icon": "🗺️",
+      "description": "Author architecture, workflow, sequence, dataflow, lifecycle, ERD, class, tree, timeline, and waterfall diagrams as JSON, then render them to HTML with archify.",
+      "i18n": {
+        "en": {
+          "name": "Archify Diagrams",
+          "description": "Author architecture, workflow, sequence, dataflow, lifecycle, ERD, class, tree, timeline, and waterfall diagrams as JSON, then render them to HTML with archify."
+        },
+        "zh-CN": {
+          "name": "Archify 架构图",
+          "description": "用 JSON 描述架构、工作流、时序、数据流、生命周期、ERD、类图、树形、时间线与瀑布图，再由 archify 渲染为 HTML。"
+        }
+      },
+      "category": "Documentation",
+      "author": "tt-a1i",
+      "homepage": "https://github.com/tt-a1i/archify",
+      "counts": {
+        "skills": 1
+      },
+      "source": "./loadouts/archify",
       "version": "1.0.0"
     }
   ],

@@ -2,14 +2,14 @@ id: daily-driver
 name: Daily Driver
 icon: 🧠
 category: Workflow
-description: 'A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing.'
+description: 'A daily engineering companion with visual explainers, code review, public-seam tests, Graphify CLI knowledge graphs, project lessons, and natural writing.'
 i18n:
   en:
     name: Daily Driver
-    description: 'A lightweight everyday engineering companion: visual explainers & diagrams, iterative planning, public-seam TDD, dual-axis code review, persistent Graphify memory, and natural human-sounding writing.'
+    description: 'A daily engineering companion with visual explainers, code review, public-seam tests, Graphify CLI knowledge graphs, project lessons, and natural writing.'
   zh-CN:
     name: 日常主力研发工作流
-    description: 轻量顺手的日常主力研发伴侣：开箱即用的可视化单页与架构图、方案规划、边界 TDD、双轴代码审查、Graphify 图谱持久记忆与去 AI 腔自然表达。
+    description: 日常开发与工程工作流：结合可视化解释、代码审查、边界测试、Graphify CLI 项目知识图谱与项目经验，适合代码理解、设计规划、实现和维护。
 author: Lumzel
 skills:
 - answer-me-with-html
@@ -23,20 +23,18 @@ skills:
 - tdd
 - graphify
 - skill-creator
+- maintain-lessons
 agents:
   mp-spec-reviewer: {}
   mp-standards-reviewer: {}
   skill-creator-analyzer: {}
   skill-creator-comparator: {}
   skill-creator-grader: {}
-mcp:
-- graphify
+mcp: []
 hooks:
-- graphify-post-compact
-- graphify-pre-read
-- graphify-pre-search
+- graphify-cli-check
+- graphify-cli-sync-after-edit
 rules:
-- graphify-memory
+- graphify-cli-workflow
 plugins: []
-env:
-  GRAPHIFY_HOOK_STRICT: '0'
+env: {}

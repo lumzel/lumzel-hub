@@ -1,0 +1,6 @@
+{
+  "event": "SessionStart",
+  "matcher": "",
+  "command": "if command -v graphify >/dev/null 2>&1; then graphify --version || true; else printf '%s\\n' 'Graphify CLI unavailable; use targeted source inspection.' >&2; fi",
+  "timeout": 10
+}
