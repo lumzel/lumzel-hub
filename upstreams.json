@@ -605,15 +605,15 @@
     },
     "github/spec-kit": {
       "branch": "main",
-      "sha": "979b0a3c1277283371c9901ad0eed04b64a99997"
+      "sha": "2ee2b1e8005905db05f5717300a469b3068b908f"
     },
     "EveryInc/compound-engineering-plugin": {
       "branch": "main",
-      "sha": "d8f8e03237bded06e77bcb3930b43ef841e7eeda"
+      "sha": "ee46dde75a40e297bd8eac4055a410a771d3ac1d"
     },
     "garrytan/gstack": {
       "branch": "main",
-      "sha": "990315df00f749ae380cc8869c51c8e864dd2f32"
+      "sha": "3b650356f3d711caca98713475dd6085b15c5996"
     },
     "qingyuna/answer-me-with-html": {
       "branch": "main",
@@ -621,7 +621,7 @@
     },
     "builderio/skills": {
       "branch": "main",
-      "sha": "a489f1a85dab83fee4b4425aa08a18ef898b62f6"
+      "sha": "68c4adaf66f99ecd546241d1470906de05811079"
     },
     "humanlayer/skills": {
       "branch": "main",
@@ -629,7 +629,7 @@
     },
     "github/awesome-copilot": {
       "branch": "main",
-      "sha": "30a0d7465b14b05e05949d6588b99f7af0c537b4"
+      "sha": "8ecd5b17f02fe5fbebf35eccd1867265eded811f"
     },
     "blader/humanizer": {
       "branch": "main",
@@ -644,8 +644,8 @@
       "sha": "a766623b062331fdde53467001379b4ddf3acc2f"
     },
     "safishamsi/graphify": {
-      "branch": "main",
-      "sha": "06aa51be050170675912781ad8a2be2b20439d39"
+      "branch": "v8",
+      "sha": "52cb28218eea0c68d80a9f4b2ae102d2fa63e267"
     },
     "anthropics/skills": {
       "branch": "main",
@@ -653,7 +653,7 @@
     },
     "BuilderIO/agent-native": {
       "branch": "main",
-      "sha": "8656de220a348855f21f4988927ee22efdb8a10c"
+      "sha": "9e4347821016c26804ae59d0bcd67d927f078b97"
     }
   }
 }
