@@ -23,12 +23,7 @@ skills:
 - graphify
 - skill-creator
 - maintain-lessons
-agents:
-  mp-spec-reviewer: {}
-  mp-standards-reviewer: {}
-  skill-creator-analyzer: {}
-  skill-creator-comparator: {}
-  skill-creator-grader: {}
+agents: {}
 mcp: []
 hooks:
 - graphify-cli-check

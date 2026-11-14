@@ -61,37 +61,6 @@
           "path": "skills/skill-creator"
         }
       ],
-      "agents": {
-        "mode": "files",
-        "items": [
-          {
-            "name": "skill-creator-analyzer",
-            "repo": "anthropics/skills",
-            "source": "skills/skill-creator/agents/analyzer.md",
-            "description": "Post-hoc skill benchmark analyzer that compares winning vs losing transcripts and extracts actionable skill improvements."
-          },
-          {
-            "name": "skill-creator-comparator",
-            "repo": "anthropics/skills",
-            "source": "skills/skill-creator/agents/comparator.md",
-            "description": "Blind A/B output comparator for evaluating two skill versions without authorship bias."
-          },
-          {
-            "name": "skill-creator-grader",
-            "repo": "anthropics/skills",
-            "source": "skills/skill-creator/agents/grader.md",
-            "description": "Execution transcript and output grader that evaluates expectations with concrete evidence and critiques weak assertions."
-          },
-          {
-            "name": "mp-standards-reviewer",
-            "localCopyFrom": "matt-pocock/agents/mp-standards-reviewer.md"
-          },
-          {
-            "name": "mp-spec-reviewer",
-            "localCopyFrom": "matt-pocock/agents/mp-spec-reviewer.md"
-          }
-        ]
-      },
       "mcp": {
         "mode": "multi",
         "sources": [],

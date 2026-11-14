@@ -35,12 +35,11 @@
       "author": "Lumzel",
       "counts": {
         "skills": 11,
-        "agents": 5,
         "rules": 1,
         "hooks": 2
       },
       "source": "./loadouts/daily-driver",
-      "version": "1.1.0"
+      "version": "2.0.0"
     },
     {
       "id": "everything-claude-code",
