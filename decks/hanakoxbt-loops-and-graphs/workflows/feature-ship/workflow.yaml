@@ -18,7 +18,7 @@ inputs:
   fullCheckCmd:
     type: string
     default: ""
-    description: 全量检查命令；空 = 自动探测
+    description: 全量检查命令；空 = 由拆分器发现或跳过
   setupCmd:
     type: string
     default: auto
@@ -36,12 +36,14 @@ inputs:
     description: 兼容保留字段（当前工作流不自动提交）
   checkPrefixes:
     type: array
-    default: ["pnpm ", "npm ", "npx ", "yarn ", "bun ", "vitest", "jest", "cargo test", "pytest", "python -m pytest", "uv run pytest", "go test", "deno test", "swift test", "make test"]
+    default: []
+    description: 可选的 checkCmd 命令前缀白名单；空数组 = 不限制工具链
 budget:
   maxMinutes: 240
   maxIterations: 16
 state:
   slug: ""
+  fullCheckCmd: ""
   candidate: null
   branches: []
   reworks: 0
@@ -62,7 +64,7 @@ nodes:
 
   - id: split
     kind: agent
-    session: new
+    session: run
     effort: high
     permissions: ask
     timeoutSec: 900
@@ -89,9 +91,15 @@ nodes:
         dependsOn: [lane_start]
         command: "{{outputs.preflight.setupCmd || 'true'}}"
         timeoutSec: 900
+      - id: mode_gate
+        kind: gate
+        dependsOn: [setup]
+        cases:
+          - when: "item.mode === 'verify' || !item.checkFiles || item.checkFiles.length === 0"
+            next: impl
+        default: write_check
       - id: write_check
         kind: agent
-        dependsOn: [setup]
         session: new
         permissions: auto
         timeoutSec: 900
@@ -115,6 +123,7 @@ nodes:
       - id: impl
         kind: agent
         dependsOn: [red_gate]
+        join: any
         session: new
         permissions: auto
         timeoutSec: 1800
@@ -158,13 +167,13 @@ nodes:
     pause: true
     prompt: |
       Accept {{state.candidate.passed}}/{{state.candidate.total}} unit(s) in current worktree ({{outputs.preflight.branch}})?
-      Full check: {{state.candidate.checkOk ? 'PASS' : 'FAIL'}} · {{state.candidate.filesChanged}} files (+{{state.candidate.insertions}} −{{state.candidate.deletions}}) · risk {{state.candidate.risk.level}}
+      Full check: {{state.candidate.checkSkipped ? 'SKIPPED' : state.candidate.checkOk ? 'PASS' : 'FAIL'}} · {{state.candidate.filesChanged}} files (+{{state.candidate.insertions}} −{{state.candidate.deletions}}) · risk {{state.candidate.risk.level}}
     onFail:
       next: rework
 
   - id: rework
     kind: agent
-    session: new
+    session: run
     permissions: auto
     timeoutSec: 1800
     promptFile: ./prompts/rework.md
@@ -192,7 +201,7 @@ nodes:
   - id: distill
     kind: agent
     dependsOn: [retro]
-    session: new
+    session: run
     permissions: ask
     timeoutSec: 600
     promptFile: ./prompts/distill.md

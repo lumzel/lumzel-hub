@@ -210,7 +210,7 @@ export function buildFeatureShipOutputs(tMs, reworks = 0, approved = false) {
       constraintIds: cList.map(c => c.id),
       fullCheckCmd: 'pnpm test',
       setupCmd: '',
-      repoHints: 'node/pnpm, tests: vitest, dirs: src tests',
+      repoHints: 'root entries: package.json pnpm-lock.yaml src tests',
       presetUnits: [],
     };
   }
@@ -219,6 +219,7 @@ export function buildFeatureShipOutputs(tMs, reworks = 0, approved = false) {
   }
   if (tMs >= 8500) {
     out.split = {
+      fullCheckCmd: 'pnpm test',
       units: units.map(u => ({ ...u, prompt: `Implement ${u.title}` })),
     };
   }
@@ -228,6 +229,7 @@ export function buildFeatureShipOutputs(tMs, reworks = 0, approved = false) {
       count: units.length,
       rejected: [],
       source: 'split',
+      fullCheckCmd: 'pnpm test',
     };
   }
   if (tMs >= 45000) {

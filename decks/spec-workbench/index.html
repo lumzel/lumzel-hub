@@ -22,6 +22,47 @@
       </nav>
 
       <main class="main">
+        <div class="topbar" id="topbar" hidden>
+          <span class="sp"></span>
+          <div class="agent-wrap" id="agent-wrap" hidden>
+            <button type="button" class="agent-btn" id="agent-btn" aria-expanded="false" aria-haspopup="dialog">
+              <span class="agent-dot" id="agent-dot" aria-hidden="true"></span>
+              <span class="agent-label" id="agent-label">Agent</span>
+              <span class="agent-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="agent-pop" id="agent-pop" role="dialog" hidden>
+              <div class="agent-pop-head">
+                <strong data-i18n="agentTitle">Agent 与模型</strong>
+                <div class="agent-pop-actions">
+                  <span class="agent-pill" id="agent-badge">默认</span>
+                  <button type="button" class="agent-link" id="agent-reset-btn" data-i18n="agentReset" hidden>恢复默认</button>
+                </div>
+              </div>
+              <label class="agent-field">
+                <span data-i18n="agentFieldAgent">Agent</span>
+                <select id="agent-select"></select>
+              </label>
+              <label class="agent-field">
+                <span data-i18n="agentFieldModel">模型</span>
+                <select id="agent-model-select"></select>
+              </label>
+              <label class="agent-field" id="agent-effort-row">
+                <span data-i18n="agentFieldEffort">思考强度</span>
+                <select id="agent-effort-select"></select>
+              </label>
+              <div class="agent-pop-foot">
+                <p class="agent-hint" id="agent-hint"></p>
+                <button type="button" class="agent-save" id="agent-save-default-btn" data-i18n="agentSaveDefault" hidden>设为当前项目默认</button>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="ico settings-btn" id="settings-btn" data-i18n-title="deckSettings" data-i18n-aria="deckSettings" title="Deck 设置" aria-label="Deck 设置">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.35"/>
+              <path d="M8 1.8v1.5M8 12.7v1.5M1.8 8h1.5M12.7 8h1.5M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M12.4 3.6l-1.1 1.1M4.7 11.3l-1.1 1.1" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
         <p class="note" id="note" hidden></p>
 
         <section class="pane" id="pane-feature" hidden>

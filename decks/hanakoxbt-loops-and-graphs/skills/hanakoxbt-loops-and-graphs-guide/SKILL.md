@@ -19,19 +19,22 @@ Loops and Graphs runs structured intra-node correction loops over a live topolog
 
 ## 2. Unit Splitting Rules
 
-- **Vertical slices**: Each unit delivers one cohesive, independently testable slice of behaviour (schema + logic + API or UI + test), not horizontal layers.
-- **Disjoint file ownership**: Two units must **never** overlap in `checkFiles` or `implFiles`. Overlapping files create interference when running sequentially in the same worktree.
-- **Bounded count**: Keep units between 2 and 5 (hard cap 6 via `maxUnits`).
-- **Self-contained brief**: A Worker starts in a fresh subsession with no shared memory—include exact file paths, public contracts, and edge cases in `prompt`.
+- **Vertical slices**: Each unit delivers one cohesive, independently verifiable slice of behaviour (schema + logic + API or UI + build/test), not arbitrary horizontal layers.
+- **Minimize file overlap**: Prefer disjoint `checkFiles` and `implFiles` across units so sequential runs in the current worktree do not step on each other.
+- **Unit modes (`tdd` vs `verify`)**:
+  - `tdd` (non-empty `checkFiles`): `write_check` writes failing tests, `red_gate` verifies they fail before implementation and hashes `checkFiles`, then `impl` makes them pass without modifying `checkFiles`.
+  - `verify` (`checkFiles: []`): skips `write_check`/`red_gate` and verifies `impl` directly via `checkCmd` (ideal for UI styling, layout, config, or project-wiring units).
+- **Bounded count**: Keep units within `maxUnits` (1–6, default 5).
+- **Self-contained brief**: A Worker starts in a fresh isolated Session with no shared memory—include exact file paths, public contracts, and edge cases in `prompt`.
 
 ## 3. `checkCmd` Specification
 
-`plan.js` strictly validates every unit's `checkCmd`:
+`plan.js` validates every unit's `checkCmd` without hardcoding a language or framework whitelist:
 
-1. Must run **only that unit's acceptance tests** (e.g., `pnpm vitest run src/export/csv.test.ts` or `cargo test --test csv_export`), never the whole suite.
-2. Must start with an allowed prefix from `checkPrefixes` (`pnpm `, `npm `, `npx `, `yarn `, `bun `, `vitest`, `jest`, `cargo test`, `pytest`, `python -m pytest`, `uv run pytest`, `go test`, `deno test`, `swift test`, `make test`).
-3. **Forbidden shell metacharacters**: `;`, `&`, `|`, `` ` ``, `$`, `<`, `>`, `\`, and newlines are rejected.
-4. `checkFiles` must contain relative paths without `..`, spaces, quotes, or metacharacters.
+1. Must be a single-line, non-empty, non-trivial command appropriate for the repository's real toolchain (e.g., `xcodebuild test ...`, `swift test`, `pnpm vitest run ...`, `cargo test ...`, `./gradlew test`, `make check`).
+2. If `inputs.checkPrefixes` is explicitly configured (non-empty), `checkCmd` must start with one of those prefixes; by default (`[]`), any toolchain command is accepted.
+3. No-op commands (`true`, `:`, `echo`, `exit 0`) and destructive commands are rejected.
+4. `checkFiles` must contain relative paths without `..` traversal or control characters.
 
 ## 4. Writing Effective Constraints (Lessons)
 
@@ -42,6 +45,6 @@ Loops and Graphs runs structured intra-node correction loops over a live topolog
 ## 5. Troubleshooting Failures
 
 - **Not a git repository (`preflight_gate -> $fail`)**: Ensure the active project root is inside a git worktree and click **Retry from here** on `preflight`. Existing uncommitted changes in the working tree are allowed.
-- **Environment failure in `red_gate`**: Missing binaries or modules (`ENOENT`, `Cannot find module`, exit 126/127) mean `setupCmd` is missing or wrong—configure `setupCmd` in the Checks popover.
+- **Environment failure in `red_gate`**: Missing binaries or modules (`Cannot find module`, exit 126/127) mean `setupCmd` is missing or wrong—configure `setupCmd` in the Checks popover.
 - **Modified test files in `green_gate`**: `redCheck` hashes `checkFiles` after red verification passes; if `impl` modifies `checkFiles`, `green_gate` detects the hash mismatch and fails the attempt.
 - **Rework at `human_gate`**: Rejecting with a note runs `rework` directly in the current working tree and re-verifies with `reverify` before returning to `human_gate`.

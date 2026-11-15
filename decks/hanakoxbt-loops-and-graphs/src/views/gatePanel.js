@@ -55,6 +55,7 @@ export function createGatePanelRenderer(store, host) {
       st.ctx.branch ||
       'main';
     const checkOk = cand.checkOk !== false;
+    const checkSkipped = Boolean(cand.checkSkipped);
     const files = Array.isArray(cand.files) ? cand.files.slice(0, 8) : [];
     const maxChurn = files.reduce((m, f) => Math.max(m, (f.add || 0) + (f.del || 0)), 1);
     const flags = (cand.risk && cand.risk.flags) || [];
@@ -105,8 +106,11 @@ export function createGatePanelRenderer(store, host) {
           h('div', { class: 'gate-metric-k' }, 'FULL CHECK'),
           h(
             'div',
-            { class: 'gate-metric-v', style: { color: checkOk ? 'var(--ok)' : 'var(--fail)' } },
-            checkOk ? 'PASS' : 'FAIL',
+            {
+              class: 'gate-metric-v',
+              style: { color: checkSkipped ? 'var(--gate)' : checkOk ? 'var(--ok)' : 'var(--fail)' },
+            },
+            checkSkipped ? 'SKIPPED' : checkOk ? 'PASS' : 'FAIL',
           ),
           h('div', { class: 'gate-metric-sub', title: cand.checkCmd || cand.checkReason }, cand.checkCmd || cand.checkReason || '—'),
         ),

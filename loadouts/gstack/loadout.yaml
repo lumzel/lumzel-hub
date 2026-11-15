@@ -94,3 +94,30 @@ plugins: []
 env:
   GSTACK_CAREFUL: '1'
   GSTACK_FREEZE_DIR: ''
+env_schema:
+  GSTACK_CAREFUL:
+    label: Careful Safety Guard
+    description: Enable gstack careful pre-command safety guardrails ('1' enabled, '0' disabled).
+    default: '1'
+    required: false
+    options:
+    - value: '1'
+      label: Enabled (1)
+    - value: '0'
+      label: Disabled (0)
+    i18n:
+      zh-CN:
+        label: 启用 Careful 安全护栏
+        description: 控制是否激活 gstack 的高风险命令前置安全检查（1 开启，0 关闭）。
+  GSTACK_FREEZE_DIR:
+    label: Freeze Scope Directory
+    description: Optional directory path that gstack freeze guard allows edits inside.
+    placeholder: src/payments
+    default: ''
+    required: false
+    i18n:
+      zh-CN:
+        label: 冻结编辑白名单目录
+        description: 可选限制 gstack freeze 护栏仅允许编辑的目录路径（留空不限制）。
+        placeholder: src/payments
+

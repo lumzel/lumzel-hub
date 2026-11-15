@@ -1157,7 +1157,16 @@ function syncSuiteLoadout(spec, repoDirs) {
   walkSubagentMarkdownDirs(loadoutDir, normalizeSubagentMarkdownInDir);
 }
 
-const MANIFEST_SECTION_KEYS = new Set(['skills', 'agents', 'mcp', 'hooks', 'rules', 'plugins', 'env']);
+const MANIFEST_SECTION_KEYS = new Set([
+  'skills',
+  'agents',
+  'mcp',
+  'hooks',
+  'rules',
+  'plugins',
+  'env',
+  'env_schema',
+]);
 
 function updateLoadoutYaml(loadoutDir, spec) {
   const yamlPath = path.join(loadoutDir, 'loadout.yaml');
@@ -1174,7 +1183,7 @@ function updateLoadoutYaml(loadoutDir, spec) {
       const key = topMatch[1];
       if (MANIFEST_SECTION_KEYS.has(key)) {
         currentKey = key;
-        if (key === 'plugins' || key === 'env') {
+        if (key === 'plugins' || key === 'env' || key === 'env_schema') {
           tailSections.set(key, [line]);
         }
         continue;
@@ -1182,7 +1191,10 @@ function updateLoadoutYaml(loadoutDir, spec) {
       currentKey = null;
       headerLines.push(line);
     } else if (currentKey) {
-      if ((currentKey === 'plugins' || currentKey === 'env') && line.trim() !== '') {
+      if (
+        (currentKey === 'plugins' || currentKey === 'env' || currentKey === 'env_schema') &&
+        line.trim() !== ''
+      ) {
         tailSections.get(currentKey).push(line);
       }
     } else if (line.trim() !== '' || headerLines.length > 0) {
@@ -1278,6 +1290,10 @@ function updateLoadoutYaml(loadoutDir, spec) {
     out.push(...(tailSections.get('env') || ['env: {}']));
   }
 
+  if (tailSections.has('env_schema')) {
+    out.push(...tailSections.get('env_schema'));
+  }
+
   fs.writeFileSync(yamlPath, `${out.join('\n')}\n`);
   return { ...inv, skills: orderedSkills };
 }
@@ -1300,6 +1316,29 @@ function measureDir(dir) {
   return { files, bytes };
 }
 
+const RESERVED_ENV_NAMES = new Set([
+  'HOME',
+  'PATH',
+  'CLAUDE_CONFIG_DIR',
+  'CODEX_HOME',
+  'GROK_HOME',
+  'KIRO_HOME',
+  'AGY_ACP_FORCE_FILE_STORAGE',
+  'LUMZEL_LOADOUT_HOME',
+]);
+
+function validEnvKeyName(name) {
+  return (
+    typeof name === 'string' &&
+    name.length > 0 &&
+    name.length <= 64 &&
+    /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) &&
+    !name.startsWith('LUMZEL_') &&
+    !name.startsWith('MCP_OAUTH_') &&
+    !RESERVED_ENV_NAMES.has(name)
+  );
+}
+
 function parseLoadoutYamlRefs(yamlText) {
   const refs = {
     skills: [],
@@ -1309,6 +1348,7 @@ function parseLoadoutYamlRefs(yamlText) {
     mcp: [],
     plugins: [],
     env: [],
+    env_schema: [],
   };
   let section = null;
   for (const line of normalizeLf(yamlText).split('\n')) {
@@ -1320,7 +1360,7 @@ function parseLoadoutYamlRefs(yamlText) {
       continue;
     }
     if (!section) continue;
-    if (section === 'agents' || section === 'env') {
+    if (section === 'agents' || section === 'env' || section === 'env_schema') {
       const mapMatch = line.match(/^\s{2}([^#\s][^:]*):/);
       if (mapMatch) refs[section].push(unquoteYamlScalar(mapMatch[1]));
     } else {
@@ -1333,10 +1373,10 @@ function parseLoadoutYamlRefs(yamlText) {
 
 function collectEnvRefsInJson(value, set) {
   if (typeof value === 'string') {
-    const re = /\$\{env:([A-Za-z_][A-Za-z0-9_]*)\}/g;
+    const re = /\$\{(?:env|secret):([A-Za-z_][A-Za-z0-9_]*)\}/g;
     let m;
     while ((m = re.exec(value)) !== null) {
-      if (!m[1].startsWith('MCP_OAUTH_')) set.add(m[1]);
+      if (validEnvKeyName(m[1])) set.add(m[1]);
     }
   } else if (Array.isArray(value)) {
     for (const item of value) collectEnvRefsInJson(item, set);
@@ -1373,12 +1413,17 @@ function computeItemCounts(itemDir, kind) {
   if (kind === 'loadout') {
     const yamlPath = path.join(itemDir, 'loadout.yaml');
     if (fs.existsSync(yamlPath)) {
-      const refs = parseLoadoutYamlRefs(fs.readFileSync(yamlPath, 'utf8'));
+      const yamlText = fs.readFileSync(yamlPath, 'utf8');
+      const refs = parseLoadoutYamlRefs(yamlText);
       for (const k of COUNT_KEYS) {
         for (const name of refs[k] || []) {
           if (k === 'mcp' && name === 'lumzel') continue;
+          if (k === 'env' && !validEnvKeyName(name)) continue;
           if (name) union[k].add(name);
         }
+      }
+      for (const name of refs.env_schema || []) {
+        if (validEnvKeyName(name)) union.env.add(name);
       }
     }
   } else if (kind === 'deck') {
@@ -1555,6 +1600,7 @@ const DECK_FIELDS = new Set([
   'permissions',
   'capabilities',
   'store',
+  'params',
   'i18n',
   'workflows',
   'version',
@@ -1565,6 +1611,30 @@ const DECK_AGENT_KEYS = new Set(['provider', 'model', 'effort', 'permissions', '
 const DECK_CAPABILITY_KEYS = new Set(['files', 'exec', 'fetch', 'open']);
 const DECK_STORE_KEYS = new Set(['scope', 'migrations']);
 const DECK_I18N_KEYS = new Set(['title', 'description']);
+const DECK_PARAM_KEYS = new Set([
+  'key',
+  'type',
+  'label',
+  'description',
+  'placeholder',
+  'required',
+  'default',
+  'options',
+  'env',
+  'i18n',
+]);
+const DECK_PARAM_TYPES = new Set(['string', 'number', 'boolean', 'select', 'secret']);
+const DECK_PARAM_I18N_KEYS = new Set(['label', 'description', 'placeholder']);
+const ENV_SCHEMA_KEYS = new Set([
+  'label',
+  'description',
+  'placeholder',
+  'required',
+  'secret',
+  'default',
+  'options',
+  'i18n',
+]);
 
 const WF_ROOT_KEYS = new Set([
   'id',
@@ -2229,6 +2299,112 @@ function verifyDeckManifest(entry, deckDir, deckJsonPath, errors) {
       }
     }
   }
+  if (manifest.params !== undefined) {
+    if (!Array.isArray(manifest.params)) {
+      errors.push(`[deck:${entry.id}] deck.json.params must be an array`);
+    } else {
+      const seenKeys = new Set();
+      const seenEnvs = new Set();
+      for (const item of manifest.params) {
+        if (!isPlainObject(item)) {
+          errors.push(`[deck:${entry.id}] deck.json.params[] item must be an object`);
+          continue;
+        }
+        for (const k of Object.keys(item)) {
+          if (!DECK_PARAM_KEYS.has(k)) {
+            errors.push(`[deck:${entry.id}] deck.json.params[] has unknown key ${JSON.stringify(k)}`);
+          }
+        }
+        const key = item.key;
+        if (!isNonEmptyString(key) || key.length > 64 || !/^[A-Za-z0-9_][A-Za-z0-9_.-]*$/.test(key)) {
+          errors.push(`[deck:${entry.id}] invalid deck.json.params[].key ${JSON.stringify(key)}`);
+          continue;
+        }
+        if (seenKeys.has(key)) {
+          errors.push(`[deck:${entry.id}] duplicate deck.json.params[].key ${JSON.stringify(key)}`);
+        }
+        seenKeys.add(key);
+
+        const pType = item.type === undefined ? 'string' : item.type;
+        if (!DECK_PARAM_TYPES.has(pType)) {
+          errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}] has unknown type ${JSON.stringify(pType)}`);
+        }
+        for (const textKey of ['label', 'description', 'placeholder']) {
+          if (item[textKey] !== undefined && !isNonEmptyString(item[textKey])) {
+            errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].${textKey} must be a non-empty string`);
+          }
+        }
+        if (item.required !== undefined && typeof item.required !== 'boolean') {
+          errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].required must be a boolean`);
+        }
+
+        const optValues = new Set();
+        if (item.options !== undefined) {
+          if (pType !== 'select') {
+            errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].options is only allowed for type "select"`);
+          } else if (!Array.isArray(item.options) || item.options.length === 0) {
+            errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].options must be a non-empty array`);
+          } else {
+            for (const opt of item.options) {
+              if (typeof opt === 'string' && opt.trim()) {
+                optValues.add(opt.trim());
+              } else if (isPlainObject(opt) && isNonEmptyString(opt.value)) {
+                optValues.add(opt.value.trim());
+              } else {
+                errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].options contains invalid option`);
+              }
+            }
+          }
+        } else if (pType === 'select') {
+          errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}] of type "select" must declare options`);
+        }
+
+        if (item.default !== undefined && item.default !== null) {
+          if (pType === 'secret') {
+            errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}] of type "secret" cannot declare default`);
+          } else if (pType === 'string' && typeof item.default !== 'string') {
+            errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].default must be a string`);
+          } else if (pType === 'number' && typeof item.default !== 'number') {
+            errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].default must be a number`);
+          } else if (pType === 'boolean' && typeof item.default !== 'boolean') {
+            errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].default must be a boolean`);
+          } else if (pType === 'select' && (typeof item.default !== 'string' || !optValues.has(item.default))) {
+            errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].default must match one of options`);
+          }
+        }
+
+        if (item.env !== undefined) {
+          if (!validEnvKeyName(item.env)) {
+            errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].env ${JSON.stringify(item.env)} is invalid or reserved`);
+          } else if (seenEnvs.has(item.env)) {
+            errors.push(`[deck:${entry.id}] duplicate params[].env ${JSON.stringify(item.env)}`);
+          } else {
+            seenEnvs.add(item.env);
+          }
+        }
+
+        if (item.i18n !== undefined) {
+          if (!isPlainObject(item.i18n)) {
+            errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].i18n must be an object`);
+          } else {
+            for (const [locale, locObj] of Object.entries(item.i18n)) {
+              if (!locale.trim() || !isPlainObject(locObj)) {
+                errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].i18n.${locale} must be an object`);
+                continue;
+              }
+              for (const [lk, lv] of Object.entries(locObj)) {
+                if (!DECK_PARAM_I18N_KEYS.has(lk)) {
+                  errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].i18n.${locale} has unknown key ${JSON.stringify(lk)}`);
+                } else if (!isNonEmptyString(lv)) {
+                  errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].i18n.${locale}.${lk} must be a non-empty string`);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 function verifyRepository() {
@@ -2262,8 +2438,33 @@ function verifyRepository() {
       const loadoutDoc = parseYamlText(yamlText, `${rel}/loadout.yaml`);
       if (!isPlainObject(loadoutDoc)) {
         errors.push(`[${entry.id}] loadout.yaml must be a YAML mapping/object`);
-      } else if (loadoutDoc.id !== entry.id) {
-        errors.push(`[${entry.id}] loadout.yaml id mismatch (got ${JSON.stringify(loadoutDoc.id)})`);
+      } else {
+        if (loadoutDoc.id !== entry.id) {
+          errors.push(`[${entry.id}] loadout.yaml id mismatch (got ${JSON.stringify(loadoutDoc.id)})`);
+        }
+        if (loadoutDoc.env_schema !== undefined) {
+          if (!isPlainObject(loadoutDoc.env_schema)) {
+            errors.push(`[${entry.id}] loadout.yaml env_schema must be an object`);
+          } else {
+            for (const [varName, spec] of Object.entries(loadoutDoc.env_schema)) {
+              if (!validEnvKeyName(varName)) {
+                errors.push(`[${entry.id}] loadout.yaml env_schema.${varName} is not a valid env name`);
+              }
+              if (!isPlainObject(spec)) {
+                errors.push(`[${entry.id}] loadout.yaml env_schema.${varName} must be an object`);
+                continue;
+              }
+              for (const k of Object.keys(spec)) {
+                if (!ENV_SCHEMA_KEYS.has(k)) {
+                  errors.push(`[${entry.id}] loadout.yaml env_schema.${varName} has unknown key ${JSON.stringify(k)}`);
+                }
+              }
+              if (spec.secret === true && spec.default !== undefined && spec.default !== null) {
+                errors.push(`[${entry.id}] loadout.yaml env_schema.${varName} with secret: true cannot declare default`);
+              }
+            }
+          }
+        }
       }
     } catch (err) {
       errors.push(`[${entry.id}] Invalid YAML in loadout.yaml: ${err.message}`);

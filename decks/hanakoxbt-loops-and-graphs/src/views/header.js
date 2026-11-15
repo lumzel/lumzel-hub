@@ -9,8 +9,22 @@ export function mountHeader(store, host) {
   const demoTagEl = document.getElementById('demo-tag');
   const demoMenuWrap = document.getElementById('demo-menu-wrap');
   const demoPop = document.getElementById('demo-pop');
+  const agentWrap = document.getElementById('agent-wrap');
+  const agentBtn = document.getElementById('agent-btn');
+  const agentDot = document.getElementById('agent-dot');
+  const agentLabel = document.getElementById('agent-label');
+  const agentPop = document.getElementById('agent-pop');
+  const agentBadge = document.getElementById('agent-badge');
+  const agentResetBtn = document.getElementById('agent-reset-btn');
+  const agentSelect = document.getElementById('agent-select');
+  const agentModelSelect = document.getElementById('agent-model-select');
+  const agentEffortRow = document.getElementById('agent-effort-row');
+  const agentEffortSelect = document.getElementById('agent-effort-select');
+  const agentHint = document.getElementById('agent-hint');
+  const agentSaveDefaultBtn = document.getElementById('agent-save-default-btn');
   const pillEl = document.getElementById('run-pill');
   const demoBtn = document.getElementById('demo-btn');
+  const settingsBtn = document.getElementById('settings-btn');
   const inspBtn = document.getElementById('insp-btn');
 
   // Wire preset tabs
@@ -37,17 +51,136 @@ export function mountHeader(store, host) {
     e.stopPropagation();
     demoPop.hidden = !demoPop.hidden;
   });
+
+  function setAgentPopOpen(open) {
+    if (!agentPop || !agentBtn) return;
+    agentPop.hidden = !open;
+    agentBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  if (agentBtn && agentPop) {
+    agentBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      setAgentPopOpen(agentPop.hidden);
+    });
+  }
+
   document.addEventListener('click', e => {
     if (!demoPop.hidden && !demoMenuWrap.contains(e.target) && e.target !== demoTagEl) {
       demoPop.hidden = true;
     }
+    if (agentPop && !agentPop.hidden && agentWrap && !agentWrap.contains(e.target)) {
+      setAgentPopOpen(false);
+    }
   });
+
+  if (agentSelect) {
+    agentSelect.addEventListener('change', () => {
+      host.setAgentOverride({ provider: agentSelect.value, model: '', effort: '' });
+    });
+  }
+  if (agentModelSelect) {
+    agentModelSelect.addEventListener('change', () => {
+      host.setAgentOverride({ model: agentModelSelect.value, effort: '' });
+    });
+  }
+  if (agentEffortSelect) {
+    agentEffortSelect.addEventListener('change', () => {
+      host.setAgentOverride({ effort: agentEffortSelect.value });
+    });
+  }
+  if (agentResetBtn) {
+    agentResetBtn.addEventListener('click', () => {
+      host.resetAgentDefaults();
+    });
+  }
+  if (agentSaveDefaultBtn) {
+    agentSaveDefaultBtn.addEventListener('click', () => {
+      host.saveAgentAsProjectDefault();
+    });
+  }
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+      host.openSettings();
+    });
+  }
 
   // Inspector toggle
   inspBtn.addEventListener('click', () => {
     const open = !store.get().ui.inspectorOpen;
     host.savePrefs({ inspectorOpen: open });
   });
+
+  function renderAgentSelector(catalog, override, ctx, mode) {
+    if (!agentWrap) return;
+    const info = host.effectiveAgentInfo(catalog, override);
+    const show = !ctx?.preview && mode !== 'demo' && info.agents.length > 0;
+    agentWrap.hidden = !show;
+    if (!show) {
+      setAgentPopOpen(false);
+      return;
+    }
+
+    const parts = [info.providerName, info.modelName, info.effort].filter(Boolean);
+    setText(agentLabel, parts.join(' · '));
+    agentBtn.classList.toggle('active', info.hasOverride);
+    if (agentDot) {
+      agentDot.className = info.hasOverride ? 'dot run' : 'dot ink';
+    }
+    if (agentBadge) {
+      setText(agentBadge, info.hasOverride ? t('agentBadgeCustom') : t('agentBadgeHost'));
+    }
+    if (agentResetBtn) {
+      agentResetBtn.hidden = !info.hasOverride && !info.hasDeckDefaults;
+    }
+    if (agentSaveDefaultBtn) {
+      agentSaveDefaultBtn.hidden = !info.hasOverride;
+    }
+    if (agentHint) {
+      setText(agentHint, info.hasOverride ? t('agentHintCustom') : t('agentHintHost'));
+    }
+
+    if (agentSelect) {
+      clear(agentSelect);
+      const hostName = info.hostAgent?.name || info.providerName;
+      agentSelect.appendChild(
+        h('option', { value: '' }, t('agentFollowHost', { name: hostName })),
+      );
+      for (const a of info.agents) {
+        agentSelect.appendChild(h('option', { value: a.id }, a.name || a.id));
+      }
+      agentSelect.value = override?.provider || '';
+    }
+
+    if (agentModelSelect) {
+      clear(agentModelSelect);
+      const defModelObj = info.models.find(m => m.id === info.defaultModelId);
+      const defModelName = defModelObj?.name || info.defaultModelId || 'auto';
+      agentModelSelect.appendChild(
+        h('option', { value: '' }, t('agentFollowDefaultModel', { name: defModelName })),
+      );
+      for (const m of info.models) {
+        agentModelSelect.appendChild(h('option', { value: m.id }, m.name || m.id));
+      }
+      agentModelSelect.value = override?.model || '';
+      agentModelSelect.disabled = info.models.length === 0;
+    }
+
+    if (agentEffortRow && agentEffortSelect) {
+      const hasEfforts = info.efforts.length > 0;
+      agentEffortRow.hidden = !hasEfforts;
+      if (hasEfforts) {
+        clear(agentEffortSelect);
+        agentEffortSelect.appendChild(
+          h('option', { value: '' }, t('agentFollowDefaultEffort', { effort: info.defaultEffort || 'default' })),
+        );
+        for (const ef of info.efforts) {
+          agentEffortSelect.appendChild(h('option', { value: ef }, ef));
+        }
+        agentEffortSelect.value = override?.effort || '';
+      }
+    }
+  }
 
   function renderDemoMenu(speed) {
     clear(demoPop);
@@ -116,6 +249,24 @@ export function mountHeader(store, host) {
       const parts = [ctx.project, ctx.branch].filter(Boolean);
       setText(ctxEl, parts.join(' · '));
     },
+  );
+
+  store.subscribe(
+    s => ({
+      catalog: s.agentCatalog,
+      override: s.agentOverride,
+      ctx: s.ctx,
+      mode: s.mode,
+    }),
+    ({ catalog, override, ctx, mode }) => {
+      renderAgentSelector(catalog, override, ctx, mode);
+    },
+    (a, b) =>
+      a.catalog === b.catalog &&
+      a.override === b.override &&
+      a.ctx.preview === b.ctx.preview &&
+      a.ctx.locale === b.ctx.locale &&
+      a.mode === b.mode,
   );
 
   store.subscribe(

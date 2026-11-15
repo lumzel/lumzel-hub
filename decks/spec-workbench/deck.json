@@ -37,5 +37,66 @@
   "permissions": [
     "agent",
     "files"
-  ]
+  ],
+  "params": [
+    {
+      "key": "tddStrictness",
+      "type": "select",
+      "label": "TDD Enforcement",
+      "description": "How strictly builder sessions follow red-green TDD when implementing tickets.",
+      "default": "balanced",
+      "options": [
+        {
+          "value": "strict",
+          "label": "Strict (test-first required)",
+          "i18n": { "zh-CN": { "label": "严格（必须先写失败测试）" } }
+        },
+        {
+          "value": "balanced",
+          "label": "Balanced (default)",
+          "i18n": { "zh-CN": { "label": "均衡（默认）" } }
+        },
+        {
+          "value": "relaxed",
+          "label": "Relaxed (verify after)",
+          "i18n": { "zh-CN": { "label": "宽松（实现后补验证）" } }
+        }
+      ],
+      "i18n": {
+        "zh-CN": {
+          "label": "TDD 严格程度",
+          "description": "按工单实现时要求遵循先红后绿 TDD 流程的严格程度。"
+        }
+      }
+    },
+    {
+      "key": "autoTickets",
+      "type": "boolean",
+      "label": "Prompt Auto Ticket Cutting",
+      "description": "Instruct design grilling sessions to proceed directly to ticket cutting once design is confirmed.",
+      "default": false,
+      "i18n": {
+        "zh-CN": {
+          "label": "设计确认后自动推进切工单",
+          "description": "在需求拷问与设计会话中，指示 Agent 在设计确认后顺手生成工单。"
+        }
+      }
+    },
+    {
+      "key": "designRules",
+      "type": "string",
+      "label": "Project Design & Review Rules",
+      "description": "Additional architectural or coding guidelines appended to design, implement, and review sessions.",
+      "placeholder": "e.g. Prefer vertical slices, keep API backward compatible",
+      "default": "",
+      "i18n": {
+        "zh-CN": {
+          "label": "项目设计与评审补充约束",
+          "description": "自动附加到方案设计、切工单、实现与代码评审会话指令中的项目约定。",
+          "placeholder": "例如：优先垂直切片拆分；保持对外 API 向后兼容"
+        }
+      }
+    }
+  ],
+  "version": "1.1.0"
 }

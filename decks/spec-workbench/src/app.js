@@ -20,7 +20,103 @@ const state = {
   ticket: '', // open ticket path, tickets tab
   hubDoc: '',
   screen: '', // current prototype screen, reported by lumzel-prototype.js
+  agentCatalog: null,
+  agentOverride: { provider: '', model: '', effort: '' },
+  params: { tddStrictness: 'balanced', autoTickets: false, designRules: '' },
 };
+
+function sanitizeAgentSelection(sel, catalog) {
+  const clean = {
+    provider: typeof sel?.provider === 'string' ? sel.provider.trim() : '',
+    model: typeof sel?.model === 'string' ? sel.model.trim() : '',
+    effort: typeof sel?.effort === 'string' ? sel.effort.trim() : '',
+  };
+  const agents = Array.isArray(catalog?.agents) ? catalog.agents : [];
+  if (agents.length === 0) return clean;
+  if (clean.provider && !agents.some(a => a.id === clean.provider)) {
+    return { provider: '', model: '', effort: '' };
+  }
+  const defaults = catalog?.defaults || {};
+  const activeProvider =
+    clean.provider || defaults.provider || agents.find(a => a.default)?.id || agents[0]?.id || '';
+  const agent = agents.find(a => a.id === activeProvider) || agents[0];
+  const models = Array.isArray(agent?.models) ? agent.models : [];
+  if (clean.model && !models.some(m => m.id === clean.model)) {
+    clean.model = '';
+  }
+  const activeModel =
+    clean.model ||
+    (!clean.provider && defaults.model && models.some(m => m.id === defaults.model) ? defaults.model : '') ||
+    agent?.defaultModel ||
+    models[0]?.id ||
+    '';
+  const modelObj = models.find(m => m.id === activeModel);
+  const efforts = Array.isArray(modelObj?.efforts) ? modelObj.efforts : [];
+  if (clean.effort && !efforts.includes(clean.effort)) {
+    clean.effort = '';
+  }
+  return clean;
+}
+
+function effectiveAgentInfo(catalog = state.agentCatalog, selected = state.agentOverride) {
+  const agents = Array.isArray(catalog?.agents) ? catalog.agents : [];
+  const defaults = catalog?.defaults || {};
+  const hostProviderId = defaults.provider || agents.find(a => a.default)?.id || agents[0]?.id || '';
+  const hostAgent = agents.find(a => a.id === hostProviderId) || agents[0] || null;
+  const providerId = selected?.provider || hostProviderId;
+  const agent = agents.find(a => a.id === providerId) || hostAgent;
+  const models = Array.isArray(agent?.models) ? agent.models : [];
+  const defaultModelId =
+    (!selected?.provider && defaults.model && models.some(m => m.id === defaults.model) ? defaults.model : '') ||
+    agent?.defaultModel ||
+    models[0]?.id ||
+    '';
+  const modelId = selected?.model && models.some(m => m.id === selected.model) ? selected.model : defaultModelId;
+  const modelObj = models.find(m => m.id === modelId) || null;
+  const efforts = Array.isArray(modelObj?.efforts) ? modelObj.efforts : [];
+  const defaultEffort =
+    (!selected?.provider && !selected?.model && defaults.effort && efforts.includes(defaults.effort)
+      ? defaults.effort
+      : '') ||
+    (modelObj?.defaultEffort && efforts.includes(modelObj.defaultEffort) ? modelObj.defaultEffort : efforts[0] || '');
+  const effort =
+    efforts.length === 0
+      ? ''
+      : selected?.effort && efforts.includes(selected.effort)
+        ? selected.effort
+        : defaultEffort;
+  const hasOverride = Boolean(selected?.provider || selected?.model || selected?.effort);
+  const hasDeckDefaults = Boolean(
+    defaults?.deck?.provider || defaults?.deck?.model || defaults?.deck?.effort,
+  );
+  return {
+    agents,
+    hostAgent,
+    agent,
+    providerId: agent?.id || providerId,
+    providerName: agent?.name || providerId || 'Agent',
+    models,
+    modelId,
+    modelName: modelObj?.name || modelId,
+    defaultModelId,
+    efforts,
+    effort,
+    defaultEffort,
+    hasOverride,
+    hasDeckDefaults,
+  };
+}
+
+function agentRunOptions() {
+  const sel = state.agentOverride || {};
+  if (!sel.provider && !sel.model && !sel.effort) return {};
+  const info = effectiveAgentInfo();
+  const opts = {};
+  if (sel.provider || sel.model) opts.provider = info.providerId;
+  if (sel.model) opts.model = info.modelId;
+  if (sel.effort && info.efforts.includes(sel.effort)) opts.effort = sel.effort;
+  return opts;
+}
 
 const statusLabel = key => ({ done: t('done'), 'in-progress': t('inProgress'), planned: t('planned') })[key] || key || '';
 const docStatusLabel = key => ({ confirmed: t('confirmed'), draft: t('draft') })[key] || key || '';
@@ -314,8 +410,76 @@ function renderHub() {
 
 // ---------- render
 
+function setAgentPopOpen(open) {
+  const pop = $('agent-pop');
+  const btn = $('agent-btn');
+  if (!pop || !btn) return;
+  pop.hidden = !open;
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function renderTopbar() {
+  const topbar = $('topbar');
+  if (!topbar) return;
+  const info = effectiveAgentInfo();
+  const canSettings = typeof window.deck?.ui?.openSettings === 'function';
+  const showTopbar = !state.preview && (info.agents.length > 0 || canSettings);
+  topbar.hidden = !showTopbar;
+  if (!showTopbar) {
+    setAgentPopOpen(false);
+    return;
+  }
+
+  const wrap = $('agent-wrap');
+  const showAgent = info.agents.length > 0;
+  wrap.hidden = !showAgent;
+  if (!showAgent) {
+    setAgentPopOpen(false);
+  } else {
+    const parts = [info.providerName, info.modelName, info.effort].filter(Boolean);
+    $('agent-label').textContent = parts.join(' · ');
+    $('agent-btn').classList.toggle('active', info.hasOverride);
+    $('agent-badge').textContent = t(info.hasOverride ? 'agentBadgeCustom' : 'agentBadgeHost');
+    $('agent-reset-btn').hidden = !info.hasOverride && !info.hasDeckDefaults;
+    $('agent-save-default-btn').hidden = !info.hasOverride;
+    $('agent-hint').textContent = t(info.hasOverride ? 'agentHintCustom' : 'agentHintHost');
+
+    const agentSelect = $('agent-select');
+    const hostName = info.hostAgent?.name || info.providerName;
+    agentSelect.replaceChildren(
+      el('option', { value: '' }, t('agentFollowHost', { name: hostName })),
+      ...info.agents.map(a => el('option', { value: a.id }, a.name || a.id)),
+    );
+    agentSelect.value = state.agentOverride.provider || '';
+
+    const modelSelect = $('agent-model-select');
+    const defModelName = info.models.find(m => m.id === info.defaultModelId)?.name || info.defaultModelId || 'auto';
+    modelSelect.replaceChildren(
+      el('option', { value: '' }, t('agentFollowDefaultModel', { name: defModelName })),
+      ...info.models.map(m => el('option', { value: m.id }, m.name || m.id)),
+    );
+    modelSelect.value = state.agentOverride.model || '';
+    modelSelect.disabled = info.models.length === 0;
+
+    const effortRow = $('agent-effort-row');
+    const effortSelect = $('agent-effort-select');
+    const hasEfforts = info.efforts.length > 0;
+    effortRow.hidden = !hasEfforts;
+    if (hasEfforts) {
+      effortSelect.replaceChildren(
+        el('option', { value: '' }, t('agentFollowDefaultEffort', { effort: info.defaultEffort || 'default' })),
+        ...info.efforts.map(ef => el('option', { value: ef }, ef)),
+      );
+      effortSelect.value = state.agentOverride.effort || '';
+    }
+  }
+
+  $('settings-btn').hidden = !canSettings;
+}
+
 function render() {
   const hasFeatures = state.index.features.length > 0;
+  renderTopbar();
   renderRail();
   $('pane-hub').hidden = state.view !== 'hub';
   $('pane-feature').hidden = state.view !== 'feature' || !feature();
@@ -346,12 +510,27 @@ function openTicket(path) {
 
 let loading = null;
 let lastLoad = 0;
+let defaultsSubscribed = false;
+let paramsSubscribed = false;
+
+function applyParamsValues(values) {
+  if (!values || typeof values !== 'object') return;
+  if (values.tddStrictness !== undefined) state.params.tddStrictness = String(values.tddStrictness || 'balanced');
+  if (values.autoTickets !== undefined) state.params.autoTickets = Boolean(values.autoTickets);
+  if (values.designRules !== undefined) state.params.designRules = String(values.designRules || '');
+}
+
 async function load({ reload = false } = {}) {
   if (loading) return loading;
   $('refresh').classList.add('spin');
   loading = (async () => {
     try {
-      const [ctx, listed] = await Promise.all([deck.context(), deck.docs.index().catch(error => ({ error }))]);
+      const [ctx, listed, catalogRes, paramsRes] = await Promise.all([
+        deck.context(),
+        deck.docs.index().catch(error => ({ error })),
+        typeof deck.agent?.catalog === 'function' ? deck.agent.catalog().catch(() => null) : Promise.resolve(null),
+        typeof deck.params?.get === 'function' ? deck.params.get().catch(() => null) : Promise.resolve(null),
+      ]);
       state.preview = Boolean(ctx.preview);
       if (listed.error && !state.preview) throw listed.error;
       const index = state.preview ? SAMPLE_INDEX : listed;
@@ -360,6 +539,36 @@ async function load({ reload = false } = {}) {
         state.theme = ctx.theme;
         document.documentElement.dataset.theme = ctx.theme;
         for (const frame of frames.values()) post(frame.contentWindow, 'theme', { theme: ctx.theme });
+      }
+      if (!state.preview) {
+        if (catalogRes) {
+          state.agentCatalog = catalogRes;
+          state.agentOverride = sanitizeAgentSelection(state.agentOverride, catalogRes);
+        }
+        if (paramsRes?.values) applyParamsValues(paramsRes.values);
+        if (!defaultsSubscribed && typeof deck.agent?.onDefaults === 'function') {
+          defaultsSubscribed = true;
+          deck.agent.onDefaults(async evt => {
+            const nextDefaults = evt?.defaults || {
+              provider: evt?.provider || '',
+              model: evt?.model || '',
+              effort: evt?.effort || '',
+            };
+            if (!state.agentCatalog && typeof deck.agent?.catalog === 'function') {
+              state.agentCatalog = await deck.agent.catalog().catch(() => null);
+            } else if (state.agentCatalog) {
+              state.agentCatalog = { ...state.agentCatalog, defaults: nextDefaults };
+            }
+            state.agentOverride = sanitizeAgentSelection(state.agentOverride, state.agentCatalog);
+            renderTopbar();
+          });
+        }
+        if (!paramsSubscribed && typeof deck.params?.onChange === 'function') {
+          paramsSubscribed = true;
+          deck.params.onChange(evt => {
+            if (evt?.values) applyParamsValues(evt.values);
+          });
+        }
       }
       state.index = index;
       if (!index.features.some(f => f.id === state.featureId)) state.featureId = index.features[0]?.id || '';
@@ -419,10 +628,37 @@ window.addEventListener('message', event => {
 
 // ---------- agent actions
 
+function buildPromptWithParams(skill, basePrompt) {
+  const extras = [];
+  if (
+    (skill === 'spec-workbench-implement' || skill === 'spec-workbench-tdd') &&
+    state.params.tddStrictness === 'strict'
+  ) {
+    extras.push('TDD enforcement: strict — always write a failing test before implementation.');
+  } else if (
+    (skill === 'spec-workbench-implement' || skill === 'spec-workbench-tdd') &&
+    state.params.tddStrictness === 'relaxed'
+  ) {
+    extras.push('TDD enforcement: relaxed — verification tests may be added after implementation.');
+  }
+  if (skill === 'spec-workbench-grilling' && state.params.autoTickets) {
+    extras.push('Once the design is confirmed, proceed directly to cutting tickets with spec-workbench-to-tickets.');
+  }
+  if (state.params.designRules.trim()) {
+    extras.push(`Project rules: ${state.params.designRules.trim()}`);
+  }
+  return extras.length ? `${basePrompt}\n\n${extras.join('\n')}` : basePrompt;
+}
+
 async function run(skill, prompt, actionId) {
   if (state.preview) return toast(t('previewOnly'));
   try {
-    const result = await deck.agent.run({ skill, prompt, actionId });
+    const result = await deck.agent.run({
+      skill,
+      prompt: buildPromptWithParams(skill, prompt),
+      actionId,
+      ...agentRunOptions(),
+    });
     toast(t(result.reused ? 'sessionFocused' : 'sessionOpened', { id: result.sessionId }));
   } catch (error) {
     toast(error.message, true);
@@ -531,5 +767,79 @@ for (const tab of document.querySelectorAll('.tab'))
     state.tab = tab.dataset.tab;
     render();
   });
+
+$('agent-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  setAgentPopOpen($('agent-pop').hidden);
+});
+document.addEventListener('click', e => {
+  const pop = $('agent-pop');
+  const wrap = $('agent-wrap');
+  if (pop && !pop.hidden && wrap && !wrap.contains(e.target)) {
+    setAgentPopOpen(false);
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const pop = $('agent-pop');
+    if (pop && !pop.hidden) setAgentPopOpen(false);
+  }
+});
+$('agent-select').addEventListener('change', () => {
+  state.agentOverride = sanitizeAgentSelection(
+    { provider: $('agent-select').value, model: '', effort: '' },
+    state.agentCatalog,
+  );
+  renderTopbar();
+});
+$('agent-model-select').addEventListener('change', () => {
+  state.agentOverride = sanitizeAgentSelection(
+    { ...state.agentOverride, model: $('agent-model-select').value, effort: '' },
+    state.agentCatalog,
+  );
+  renderTopbar();
+});
+$('agent-effort-select').addEventListener('change', () => {
+  state.agentOverride = sanitizeAgentSelection(
+    { ...state.agentOverride, effort: $('agent-effort-select').value },
+    state.agentCatalog,
+  );
+  renderTopbar();
+});
+$('agent-reset-btn').addEventListener('click', async () => {
+  if (!state.preview && typeof window.deck?.agent?.resetDefaults === 'function') {
+    try {
+      const res = await window.deck.agent.resetDefaults();
+      if (res?.defaults && state.agentCatalog) {
+        state.agentCatalog = { ...state.agentCatalog, defaults: res.defaults };
+      }
+    } catch (error) {
+      toast(error.message, true);
+    }
+  }
+  state.agentOverride = { provider: '', model: '', effort: '' };
+  renderTopbar();
+});
+$('agent-save-default-btn').addEventListener('click', async () => {
+  if (state.preview) return toast(t('previewOnly'));
+  const opts = agentRunOptions();
+  if (!Object.keys(opts).length || typeof window.deck?.agent?.setDefaults !== 'function') return;
+  try {
+    const res = await window.deck.agent.setDefaults(opts);
+    if (res?.defaults && state.agentCatalog) {
+      state.agentCatalog = { ...state.agentCatalog, defaults: res.defaults };
+    }
+    state.agentOverride = { provider: '', model: '', effort: '' };
+    renderTopbar();
+    toast(t('agentSavedDefault'));
+  } catch (error) {
+    toast(error.message, true);
+  }
+});
+$('settings-btn').addEventListener('click', () => {
+  if (typeof window.deck?.ui?.openSettings === 'function') {
+    window.deck.ui.openSettings().catch(error => toast(error.message, true));
+  }
+});
 
 void load();

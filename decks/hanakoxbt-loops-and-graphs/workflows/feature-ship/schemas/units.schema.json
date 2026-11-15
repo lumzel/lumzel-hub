@@ -2,6 +2,7 @@
   "type": "object",
   "required": ["units"],
   "properties": {
+    "fullCheckCmd": { "type": "string" },
     "units": {
       "type": "array",
       "items": {
@@ -11,6 +12,7 @@
           "id": { "type": "string", "minLength": 1 },
           "title": { "type": "string", "minLength": 1 },
           "goal": { "type": "string" },
+          "mode": { "type": "string", "enum": ["tdd", "verify"] },
           "checkFiles": { "type": "array", "items": { "type": "string" } },
           "implFiles": { "type": "array", "items": { "type": "string" } },
           "checkCmd": { "type": "string", "minLength": 1 },

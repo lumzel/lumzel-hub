@@ -42,7 +42,7 @@ nodes:
   - id: apply_revisions
     kind: agent
     dependsOn: [prepare_revision]
-    session: new
+    session: run
     prompt: |
       Use the `opendesign-critique` skill (Mode B: Targeted Element Revision) to revise the HTML artifact.
 

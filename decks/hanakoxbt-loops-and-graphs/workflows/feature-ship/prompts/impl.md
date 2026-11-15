@@ -3,8 +3,7 @@ Brief:
 {{item.prompt}}
 
 Make `{{item.checkCmd}}` pass. Likely files: {{item.implFiles.join(', ') || 'decide yourself'}}.
-FORBIDDEN: modifying {{item.checkFiles.join(', ')}} (the workflow hashes checkFiles after redCheck and fails the attempt if their contents change).
-Do not run git commit; leave changes in the working tree. Attempt {{(state.greenAttempts || 0) + 1}} of 3.
+{{item.checkFiles && item.checkFiles.length ? 'FORBIDDEN: modifying ' + item.checkFiles.join(', ') + ' (the workflow hashes checkFiles after redCheck and fails the attempt if their contents change).\n' : ''}}Do not run git commit; leave changes in the working tree. Attempt {{(state.greenAttempts || 0) + 1}} of 3.
 
 Constraints:
 {{outputs.preflight.constraintsText}}

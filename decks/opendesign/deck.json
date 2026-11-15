@@ -45,10 +45,59 @@
   "store": {
     "scope": "project"
   },
+  "params": [
+    {
+      "key": "defaultSurface",
+      "type": "select",
+      "label": "Default Design Surface",
+      "description": "Pre-selected artifact surface when creating a new design in this project.",
+      "default": "prototype",
+      "options": [
+        { "value": "prototype", "label": "Interactive Prototype" },
+        { "value": "dashboard", "label": "Data Dashboard" },
+        { "value": "mobile", "label": "Mobile UI" },
+        { "value": "slide", "label": "Presentation Slide" }
+      ],
+      "i18n": {
+        "zh-CN": {
+          "label": "默认设计形态",
+          "description": "在本项目中新建设计产物时默认选中的形态。"
+        }
+      }
+    },
+    {
+      "key": "skipDirectionGate",
+      "type": "boolean",
+      "label": "Skip Direction Picker",
+      "description": "Default to auto-selecting direction 1 without pausing at the human review gate.",
+      "default": false,
+      "i18n": {
+        "zh-CN": {
+          "label": "默认跳过方向选择门禁",
+          "description": "在当前项目中发起设计工作流时默认直接采用方向一。"
+        }
+      }
+    },
+    {
+      "key": "designNotes",
+      "type": "string",
+      "label": "Project Design Constraints",
+      "description": "Persistent design notes appended to design & revision workflow briefs for this project.",
+      "placeholder": "e.g. Keep compact density, high contrast tables, B2B aesthetic",
+      "default": "",
+      "i18n": {
+        "zh-CN": {
+          "label": "项目设计约束说明",
+          "description": "自动附加到本项目新建设计与修订工作流指令中的设计要求。",
+          "placeholder": "例如：保持紧凑信息密度、高对比度数据表、偏向 B2B 专业风格"
+        }
+      }
+    }
+  ],
   "workflows": [
     "design-artifact",
     "extract-design-system",
     "revise-artifact"
   ],
-  "version": "1.0.2"
+  "version": "1.1.0"
 }

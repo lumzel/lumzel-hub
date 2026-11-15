@@ -98,6 +98,12 @@ export function applyNoticeToMap(byUnit, notice, preset = 'feature-ship') {
     rec.status = 'running';
     rec.startedAt = rec.startedAt ?? t;
     rec.phases[0] = 'running';
+  } else if (p === 'red_skip') {
+    rec.status = 'running';
+    rec.startedAt = rec.startedAt ?? t;
+    rec.phases[0] = 'skip';
+    rec.phases[1] = 'skip';
+    rec.phases[2] = 'running';
   } else if (p === 'red') {
     const idx = Math.max(0, (a || 1) - 1);
     rec.attempts.red[idx] = s === 'pass' ? 'pass' : 'fail';
@@ -132,7 +138,12 @@ export function applyNoticeToMap(byUnit, notice, preset = 'feature-ship') {
       rec.phases[3] = 'fail';
     }
   } else if (p === 'done') {
-    rec.phases = ['pass', 'pass', 'pass', 'pass'];
+    rec.phases = [
+      rec.phases[0] === 'skip' ? 'skip' : 'pass',
+      rec.phases[1] === 'skip' ? 'skip' : 'pass',
+      'pass',
+      'pass',
+    ];
     rec.status = 'pass';
     rec.finishedAt = t;
   } else if (p === 'merge' && s === 'fail') {
@@ -177,6 +188,7 @@ export function applyNoticesBatch(store, events, minEpochSec, preset) {
 export function createTelemetryController(store, safe) {
   let activeSessionId = null;
   let activeRunId = null;
+  let lastRunLogSeq = -1;
   let unsubFn = null;
   let stopTimer = null;
 
@@ -208,6 +220,7 @@ export function createTelemetryController(store, safe) {
   function reset() {
     unsubscribeNow();
     activeRunId = null;
+    lastRunLogSeq = -1;
     store.set(s => ({
       ...s,
       telemetry: { rev: s.telemetry.rev + 1, byUnit: {}, lastSeq: 0 },
@@ -227,13 +240,42 @@ export function createTelemetryController(store, safe) {
     if (run.runId !== activeRunId) {
       unsubscribeNow();
       activeRunId = run.runId;
+      lastRunLogSeq = -1;
       store.set(s => ({
         ...s,
         telemetry: { rev: s.telemetry.rev + 1, byUnit: {}, lastSeq: 0 },
       }));
     }
 
+    const preset = run.workflowId || store.get().preset;
     const active = run.state === 'running' || run.state === 'waiting_gate';
+
+    if (Array.isArray(run.logs)) {
+      const freshLogs = run.logs.filter(
+        entry => entry && Number(entry.seq) > lastRunLogSeq && typeof entry.text === 'string',
+      );
+      if (freshLogs.length) {
+        lastRunLogSeq = Math.max(lastRunLogSeq, ...freshLogs.map(entry => Number(entry.seq)));
+        const noticeEvents = freshLogs.map(entry => ({
+          kind: 'notice',
+          text: entry.text,
+          timestamp: entry.timestamp,
+        }));
+        applyNoticesBatch(store, noticeEvents, 0, preset);
+        store.set(s => ({
+          ...s,
+          telemetry: { ...s.telemetry, lastSeq: lastRunLogSeq },
+        }));
+      }
+      if (!active) {
+        scheduleDelayedUnsubscribe();
+      } else if (stopTimer) {
+        clearTimeout(stopTimer);
+        stopTimer = null;
+      }
+      return;
+    }
+
     if (!active) {
       scheduleDelayedUnsubscribe();
       return;
@@ -249,7 +291,6 @@ export function createTelemetryController(store, safe) {
 
     unsubscribeNow();
     activeSessionId = run.sessionId;
-    const preset = run.workflowId || store.get().preset;
     const minSec = minEpochOf(run);
 
     const res = await safe(

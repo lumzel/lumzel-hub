@@ -51,7 +51,10 @@
                 <span data-i18n="agentFieldEffort">Thinking</span>
                 <select id="od-effort-select"></select>
               </label>
-              <p class="hint-sm agent-pop-hint" id="od-agent-hint"></p>
+              <div class="agent-pop-foot">
+                <p class="hint-sm agent-pop-hint" id="od-agent-hint"></p>
+                <button type="button" class="btn subtle btn-xs" id="od-agent-save-default" data-i18n="agentSaveDefault" hidden>Save as Project Default</button>
+              </div>
             </div>
           </div>
           <button type="button" class="sys-pill" id="active-sys-pill">
@@ -59,6 +62,7 @@
             <span id="active-sys-name">Editorial Slate</span>
           </button>
           <button type="button" class="btn primary" id="btn-new-design" data-i18n="newDesignPlus">+ New Design</button>
+          <button type="button" class="btn icon-btn" id="btn-deck-settings" data-i18n-title="deckSettings" title="Deck Settings" aria-label="Deck Settings">⚙</button>
           <button type="button" class="btn icon-btn" id="btn-refresh" data-i18n-title="refresh" title="Refresh">↻</button>
         </div>
       </header>

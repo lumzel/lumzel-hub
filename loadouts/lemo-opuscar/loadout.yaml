@@ -26,3 +26,41 @@ env:
   LEMO_OPUSCAR_HOME: ''
   LEMO_FETCH: '1'
   HF_ENDPOINT: ''
+env_schema:
+  LEMO_OPUSCAR_HOME:
+    label: Lemo-Opuscar Home
+    description: Directory for cached models, sound fonts, and rendered clips (optional).
+    placeholder: ~/.cache/lemo-opuscar
+    default: ''
+    required: false
+    i18n:
+      zh-CN:
+        label: 资产缓存目录
+        description: 可选指定 Kokoro 语音模型与渲染资源缓存目录（留空使用默认目录）。
+        placeholder: ~/.cache/lemo-opuscar
+  LEMO_FETCH:
+    label: Auto-Download Models
+    description: Allow downloading missing Kokoro TTS weights on first run ('1' or '0').
+    default: '1'
+    required: false
+    options:
+    - value: '1'
+      label: Enabled (1)
+    - value: '0'
+      label: Disabled (0)
+    i18n:
+      zh-CN:
+        label: 自动下载模型权重
+        description: 首次运行缺少语音或素材模型时是否允许自动下载（1 允许，0 禁止）。
+  HF_ENDPOINT:
+    label: Hugging Face Mirror Endpoint
+    description: Optional custom Hugging Face hub URL for fetching model assets.
+    placeholder: https://hf-mirror.com
+    default: ''
+    required: false
+    i18n:
+      zh-CN:
+        label: Hugging Face 镜像地址
+        description: 可选配置 Hugging Face 模型下载镜像端点。
+        placeholder: https://hf-mirror.com
+

@@ -67,8 +67,15 @@ async function boot() {
     }
 
     if (e.key === 'Escape') {
+      const agentPop = document.getElementById('agent-pop');
+      const agentBtn = document.getElementById('agent-btn');
       const checksPop = document.getElementById('checks-pop');
       const demoPop = document.getElementById('demo-pop');
+      if (agentPop && !agentPop.hidden) {
+        agentPop.hidden = true;
+        if (agentBtn) agentBtn.setAttribute('aria-expanded', 'false');
+        return;
+      }
       if (checksPop && !checksPop.hidden) {
         checksPop.hidden = true;
         return;

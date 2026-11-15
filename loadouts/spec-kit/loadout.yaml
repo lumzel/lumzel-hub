@@ -34,3 +34,41 @@ env:
   SPECIFY_FEATURE: ''
   SPECIFY_INIT_DIR: ''
   SPECIFY_FEATURE_NO_PERSIST: '0'
+env_schema:
+  SPECIFY_FEATURE:
+    label: Active Specify Feature
+    description: Default feature ID override for Spec-Kit commands (optional).
+    placeholder: 001-user-auth
+    default: ''
+    required: false
+    i18n:
+      zh-CN:
+        label: 默认 Feature 标识
+        description: 可选指定 Spec-Kit 命令默认聚焦的 Feature ID。
+        placeholder: 001-user-auth
+  SPECIFY_INIT_DIR:
+    label: Spec-Kit Init Directory
+    description: Custom directory root for Spec-Kit artifacts (defaults to repo root).
+    placeholder: .specify
+    default: ''
+    required: false
+    i18n:
+      zh-CN:
+        label: Spec-Kit 初始化目录
+        description: 自定义 Spec-Kit 产物目录根路径（留空则使用仓库默认目录）。
+        placeholder: .specify
+  SPECIFY_FEATURE_NO_PERSIST:
+    label: Disable Feature State Persistence
+    description: Set to '1' to prevent Spec-Kit from persisting active feature state on disk.
+    default: '0'
+    required: false
+    options:
+    - value: '0'
+      label: Persist State (0)
+    - value: '1'
+      label: Do Not Persist (1)
+    i18n:
+      zh-CN:
+        label: 禁止持久化当前 Feature 状态
+        description: 设为 1 时，不在磁盘上自动记录当前激活的 Feature 状态。
+

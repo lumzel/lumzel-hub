@@ -13,6 +13,7 @@ export const DEFAULT_PREFS = {
   reviewCheckCmd: '',
   lenses: ['correctness', 'security', 'performance', 'tests'],
   demoSpeed: 1,
+  agentOverride: { provider: '', model: '', effort: '' },
 };
 
 export const INITIAL_STATE = {
@@ -32,6 +33,8 @@ export const INITIAL_STATE = {
   history: [],
   selection: null, // { kind: 'node' | 'lane', id }
   prefs: { ...DEFAULT_PREFS },
+  agentCatalog: null,
+  agentOverride: { provider: '', model: '', effort: '' },
   ui: {
     inspectorOpen: true,
     inspectorWidth: 380,

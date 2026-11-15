@@ -106,10 +106,12 @@ const state = {
   agentCatalog: null,
   selectedAgent: { provider: '', model: '', effort: '' },
   agentMenuOpen: false,
+  params: { defaultSurface: 'prototype', skipDirectionGate: false, designNotes: '' },
 };
 
 let unsubWorkflow = null;
 let unsubAgentDefaults = null;
+let unsubParams = null;
 let toastTimer = 0;
 
 function el(tag, attrs = {}, ...children) {
@@ -402,6 +404,11 @@ function renderAgentControls() {
   if ($('agent-override-label')) $('agent-override-label').textContent = summary;
   if ($('revise-agent-val')) $('revise-agent-val').textContent = summary;
 
+  const hasDeckDefaults = Boolean(
+    state.agentCatalog?.defaults?.deck?.provider ||
+    state.agentCatalog?.defaults?.deck?.model ||
+    state.agentCatalog?.defaults?.deck?.effort,
+  );
   const pop = $('agent-popover');
   if (pop) pop.hidden = !state.agentMenuOpen;
   const badge = $('od-agent-badge');
@@ -409,7 +416,10 @@ function renderAgentControls() {
     badge.textContent = info.hasOverride ? t('agentBadgeCustom') : t('agentBadgeHost');
     badge.className = `pill${info.hasOverride ? ' brand' : ''}`;
   }
-  if ($('od-agent-reset')) $('od-agent-reset').hidden = !info.hasOverride;
+  if ($('od-agent-reset')) $('od-agent-reset').hidden = !info.hasOverride && !hasDeckDefaults;
+  if ($('od-agent-save-default')) {
+    $('od-agent-save-default').hidden = state.preview || !info.hasOverride;
+  }
   if ($('od-agent-hint')) $('od-agent-hint').textContent = info.hasOverride ? t('agentHintCustom') : t('agentHintHost');
 
   populateAgentSelectTriplet($('od-agent-select'), $('od-model-select'), $('od-effort-select'), $('od-effort-row'), info);
@@ -424,6 +434,38 @@ async function setAgentOverride(partial) {
   if (!state.preview) {
     await saveStore('meta', 'agentOverride', next);
   }
+}
+
+async function saveAgentAsProjectDefault() {
+  if (state.preview) return toast(t('previewDisabled'), true);
+  const opts = workflowAgentOptions();
+  if (!opts || typeof window.deck?.agent?.setDefaults !== 'function') return;
+  const res = await window.deck.agent.setDefaults(opts).catch(err => {
+    toast(err?.message || String(err), true);
+    return null;
+  });
+  if (!res) return;
+  if (state.agentCatalog && res.defaults) {
+    state.agentCatalog = { ...state.agentCatalog, defaults: res.defaults };
+  }
+  state.selectedAgent = { provider: '', model: '', effort: '' };
+  await saveStore('meta', 'agentOverride', state.selectedAgent);
+  renderAgentControls();
+  toast(t('agentSavedDefault'));
+}
+
+async function resetAgentDefaults() {
+  state.selectedAgent = { provider: '', model: '', effort: '' };
+  if (!state.preview) {
+    await saveStore('meta', 'agentOverride', state.selectedAgent);
+    if (typeof window.deck?.agent?.resetDefaults === 'function') {
+      const res = await window.deck.agent.resetDefaults().catch(() => null);
+      if (state.agentCatalog && res?.defaults) {
+        state.agentCatalog = { ...state.agentCatalog, defaults: res.defaults };
+      }
+    }
+  }
+  renderAgentControls();
 }
 
 function workflowAgentOptions() {
@@ -1166,6 +1208,13 @@ async function applyRevisions() {
   const snapshotPath = `.lumzel/opendesign/versions/${art.id}/v${art.version || 1}.html`;
   await window.deck.files.write(snapshotPath, art.html || '');
 
+  const notes = typeof state.params?.designNotes === 'string' ? state.params.designNotes.trim() : '';
+  const combinedInstruction = notes
+    ? instruction
+      ? `${instruction}\n\nProject Design Constraints:\n${notes}`
+      : `Project Design Constraints:\n${notes}`
+    : instruction;
+
   const run = await window.deck.workflow.run(
     'revise-artifact',
     {
@@ -1176,7 +1225,7 @@ async function applyRevisions() {
       tokensPath: `.lumzel/opendesign/design-systems/${sys.slug}/tokens.css`,
       commentsJson: JSON.stringify(comments),
       tweakOverridesJson: JSON.stringify(state.tweaks),
-      instruction,
+      instruction: combinedInstruction,
     },
     workflowAgentOptions(),
   );
@@ -1289,13 +1338,16 @@ async function startDesignPipeline({ id, title, surface, systemSlug, brief, skip
   state.artifacts = [art, ...state.artifacts.filter(a => a.id !== id)];
   state.artifactId = id;
 
+  const notes = typeof state.params?.designNotes === 'string' ? state.params.designNotes.trim() : '';
+  const fullBrief = notes ? `${brief}\n\nProject Design Constraints:\n${notes}` : brief;
+
   const run = await window.deck.workflow.run(
     'design-artifact',
     {
       artifactId: id,
       title,
       surface,
-      brief,
+      brief: fullBrief,
       systemSlug: sys.slug,
       targetPath,
       designSystemPath: `.lumzel/opendesign/design-systems/${sys.slug}/DESIGN.md`,
@@ -1433,6 +1485,12 @@ function openNewDesignModal() {
   $('new-system').replaceChildren(
     ...state.systems.map(s => el('option', { value: s.slug, selected: s.slug === state.activeSystemSlug }, s.name)),
   );
+  if ($('new-surface') && state.params?.defaultSurface) {
+    $('new-surface').value = state.params.defaultSurface;
+  }
+  if ($('new-skip-gate')) {
+    $('new-skip-gate').checked = Boolean(state.params?.skipDirectionGate);
+  }
   $('new-err').textContent = '';
   renderAgentControls();
   $('modal-new').hidden = false;
@@ -1466,7 +1524,10 @@ function bindEvents() {
     $('od-model-select').focus();
   });
   $('od-agent-reset').addEventListener('click', () => {
-    setAgentOverride({ provider: '', model: '', effort: '' });
+    resetAgentDefaults();
+  });
+  $('od-agent-save-default').addEventListener('click', () => {
+    saveAgentAsProjectDefault();
   });
   for (const [agentId, modelId, effortId] of [
     ['od-agent-select', 'od-model-select', 'od-effort-select'],
@@ -1501,6 +1562,9 @@ function bindEvents() {
   $('btn-wf-new-design').addEventListener('click', openNewDesignModal);
   $('btn-open-extract').addEventListener('click', openExtractModal);
   $('btn-wf-extract').addEventListener('click', openExtractModal);
+  $('btn-deck-settings')?.addEventListener('click', () => {
+    window.deck?.ui?.openSettings?.().catch(() => {});
+  });
   $('btn-refresh').addEventListener('click', () => loadWorkspace());
 
   $('empty-starter-btn').addEventListener('click', () => {
@@ -1739,13 +1803,17 @@ async function loadWorkspace() {
   }
 
   $('banner').hidden = true;
-  const [activeSys, catalogRes, savedAgentOverride] = await Promise.all([
+  const [activeSys, catalogRes, savedAgentOverride, paramsRes] = await Promise.all([
     window.deck.store.get('meta', 'activeSystem').catch(() => null),
     window.deck.agent?.catalog?.().catch(() => null),
     window.deck.store.get('meta', 'agentOverride').catch(() => null),
+    window.deck.params?.get?.().catch(() => null),
   ]);
   state.agentCatalog = catalogRes || null;
   state.selectedAgent = sanitizeSelectedAgent(savedAgentOverride, state.agentCatalog);
+  if (paramsRes?.values && typeof paramsRes.values === 'object') {
+    state.params = { ...state.params, ...paramsRes.values };
+  }
   const customSystems = await window.deck.store.list({ collection: 'systems' }).catch(() => []);
   const customMap = new Map(customSystems.map(e => [e.key, e.value]));
   state.systems = [
@@ -1844,6 +1912,14 @@ async function loadWorkspace() {
         saveStore('meta', 'agentOverride', next).catch(() => {});
       }
       renderAgentControls();
+    });
+  }
+
+  if (!unsubParams && typeof window.deck.params?.onChange === 'function') {
+    unsubParams = window.deck.params.onChange(evt => {
+      if (evt?.values && typeof evt.values === 'object') {
+        state.params = { ...state.params, ...evt.values };
+      }
     });
   }
 

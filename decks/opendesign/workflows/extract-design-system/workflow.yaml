@@ -33,7 +33,7 @@ nodes:
   - id: author_system
     kind: agent
     dependsOn: [probe_source]
-    session: new
+    session: run
     prompt: |
       Use the `opendesign-system-extract` skill to create a complete design system package in:
       {{inputs.outDir}}

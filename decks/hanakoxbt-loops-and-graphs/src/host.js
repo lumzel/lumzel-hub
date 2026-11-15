@@ -6,15 +6,112 @@ import { checkTopologyDrift, extractYamlNodeIds } from './topology/layout.js';
 import { getTopology } from './topology/index.js';
 
 const BASE_TITLE = 'Loops & Graphs · @hanakoxbt';
+const PARAM_KEYS = ['maxUnits', 'fullCheckCmd', 'setupCmd', 'reviewCheckCmd'];
 
 export function createHost(store, demo) {
   let workflowUnsub = null;
+  let defaultsUnsub = null;
+  let paramsUnsub = null;
   let pollTimer = null;
   let lastPushAt = 0;
   let pollNullCount = 0;
   let toastTimer = null;
   let tickTimer = null;
   let prevRunState = null;
+
+  function sanitizeAgentSelection(sel, catalog) {
+    const clean = {
+      provider: typeof sel?.provider === 'string' ? sel.provider.trim() : '',
+      model: typeof sel?.model === 'string' ? sel.model.trim() : '',
+      effort: typeof sel?.effort === 'string' ? sel.effort.trim() : '',
+    };
+    const agents = Array.isArray(catalog?.agents) ? catalog.agents : [];
+    if (agents.length === 0) return clean;
+    if (clean.provider && !agents.some(a => a.id === clean.provider)) {
+      return { provider: '', model: '', effort: '' };
+    }
+    const defaults = catalog?.defaults || {};
+    const activeProvider =
+      clean.provider || defaults.provider || agents.find(a => a.default)?.id || agents[0]?.id || '';
+    const agent = agents.find(a => a.id === activeProvider) || agents[0];
+    const models = Array.isArray(agent?.models) ? agent.models : [];
+    if (clean.model && !models.some(m => m.id === clean.model)) {
+      clean.model = '';
+    }
+    const activeModel =
+      clean.model ||
+      (!clean.provider && defaults.model && models.some(m => m.id === defaults.model) ? defaults.model : '') ||
+      agent?.defaultModel ||
+      models[0]?.id ||
+      '';
+    const modelObj = models.find(m => m.id === activeModel);
+    const efforts = Array.isArray(modelObj?.efforts) ? modelObj.efforts : [];
+    if (clean.effort && !efforts.includes(clean.effort)) {
+      clean.effort = '';
+    }
+    return clean;
+  }
+
+  function effectiveAgentInfo(catalog = store.get().agentCatalog, selected = store.get().agentOverride) {
+    const agents = Array.isArray(catalog?.agents) ? catalog.agents : [];
+    const defaults = catalog?.defaults || {};
+    const hostProviderId = defaults.provider || agents.find(a => a.default)?.id || agents[0]?.id || '';
+    const hostAgent = agents.find(a => a.id === hostProviderId) || agents[0] || null;
+    const providerId = selected?.provider || hostProviderId;
+    const agent = agents.find(a => a.id === providerId) || hostAgent;
+    const models = Array.isArray(agent?.models) ? agent.models : [];
+    const defaultModelId =
+      (!selected?.provider && defaults.model && models.some(m => m.id === defaults.model) ? defaults.model : '') ||
+      agent?.defaultModel ||
+      models[0]?.id ||
+      '';
+    const modelId = selected?.model && models.some(m => m.id === selected.model) ? selected.model : defaultModelId;
+    const modelObj = models.find(m => m.id === modelId) || null;
+    const efforts = Array.isArray(modelObj?.efforts) ? modelObj.efforts : [];
+    const defaultEffort =
+      (!selected?.provider && !selected?.model && defaults.effort && efforts.includes(defaults.effort)
+        ? defaults.effort
+        : '') ||
+      (modelObj?.defaultEffort && efforts.includes(modelObj.defaultEffort) ? modelObj.defaultEffort : efforts[0] || '');
+    const effort =
+      efforts.length === 0
+        ? ''
+        : selected?.effort && efforts.includes(selected.effort)
+          ? selected.effort
+          : defaultEffort;
+    const hasOverride = Boolean(selected?.provider || selected?.model || selected?.effort);
+    const hasDeckDefaults = Boolean(
+      defaults?.deck?.provider || defaults?.deck?.model || defaults?.deck?.effort,
+    );
+    return {
+      agents,
+      hostAgent,
+      agent,
+      providerId: agent?.id || providerId,
+      providerName: agent?.name || providerId || 'Agent',
+      models,
+      modelId,
+      modelName: modelObj?.name || modelId,
+      defaultModelId,
+      efforts,
+      effort,
+      defaultEffort,
+      hasOverride,
+      hasDeckDefaults,
+    };
+  }
+
+  function workflowAgentOptions() {
+    const st = store.get();
+    const sel = st.agentOverride || {};
+    if (!sel.provider && !sel.model && !sel.effort) return undefined;
+    const info = effectiveAgentInfo(st.agentCatalog, sel);
+    const opts = {};
+    if (sel.provider || sel.model) opts.provider = info.providerId;
+    if (sel.model) opts.model = info.modelId;
+    if (sel.effort && info.efforts.includes(sel.effort)) opts.effort = sel.effort;
+    return Object.keys(opts).length > 0 ? opts : undefined;
+  }
 
   function setCap(key, val) {
     if (!key) return;
@@ -264,6 +361,83 @@ export function createHost(store, demo) {
     if (window.deck?.store?.put) {
       await safe(() => window.deck.store.put('prefs', 'ui', nextPrefs), 'db');
     }
+    if (window.deck?.params?.set && !store.get().ctx.preview) {
+      const paramPatch = {};
+      for (const k of PARAM_KEYS) {
+        if (Object.prototype.hasOwnProperty.call(patch, k)) {
+          paramPatch[k] = k === 'maxUnits' ? Number(nextPrefs[k]) || 5 : String(nextPrefs[k] ?? '');
+        }
+      }
+      if (Object.keys(paramPatch).length > 0) {
+        window.deck.params.set(paramPatch).catch(() => {});
+      }
+    }
+  }
+
+  async function setAgentOverride(partial) {
+    const st = store.get();
+    const next = sanitizeAgentSelection({ ...st.agentOverride, ...partial }, st.agentCatalog);
+    store.set(s => ({
+      ...s,
+      agentOverride: next,
+      prefs: { ...s.prefs, agentOverride: next },
+    }));
+    if (st.mode !== 'demo' && st.caps.db !== false && window.deck?.store?.put) {
+      await safe(() => window.deck.store.put('prefs', 'ui', { ...st.prefs, agentOverride: next }), 'db');
+    }
+  }
+
+  async function saveAgentAsProjectDefault() {
+    const st = store.get();
+    if (st.ctx.preview) {
+      showToast(t('demoNoRepoWrite'));
+      return;
+    }
+    const opts = workflowAgentOptions();
+    if (!opts || !window.deck?.agent?.setDefaults) return;
+    const res = await safe(() => window.deck.agent.setDefaults(opts), 'agent');
+    if (!res.ok) {
+      showToast(res.error || 'Failed to save default');
+      return;
+    }
+    const empty = { provider: '', model: '', effort: '' };
+    store.set(s => ({
+      ...s,
+      agentCatalog: res.v?.defaults && s.agentCatalog ? { ...s.agentCatalog, defaults: res.v.defaults } : s.agentCatalog,
+      agentOverride: empty,
+      prefs: { ...s.prefs, agentOverride: empty },
+    }));
+    if (st.caps.db !== false && window.deck?.store?.put) {
+      await safe(() => window.deck.store.put('prefs', 'ui', { ...st.prefs, agentOverride: empty }), 'db');
+    }
+    showToast(t('agentSavedDefault'));
+  }
+
+  async function resetAgentDefaults() {
+    const st = store.get();
+    const empty = { provider: '', model: '', effort: '' };
+    let nextCatalog = st.agentCatalog;
+    if (!st.ctx.preview && window.deck?.agent?.resetDefaults) {
+      const res = await safe(() => window.deck.agent.resetDefaults(), 'agent');
+      if (res.ok && res.v?.defaults && nextCatalog) {
+        nextCatalog = { ...nextCatalog, defaults: res.v.defaults };
+      }
+    }
+    store.set(s => ({
+      ...s,
+      agentCatalog: nextCatalog,
+      agentOverride: empty,
+      prefs: { ...s.prefs, agentOverride: empty },
+    }));
+    if (st.mode !== 'demo' && st.caps.db !== false && window.deck?.store?.put) {
+      await safe(() => window.deck.store.put('prefs', 'ui', { ...st.prefs, agentOverride: empty }), 'db');
+    }
+  }
+
+  function openSettings() {
+    if (window.deck?.ui?.openSettings) {
+      window.deck.ui.openSettings().catch(() => {});
+    }
   }
 
   async function checkWorkflowTopology(id) {
@@ -322,15 +496,17 @@ export function createHost(store, demo) {
     }
 
     // 2. Parallel startup probes (§9.5 step 3)
-    const [prefsRes, lessonsRes, runsRes, wfListRes, fileRes] = await Promise.all([
+    const [prefsRes, lessonsRes, runsRes, wfListRes, fileRes, catalogRes, paramsRes] = await Promise.all([
       window.deck?.store?.list ? safe(() => window.deck.store.list('prefs'), 'db') : Promise.resolve({ ok: false }),
       window.deck?.store?.list ? safe(() => window.deck.store.list('lessons'), 'db') : Promise.resolve({ ok: false }),
       window.deck?.store?.list ? safe(() => window.deck.store.list('runs'), 'db') : Promise.resolve({ ok: false }),
       window.deck?.workflow?.list ? safe(() => window.deck.workflow.list(), 'workflow') : Promise.resolve({ ok: false }),
       window.deck?.files?.read ? safe(() => window.deck.files.read(lessons.LESSONS_FILE), 'files') : Promise.resolve({ ok: false }),
+      window.deck?.agent?.catalog ? safe(() => window.deck.agent.catalog()) : Promise.resolve({ ok: false }),
+      window.deck?.params?.get ? safe(() => window.deck.params.get()) : Promise.resolve({ ok: false }),
     ]);
 
-    // Prefs
+    // Prefs + project-scoped Deck params
     let mergedPrefs = { ...DEFAULT_PREFS };
     if (prefsRes.ok && Array.isArray(prefsRes.v)) {
       const uiEntry = prefsRes.v.find(e => e && (e.key === 'ui' || e.id === 'ui'));
@@ -339,6 +515,16 @@ export function createHost(store, demo) {
         mergedPrefs = { ...DEFAULT_PREFS, ...val };
       }
     }
+    if (paramsRes.ok && paramsRes.v?.values && typeof paramsRes.v.values === 'object') {
+      for (const k of PARAM_KEYS) {
+        if (paramsRes.v.values[k] !== undefined) {
+          mergedPrefs[k] = paramsRes.v.values[k];
+        }
+      }
+    }
+    const agentCatalog = catalogRes.ok ? catalogRes.v || null : null;
+    const agentOverride = sanitizeAgentSelection(mergedPrefs.agentOverride, agentCatalog);
+    mergedPrefs.agentOverride = agentOverride;
 
     // Workflows
     const wfMap = {};
@@ -381,6 +567,8 @@ export function createHost(store, demo) {
       workflows: wfMap,
       history: hist,
       prefs: mergedPrefs,
+      agentCatalog,
+      agentOverride,
       banner,
       ui: {
         ...s.ui,
@@ -392,6 +580,43 @@ export function createHost(store, demo) {
         demoSpeed: mergedPrefs.demoSpeed === 4 ? 4 : 1,
       },
     }));
+
+    if (!defaultsUnsub && typeof window.deck?.agent?.onDefaults === 'function') {
+      defaultsUnsub = window.deck.agent.onDefaults(async evt => {
+        const nextDefaults = evt?.defaults || {
+          provider: evt?.provider || '',
+          model: evt?.model || '',
+          effort: evt?.effort || '',
+        };
+        let nextCatalog = store.get().agentCatalog;
+        if (!nextCatalog && window.deck?.agent?.catalog) {
+          nextCatalog = await window.deck.agent.catalog().catch(() => null);
+        } else if (nextCatalog) {
+          nextCatalog = { ...nextCatalog, defaults: nextDefaults };
+        }
+        const nextOverride = sanitizeAgentSelection(store.get().agentOverride, nextCatalog);
+        store.set(s => ({
+          ...s,
+          agentCatalog: nextCatalog,
+          agentOverride: nextOverride,
+          prefs: { ...s.prefs, agentOverride: nextOverride },
+        }));
+      });
+    }
+
+    if (!paramsUnsub && typeof window.deck?.params?.onChange === 'function') {
+      paramsUnsub = window.deck.params.onChange(evt => {
+        const vals = evt?.values;
+        if (!vals || typeof vals !== 'object') return;
+        store.set(s => {
+          const nextPrefs = { ...s.prefs };
+          for (const k of PARAM_KEYS) {
+            if (vals[k] !== undefined) nextPrefs[k] = vals[k];
+          }
+          return { ...s, prefs: nextPrefs };
+        });
+      });
+    }
 
     // Check YAML vs topology
     checkWorkflowTopology(preset);
@@ -491,7 +716,10 @@ export function createHost(store, demo) {
     document.title = BASE_TITLE;
     store.set({ pending: 'starting', banner: null, selection: null });
 
-    const r = await safe(() => window.deck.workflow.run(preset, inputs), 'workflow');
+    const r = await safe(
+      () => window.deck.workflow.run(preset, inputs, workflowAgentOptions()),
+      'workflow',
+    );
     if (!r.ok || !r.v) {
       store.set({
         pending: null,
@@ -679,6 +907,11 @@ export function createHost(store, demo) {
     safe,
     showToast,
     savePrefs,
+    effectiveAgentInfo,
+    setAgentOverride,
+    saveAgentAsProjectDefault,
+    resetAgentDefaults,
+    openSettings,
     startRun,
     stopRun,
     retryNode,

@@ -121,8 +121,17 @@ function buildFeatureShipLanes(run, telemetryByUnit) {
               idx === greenAttempts - 1 && greenGate.ok !== false ? 'pass' : 'fail',
             );
 
+      const isVerifyOnly = u.mode === 'verify' || !(u.checkFiles && u.checkFiles.length);
       let phases;
-      if (r.ok) {
+      if (isVerifyOnly) {
+        if (r.ok) {
+          phases = ['skip', 'skip', 'pass', 'pass'];
+        } else if (o.verify_green || o.green_gate) {
+          phases = ['skip', 'skip', 'pass', 'fail'];
+        } else {
+          phases = ['skip', 'skip', 'fail', 'skip'];
+        }
+      } else if (r.ok) {
         phases = ['pass', 'pass', 'pass', 'pass'];
       } else if (redGate.ok === false) {
         phases = ['pass', 'fail', 'skip', 'skip'];

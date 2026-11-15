@@ -44,6 +44,7 @@ export const META = {
 export const CHILD_NODE_IDS = [
   'lane_start',
   'setup',
+  'mode_gate',
   'write_check',
   'verify_red',
   'red_gate',

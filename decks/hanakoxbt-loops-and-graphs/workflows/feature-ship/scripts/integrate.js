@@ -20,20 +20,40 @@ export function assessRisk(ns, extra) {
   return { level, flags };
 }
 
+function resolveFullCheckCmd(ctx) {
+  const { inputs, outputs, state } = ctx;
+  return (
+    String((inputs && inputs.fullCheckCmd) || '').trim() ||
+    String((state && state.fullCheckCmd) || '').trim() ||
+    String((outputs && outputs.plan && outputs.plan.fullCheckCmd) || '').trim() ||
+    String((outputs && outputs.preflight && outputs.preflight.fullCheckCmd) || '').trim()
+  );
+}
+
 async function runCheck(ctx) {
-  const pre = ctx.outputs.preflight;
+  const pre = (ctx.outputs && ctx.outputs.preflight) || {};
   if (pre.setupCmd) {
     const s = await ctx.sh(pre.setupCmd, { timeoutSec: 900 });
-    if (!s.ok) return { ok: false, reason: 'setup failed', tail: tail(s.stdout + '\n' + s.stderr) };
+    if (!s.ok) return { ok: false, skipped: false, reason: 'setup failed', tail: tail(s.stdout + '\n' + s.stderr) };
   }
-  if (!pre.fullCheckCmd) return { ok: false, reason: 'no full check command', tail: '' };
-  const c = await ctx.sh(pre.fullCheckCmd, { timeoutSec: 1800 });
-  return { ok: c.ok, reason: c.ok ? '' : 'full check failed', code: c.code, tail: tail(c.stdout + '\n' + c.stderr) };
+  const cmd = resolveFullCheckCmd(ctx);
+  if (!cmd) {
+    return { ok: true, skipped: true, reason: 'no full check command configured', cmd: '', tail: '' };
+  }
+  const c = await ctx.sh(cmd, { timeoutSec: 1800 });
+  return {
+    ok: c.ok,
+    skipped: false,
+    reason: c.ok ? '' : 'full check failed',
+    cmd,
+    code: c.code,
+    tail: tail(c.stdout + '\n' + c.stderr),
+  };
 }
 
 async function collectWorkingTreeDiff(ctx, sh) {
-  const ns = parseNumstat((await sh('git diff --numstat HEAD', { timeoutSec: 60 })).stdout);
-  const stOut = (await sh('git status --porcelain=v1 -uall', { timeoutSec: 30 })).stdout;
+  const ns = parseNumstat((await sh('git -c core.quotePath=false diff --numstat HEAD', { timeoutSec: 60 })).stdout);
+  const stOut = (await sh('git -c core.quotePath=false status --porcelain=v1 -uall', { timeoutSec: 30 })).stdout;
   const seen = new Set(ns.files.map(f => f.path));
   for (const rawLine of stOut.split('\n')) {
     if (!rawLine.startsWith('?? ')) continue;
@@ -58,15 +78,16 @@ export async function integrate(ctx) {
       error: r.error || '',
       retries: r.retries || 0,
       attempts: (r.outputs && r.outputs.green_gate && r.outputs.green_gate.attempt) || 0,
-      phase: r.outputs && r.outputs.red_gate && r.outputs.red_gate.ok ? 'green' : 'red',
+      phase: r.outputs && r.outputs.red_gate && r.outputs.red_gate.ok === false ? 'red' : 'green',
     }));
   const branch = await line(ctx, 'git rev-parse --abbrev-ref HEAD');
   const sha = await line(ctx, 'git rev-parse HEAD');
   const merged = passed.map(p => ({ id: p.item.id }));
-  const check = passed.length ? await runCheck(ctx) : { ok: false, reason: 'no unit passed', tail: '' };
+  const check = passed.length ? await runCheck(ctx) : { ok: false, skipped: false, reason: 'no unit passed', cmd: '', tail: '' };
   const ns = await collectWorkingTreeDiff(ctx, sh);
   const extra = [];
   if (!check.ok) extra.push({ level: 'high', label: `full check: ${check.reason}` });
+  else if (check.skipped) extra.push({ level: 'medium', label: 'no full check command — verified by per-unit checks only' });
   if (failed.length) extra.push({ level: 'low', label: `${failed.length} unit(s) failed after bounded retries — excluded` });
   const risk = assessRisk(ns, extra);
   state.candidate = {
@@ -78,9 +99,10 @@ export async function integrate(ctx) {
     passed: passed.length,
     total: results.length,
     checkOk: check.ok,
+    checkSkipped: !!check.skipped,
     checkReason: check.reason,
     checkTail: check.tail,
-    checkCmd: outputs.preflight.fullCheckCmd,
+    checkCmd: check.cmd || resolveFullCheckCmd(ctx),
     filesChanged: ns.files.length,
     insertions: ns.insertions,
     deletions: ns.deletions,
@@ -101,15 +123,21 @@ export async function reverify(ctx) {
   const sha = await line(ctx, 'git rev-parse HEAD');
   const check = await runCheck(ctx);
   const ns = await collectWorkingTreeDiff(ctx, sh);
-  const extra = check.ok ? [] : [{ level: 'high', label: `full check after rework: ${check.reason}` }];
+  const extra = !check.ok
+    ? [{ level: 'high', label: `full check after rework: ${check.reason}` }]
+    : check.skipped
+      ? [{ level: 'medium', label: 'no full check command — verified by per-unit checks only' }]
+      : [];
   state.candidate = Object.assign({}, c, {
     source: 'rework',
     round,
     branch,
     sha,
     checkOk: check.ok,
+    checkSkipped: !!check.skipped,
     checkReason: check.reason,
     checkTail: check.tail,
+    checkCmd: check.cmd || c.checkCmd || resolveFullCheckCmd(ctx),
     filesChanged: ns.files.length,
     insertions: ns.insertions,
     deletions: ns.deletions,

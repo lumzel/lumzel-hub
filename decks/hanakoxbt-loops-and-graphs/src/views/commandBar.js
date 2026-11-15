@@ -83,7 +83,9 @@ export function mountCommandBar(store, host) {
     clear(checksPop);
     const st = store.get();
     const prefs = st.prefs;
-    const detectedCmd = st.run && st.run.outputs && st.run.outputs.preflight && st.run.outputs.preflight.fullCheckCmd;
+    const detectedCmd =
+      (st.run && st.run.outputs && st.run.outputs.plan && st.run.outputs.plan.fullCheckCmd) ||
+      (st.run && st.run.outputs && st.run.outputs.preflight && st.run.outputs.preflight.fullCheckCmd);
 
     if (st.preset === 'feature-ship') {
       const fullInput = h('input', {

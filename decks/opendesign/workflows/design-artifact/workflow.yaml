@@ -45,7 +45,7 @@ nodes:
   - id: propose_directions
     kind: agent
     dependsOn: [load_context]
-    session: new
+    session: run
     prompt: |
       You are running the Discovery & Direction stage of OpenDesign for "{{inputs.title}}" (surface: {{inputs.surface}}).
 

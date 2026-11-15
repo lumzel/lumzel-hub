@@ -967,6 +967,15 @@ button { border: 0; background: none; padding: 0; cursor: pointer; }
 .agent-pop-hint {
   margin: 0;
 }
+.agent-pop-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.btn-xs {
+  padding: 5px 8px;
+  font-size: 11px;
+}
 
 .revise-agent-btn {
   display: flex;

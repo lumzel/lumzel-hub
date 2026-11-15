@@ -9,14 +9,17 @@
   var inflightRuns = {};
   var tokenButtons = {};
   var stateListeners = [];
+  var defaultsListeners = [];
+  var paramsListeners = [];
   var eventSubscribers = {};
+  var workflowSubscribers = {};
   var UPLOAD_CHUNK_BYTES = 512 * 1024;
 
   function emitDomEvent(el, name, detail) {
     if (!el || typeof el.dispatchEvent !== 'function' || typeof window.CustomEvent !== 'function') return;
     try {
       el.dispatchEvent(new window.CustomEvent(name, { bubbles: true, detail: detail }));
-    } catch (_err) {
+    } catch {
       // Ignore synthetic event errors in minimal/headless DOM hosts.
     }
   }
@@ -38,6 +41,26 @@
       }
       return;
     }
+    if (msg.event === 'agent.defaults') {
+      for (var d = 0; d < defaultsListeners.length; d++) {
+        try {
+          defaultsListeners[d](msg);
+        } catch (err4) {
+          report(err4 && err4.message ? err4.message : err4, err4 && err4.stack);
+        }
+      }
+      return;
+    }
+    if (msg.event === 'params.changed') {
+      for (var p = 0; p < paramsListeners.length; p++) {
+        try {
+          paramsListeners[p](msg.state || msg);
+        } catch (err5) {
+          report(err5 && err5.message ? err5.message : err5, err5 && err5.stack);
+        }
+      }
+      return;
+    }
     if (msg.event === 'agent.event') {
       var sid = msg.sessionId ? String(msg.sessionId) : '';
       var targets = [];
@@ -48,6 +71,20 @@
           targets[j](msg);
         } catch (err2) {
           report(err2 && err2.message ? err2.message : err2, err2 && err2.stack);
+        }
+      }
+      return;
+    }
+    if (msg.event === 'workflow.event') {
+      var rid = msg.runId ? String(msg.runId) : '';
+      var wfTargets = [];
+      if (rid && workflowSubscribers[rid]) wfTargets = wfTargets.concat(workflowSubscribers[rid]);
+      if (workflowSubscribers['*']) wfTargets = wfTargets.concat(workflowSubscribers['*']);
+      for (var k = 0; k < wfTargets.length; k++) {
+        try {
+          wfTargets[k](msg);
+        } catch (err3) {
+          report(err3 && err3.message ? err3.message : err3, err3 && err3.stack);
         }
       }
     }
@@ -268,6 +305,50 @@
     };
   }
 
+  function subscribeAgentDefaults(cb) {
+    if (typeof cb !== 'function') throw new Error('agent.onDefaults expects a callback');
+    defaultsListeners.push(cb);
+    return function unsubscribe() {
+      var idx = defaultsListeners.indexOf(cb);
+      if (idx >= 0) defaultsListeners.splice(idx, 1);
+    };
+  }
+
+  function subscribeParamsChanged(cb) {
+    if (typeof cb !== 'function') throw new Error('params.onChange expects a callback');
+    paramsListeners.push(cb);
+    return function unsubscribe() {
+      var idx = paramsListeners.indexOf(cb);
+      if (idx >= 0) paramsListeners.splice(idx, 1);
+    };
+  }
+
+  function subscribeWorkflowEvents(runIdOrCb, maybeCb) {
+    var rid = typeof runIdOrCb === 'function' ? '*' : String(runIdOrCb || '*');
+    var cb = typeof runIdOrCb === 'function' ? runIdOrCb : maybeCb;
+    if (typeof cb !== 'function') throw new Error('workflow.subscribe expects a callback');
+    var list = workflowSubscribers[rid];
+    if (!list) {
+      list = [];
+      workflowSubscribers[rid] = list;
+      call('workflow.subscribe', { runId: rid }).catch(function () {});
+    }
+    list.push(cb);
+    var active = true;
+    return function unsubscribe() {
+      if (!active) return;
+      active = false;
+      var current = workflowSubscribers[rid];
+      if (!current) return;
+      var idx = current.indexOf(cb);
+      if (idx >= 0) current.splice(idx, 1);
+      if (current.length === 0) {
+        delete workflowSubscribers[rid];
+        call('workflow.unsubscribe', { runId: rid }).catch(function () {});
+      }
+    };
+  }
+
   window.deck = {
     context: function () {
       return call('ui.context');
@@ -276,6 +357,15 @@
     // Defaults: `focus: false` (runs in background, visible in Session list), `wait: true` (returns Turn output),
     // `dedupe: 'running'` (prevents duplicate concurrent execution).
     agent: {
+      catalog: function () {
+        return call('agent.catalog');
+      },
+      setDefaults: function (defaults) {
+        return call('agent.setDefaults', defaults || {});
+      },
+      resetDefaults: function () {
+        return call('agent.resetDefaults');
+      },
       run: runAgent,
       send: function (prompt, options) {
         var req = {};
@@ -306,6 +396,23 @@
       },
       onEvent: subscribeAgentEvents,
       onState: subscribeAgentState,
+      onDefaults: subscribeAgentDefaults,
+    },
+    // Project-scoped Deck configuration parameters declared in `deck.json` `params`.
+    params: {
+      schema: function () {
+        return call('params.schema');
+      },
+      get: function () {
+        return call('params.get');
+      },
+      set: function (patch) {
+        return call('params.set', { patch: patch && typeof patch === 'object' ? patch : {} });
+      },
+      reset: function () {
+        return call('params.reset');
+      },
+      onChange: subscribeParamsChanged,
     },
     // Local SQLite database (`deck.json` `permissions: ["db"]`).
     db: {
@@ -435,7 +542,7 @@
       if (typeof init.timeoutMs === 'number') payload.timeoutMs = init.timeoutMs;
       return call('fetch', payload);
     },
-    // Opens a Session, Worktree file preview, or allowlisted external URL (`permissions: ["open"]`).
+    // Opens a Session, Worktree file preview, allowlisted external URL (`permissions: ["open"]`), or Deck Settings.
     ui: {
       open: function (target, options) {
         var payload = {};
@@ -451,6 +558,55 @@
         }
         return call('ui.open', payload);
       },
+      openSettings: function () {
+        return call('ui.openSettings');
+      },
+    },
+    // Built-in Deck workflows (`permissions: ["workflow"]`).
+    workflow: {
+      list: function () {
+        return call('workflow.list');
+      },
+      get: function (workflowId) {
+        return call('workflow.get', { workflowId: workflowId ? String(workflowId) : '' });
+      },
+      run: function (workflowId, inputs, options) {
+        var opts = options && typeof options === 'object' ? options : {};
+        var payload = {
+          workflowId: workflowId ? String(workflowId) : '',
+        };
+        if (inputs !== undefined && inputs !== null) payload.inputs = inputs;
+        if (typeof opts.worktreeId === 'string' && opts.worktreeId.trim()) payload.worktreeId = opts.worktreeId.trim();
+        if (typeof opts.provider === 'string' && opts.provider.trim()) payload.provider = opts.provider.trim();
+        if (typeof opts.model === 'string' && opts.model.trim()) payload.model = opts.model.trim();
+        if (typeof opts.effort === 'string' && opts.effort.trim()) payload.effort = opts.effort.trim();
+        if (isPermissionTier(opts.permissions)) payload.permissions = opts.permissions;
+        if (typeof opts.loadout === 'string' && opts.loadout.trim()) payload.loadout = opts.loadout.trim();
+        return call('workflow.run', payload);
+      },
+      stop: function (runId) {
+        return call('workflow.stop', { runId: runId ? String(runId) : '' });
+      },
+      getRun: function (runId) {
+        return call('workflow.getRun', { runId: runId ? String(runId) : '' });
+      },
+      retryNode: function (runId, nodeId) {
+        return call('workflow.retryNode', {
+          runId: runId ? String(runId) : '',
+          nodeId: nodeId ? String(nodeId) : '',
+        });
+      },
+      resumeGate: function (runId, nodeId, decision, payload) {
+        var args = {
+          runId: runId ? String(runId) : '',
+          nodeId: nodeId ? String(nodeId) : '',
+          decision: decision ? String(decision) : '',
+        };
+        if (payload !== undefined) args.payload = payload;
+        return call('workflow.resumeGate', args);
+      },
+      subscribe: subscribeWorkflowEvents,
+      onEvent: subscribeWorkflowEvents,
     },
   };
 

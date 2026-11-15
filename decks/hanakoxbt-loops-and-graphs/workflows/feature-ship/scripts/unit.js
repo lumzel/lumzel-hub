@@ -1,10 +1,13 @@
-import { tel, tail, parseNumstat, line, fnv1a } from './lib.js';
-const ENV_FAIL = /command not found|Cannot find module|ERR_MODULE_NOT_FOUND|ENOENT|No such file or directory|could not find `Cargo\.toml`|No module named/i;
+import { tel, tail, parseNumstat, line, fnv1a, shQuote } from './lib.js';
+const ENV_FAIL = /command not found|Cannot find module|ERR_MODULE_NOT_FOUND|could not find `Cargo\.toml`|No module named|executable not found/i;
 const SIG = /(FAIL|✗|×|panicked at|AssertionError|Error:|expected .* received|assert)/i;
 
 export function laneStart(ctx) {
   tel(ctx, ctx.item.id, 'start', 'info', 0, ctx.item.title);
-  return { unit: ctx.item.id, startedAt: Math.floor(Date.now() / 1000) };
+  if (ctx.item.mode === 'verify' || !ctx.item.checkFiles || !ctx.item.checkFiles.length) {
+    tel(ctx, ctx.item.id, 'red_skip', 'info', 0, 'verify-only unit');
+  }
+  return { unit: ctx.item.id, mode: ctx.item.mode || 'tdd', startedAt: Math.floor(Date.now() / 1000) };
 }
 
 export async function redCheck(ctx) {
@@ -16,7 +19,7 @@ export async function redCheck(ctx) {
   let wrote = Array.isArray(item.checkFiles) && item.checkFiles.length > 0;
   if (wrote) {
     for (const f of item.checkFiles) {
-      if (!(await sh(`test -e '${f}'`, { timeoutSec: 5 })).ok) {
+      if (!(await sh(`test -e ${shQuote(f)}`, { timeoutSec: 5 })).ok) {
         wrote = false;
         break;
       }
@@ -77,7 +80,7 @@ const stripLines = s =>
 export async function unitReport(ctx) {
   const { item, state } = ctx;
   const sha = await line(ctx, 'git rev-parse HEAD');
-  const paths = [...(item.checkFiles || []), ...(item.implFiles || [])].map(f => `'${f}'`).join(' ');
+  const paths = [...(item.checkFiles || []), ...(item.implFiles || [])].map(shQuote).join(' ');
   const diffCmd = paths ? `git diff --numstat HEAD -- ${paths}` : 'git diff --numstat HEAD';
   const ns = parseNumstat((await ctx.sh(diffCmd, { timeoutSec: 30 })).stdout);
   tel(ctx, item.id, 'done', 'pass', state.greenAttempts || 1, sha.slice(0, 7));
@@ -88,6 +91,6 @@ export async function unitReport(ctx) {
     insertions: ns.insertions,
     deletions: ns.deletions,
     attempts: state.greenAttempts || 1,
-    redAttempts: state.redAttempts || 1,
+    redAttempts: state.redAttempts || 0,
   };
 }
