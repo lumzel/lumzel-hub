@@ -1,5 +1,5 @@
 id: design-artifact
-description: Structured OpenDesign pipeline: load DESIGN.md -> propose visual directions -> optional direction gate -> build tagged HTML artifact -> deterministic anti-slop lint & 5-axis critique loop.
+description: "Structured OpenDesign pipeline: load DESIGN.md -> propose visual directions -> optional direction gate -> build tagged HTML artifact -> deterministic anti-slop lint & 5-axis critique loop."
 
 inputs:
   artifactId:
