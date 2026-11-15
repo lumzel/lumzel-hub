@@ -25,6 +25,7 @@ A single repository can host both **Loadouts** (complete Agent persona + instruc
 | `visual-docs` | `Documentation` | 📐 Visual Docs | Curated Multi-Repo (`upstreams.json`) | 7 Diagram, HTML Doc, Wireframe, Prototype, Plan & PDF/PPT Skills |
 | `archify` | `Documentation` | 🗺️ Archify Diagrams | [`tt-a1i/archify`](https://github.com/tt-a1i/archify) | JSON-IR Architecture, Workflow, Sequence, Dataflow, ERD & Timeline Diagrams |
 | `lemo-opuscar` | `Design` | 🎬 Lemo-Opuscar | [`lemomo-ai/lemo-opuscar`](https://github.com/lemomo-ai/lemo-opuscar) | Code-rendered film directing skill (99 styles + custom), `opuscar-*` directing/technique/style rules, Kokoro TTS & audio synthesis env vars |
+| `bama` | `Engineering` | 🖥️ BAMA (Build Any Mac App) | [`daveebbelaar/bama`](https://github.com/daveebbelaar/bama) | 21 Stage-Ordered Skills (`start`, `plan`, `design`, `code`, `ship`) for native macOS / Swift / SwiftUI app research, cloning, scaffolding, Liquid Glass design, performance & testing |
 
 ## Included Decks
 

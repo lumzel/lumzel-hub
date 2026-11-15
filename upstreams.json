@@ -771,6 +771,28 @@
         "LEMO_FETCH": "1",
         "HF_ENDPOINT": ""
       }
+    },
+    {
+      "id": "bama",
+      "mode": "suite",
+      "repo": "daveebbelaar/bama",
+      "skills": {
+        "mode": "buckets",
+        "path": "skills",
+        "buckets": [
+          "start",
+          "plan",
+          "design",
+          "code",
+          "ship"
+        ]
+      },
+      "license": {
+        "source": "LICENSE"
+      },
+      "preserve": [
+        "AGENTS.md"
+      ]
     }
   ],
   "repos": {
@@ -865,6 +887,10 @@
     "lemomo-ai/lemo-opuscar": {
       "branch": "main",
       "sha": "3a7132b996be0241c1ea0ab180d519f06e6f10b6"
+    },
+    "daveebbelaar/bama": {
+      "branch": "main",
+      "sha": "22dc792ea040a35270c219c669f626594267aa1f"
     }
   }
 }

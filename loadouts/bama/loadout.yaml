@@ -1,0 +1,42 @@
+id: bama
+name: BAMA (Build Any Mac App)
+icon: 🖥️
+category: Engineering
+description: 'End-to-end native macOS app engineering suite (daveebbelaar/bama) with Swift and SwiftUI: research, app cloning, briefs and user stories, Swift Package scaffolding, Liquid Glass & UX design, OS integrations, performance, testing, and autonomous milestone loops.'
+i18n:
+  en:
+    name: BAMA (Build Any Mac App)
+    description: 'End-to-end native macOS app engineering suite (daveebbelaar/bama) with Swift and SwiftUI: research, app cloning, briefs and user stories, Swift Package scaffolding, Liquid Glass & UX design, OS integrations, performance, testing, and autonomous milestone loops.'
+  zh-CN:
+    name: BAMA 原生 Mac 应用构建套件
+    description: '基于 daveebbelaar/bama 的原生 macOS（Swift / SwiftUI）应用全流程构建套件：涵盖应用调研、竞品复刻截图、需求简报与用户故事、Swift Package 脚手架、Liquid Glass 与 UX 设计、系统集成、性能调优、测试验证及里程碑自主迭代闭环。'
+author: Dave Ebbelaar
+homepage: https://github.com/daveebbelaar/bama
+skills:
+- agent-cli
+- app-brief
+- app-icon
+- bama
+- build-and-verify
+- clone
+- design-from-app
+- design-kit
+- design-system
+- improve-architecture
+- improve-loop
+- layout-grid
+- mac-design
+- new-mac-app
+- os-integrations
+- performance
+- research
+- swift-swiftui
+- test-mac-app
+- user-stories
+- ux-design
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}
