@@ -17,33 +17,13 @@ on:
         required: false
         default: false
         type: boolean
-  pull_request:
-    paths:
-      - 'marketplace.json'
-      - 'upstreams.json'
-      - 'loadouts/**'
-      - 'tools/sync-upstreams.mjs'
 
 concurrency:
   group: sync-upstreams-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  verify:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Verify catalog manifests and Lumzel preview bounds
-        run: node tools/sync-upstreams.mjs --verify
-
   sync:
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: write

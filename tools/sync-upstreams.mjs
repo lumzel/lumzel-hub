@@ -22,7 +22,7 @@
  *   node tools/sync-upstreams.mjs --report /tmp/pr.md                 # Write Markdown change report
  */
 
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -1511,6 +1511,726 @@ function checkLoadoutSubagentTiers(entryId, loadoutDir, yamlText, errors) {
   });
 }
 
+const RUBY_YAML_TO_JSON = [
+  'require "yaml"; require "json"; require "date"',
+  'def norm(v); case v when Hash then v.each_with_object({}) { |(k, val), h| h[k.to_s] = norm(val) } when Array then v.map { |x| norm(x) } when Date, Time then v.to_s else v end; end',
+  'raw = STDIN.read',
+  'rbv = RUBY_VERSION.split(".").map(&:to_i)',
+  'doc = (rbv[0] > 3 || (rbv[0] == 3 && rbv[1] >= 1)) ? YAML.safe_load(raw, permitted_classes: [Date, Time], aliases: true) : YAML.safe_load(raw, [Date, Time], [], true)',
+  'puts JSON.generate(norm(doc))',
+].join('\n');
+
+function parseYamlText(yamlText, fileLabel) {
+  try {
+    const out = execFileSync('ruby', ['-e', RUBY_YAML_TO_JSON], {
+      input: yamlText,
+      encoding: 'utf8',
+      maxBuffer: 8 * 1024 * 1024,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return JSON.parse(out);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      throw new Error(`ruby is required to validate YAML files (${fileLabel})`);
+    }
+    const stderr = String(err.stderr || err.message || err).trim();
+    const firstLine = stderr.split('\n').find(Boolean) || String(err.message || err);
+    throw new Error(firstLine);
+  }
+}
+
+const DECK_FIELDS = new Set([
+  'id',
+  'title',
+  'description',
+  'category',
+  'author',
+  'homepage',
+  'icon',
+  'entry',
+  'lib',
+  'uses',
+  'loadout',
+  'agent',
+  'permissions',
+  'capabilities',
+  'store',
+  'i18n',
+  'workflows',
+  'version',
+]);
+const DECK_USES_KEYS = new Set(['skills', 'mcp', 'agents', 'hooks', 'rules']);
+const DECK_PERMISSIONS = new Set(['agent', 'db', 'files', 'upload', 'exec', 'fetch', 'open', 'workflow']);
+const DECK_AGENT_KEYS = new Set(['provider', 'model', 'effort', 'permissions', 'loadout', 'plan']);
+const DECK_CAPABILITY_KEYS = new Set(['files', 'exec', 'fetch', 'open']);
+const DECK_STORE_KEYS = new Set(['scope', 'migrations']);
+const DECK_I18N_KEYS = new Set(['title', 'description']);
+
+const WF_ROOT_KEYS = new Set([
+  'id',
+  'description',
+  'permissions',
+  'start',
+  'trigger',
+  'inputs',
+  'budget',
+  'state',
+  'nodes',
+]);
+const WF_TRIGGER_KEYS = new Set(['autoRun', 'inputHint']);
+const WF_INPUT_KEYS = new Set(['type', 'required', 'default', 'description']);
+const WF_BUDGET_KEYS = new Set(['maxMinutes', 'maxIterations']);
+const WF_COMMON_NODE_KEYS = new Set([
+  'id',
+  'kind',
+  'dependsOn',
+  'join',
+  'next',
+  'advanceRound',
+  'maxIterations',
+  'onExceed',
+]);
+const WF_NODE_KEYS = {
+  agent: new Set([
+    ...WF_COMMON_NODE_KEYS,
+    'session',
+    'worktree',
+    'loadout',
+    'agent',
+    'model',
+    'effort',
+    'permissions',
+    'timeoutSec',
+    'prompt',
+    'promptFile',
+    'outputSchema',
+  ]),
+  shell: new Set([
+    ...WF_COMMON_NODE_KEYS,
+    'worktree',
+    'command',
+    'timeoutSec',
+    'expectOk',
+    'continueOnError',
+  ]),
+  code: new Set([...WF_COMMON_NODE_KEYS, 'worktree', 'script', 'uses']),
+  gate: new Set([...WF_COMMON_NODE_KEYS, 'cases', 'check', 'onFail', 'default', 'pause', 'prompt']),
+  map: new Set([...WF_COMMON_NODE_KEYS, 'forEach', 'concurrency', 'worktree', 'nodes']),
+};
+const WF_GATE_CASE_KEYS = new Set(['when', 'next', 'advanceRound']);
+const WF_GATE_TARGET_KEYS = new Set(['next', 'advanceRound']);
+const WF_GATE_CHECK_KEYS = new Set(['kind', 'script', 'uses', 'command', 'timeoutSec', 'expectOk']);
+
+function isPlainObject(v) {
+  return Boolean(v) && typeof v === 'object' && !Array.isArray(v);
+}
+
+function isNonEmptyString(v) {
+  return typeof v === 'string' && v.trim().length > 0;
+}
+
+function validDeckRelativePath(rel) {
+  if (typeof rel !== 'string' || !rel || rel.startsWith('/') || rel.includes('\\') || rel.includes('\0')) {
+    return false;
+  }
+  return rel.split('/').every((part) => part !== '..' && part !== '');
+}
+
+function validExecCommand(cmd) {
+  if (typeof cmd !== 'string' || !cmd || cmd.trim() !== cmd || cmd === '.' || cmd === '..') {
+    return false;
+  }
+  return !/[\\/\0\s]/.test(cmd);
+}
+
+function validOriginPattern(pattern) {
+  if (typeof pattern !== 'string' || !pattern || pattern.trim() !== pattern || /\s/.test(pattern)) {
+    return false;
+  }
+  const idx = pattern.indexOf('://');
+  if (idx === -1) return false;
+  const scheme = pattern.slice(0, idx);
+  if (scheme !== 'http' && scheme !== 'https') return false;
+  const authority = pattern.slice(idx + 3).split(/[/?#]/)[0] || '';
+  return authority.length > 0 && !authority.startsWith(':');
+}
+
+function validLibRange(range) {
+  if (typeof range !== 'string') return false;
+  const tokens = range.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return false;
+  for (const token of tokens) {
+    const version = token.replace(/^(\^|~|>=|<=|>|<|=)/, '');
+    const parts = version.split('.');
+    if (parts.length < 1 || parts.length > 3 || parts[0] === 'x') return false;
+    for (let i = 0; i < parts.length; i += 1) {
+      if (!(/^\d+$/.test(parts[i]) || (i > 0 && parts[i] === 'x'))) return false;
+    }
+  }
+  return true;
+}
+
+function resolveInsideSandbox(rootDir, rel) {
+  if (typeof rel !== 'string' || !rel || rel.includes('\0') || rel.includes('\\') || rel.startsWith('/')) {
+    throw new Error(`invalid sandbox path ${JSON.stringify(rel)}`);
+  }
+  const parts = [];
+  for (const seg of rel.split('/')) {
+    if (seg === '') throw new Error(`empty path segment in ${JSON.stringify(rel)}`);
+    if (seg === '.') continue;
+    if (seg === '..') throw new Error(`parent traversal '..' not allowed in ${JSON.stringify(rel)}`);
+    parts.push(seg);
+  }
+  if (parts.length === 0) throw new Error(`path ${JSON.stringify(rel)} resolves to directory root`);
+  const canonRoot = fs.realpathSync(rootDir);
+  const candidate = path.join(rootDir, ...parts);
+  if (!fs.existsSync(candidate)) {
+    throw new Error(`sandbox file '${rel}' does not exist`);
+  }
+  const canonTarget = fs.realpathSync(candidate);
+  if (canonTarget === canonRoot || !canonTarget.startsWith(canonRoot + path.sep)) {
+    throw new Error(`path '${rel}' escapes sandbox root`);
+  }
+  if (!fs.statSync(canonTarget).isFile()) {
+    throw new Error(`path '${rel}' must reference a file, not a directory`);
+  }
+  return canonTarget;
+}
+
+function splitUsesSpec(uses) {
+  const trimmed = String(uses || '').trim();
+  if (!trimmed) throw new Error('`uses` reference cannot be empty');
+  const hashIdx = trimmed.indexOf('#');
+  if (hashIdx === -1) return { rel: trimmed, exportName: null };
+  const rel = trimmed.slice(0, hashIdx).trim();
+  const exportName = trimmed.slice(hashIdx + 1).trim();
+  if (!rel || !exportName) throw new Error(`invalid \`uses\` reference '${uses}'`);
+  return { rel, exportName };
+}
+
+function isSpecialWorkflowTarget(t) {
+  return t === '$done' || t === '$fail';
+}
+
+function forwardTargetsOfNode(node) {
+  const out = [];
+  if (typeof node.next === 'string' && !isSpecialWorkflowTarget(node.next)) out.push(node.next);
+  if (typeof node.onExceed === 'string' && !isSpecialWorkflowTarget(node.onExceed)) out.push(node.onExceed);
+  if (node.kind === 'gate') {
+    for (const c of Array.isArray(node.cases) ? node.cases : []) {
+      if (isPlainObject(c) && typeof c.next === 'string' && !isSpecialWorkflowTarget(c.next)) {
+        out.push(c.next);
+      }
+    }
+    if (isPlainObject(node.onFail) && typeof node.onFail.next === 'string' && !isSpecialWorkflowTarget(node.onFail.next)) {
+      out.push(node.onFail.next);
+    }
+    if (typeof node.default === 'string' && !isSpecialWorkflowTarget(node.default)) {
+      out.push(node.default);
+    }
+  }
+  return out;
+}
+
+function validateWorkflowNodes(nodes, explicitStart, wfDir) {
+  if (!Array.isArray(nodes) || nodes.length === 0) {
+    throw new Error('workflow must define at least one node');
+  }
+  const ids = new Set();
+  const indexOf = new Map();
+  for (let idx = 0; idx < nodes.length; idx += 1) {
+    const node = nodes[idx];
+    if (!isPlainObject(node)) throw new Error(`node #${idx + 1} must be an object`);
+    if (typeof node.id !== 'string' || !node.id.trim()) {
+      throw new Error('every node must have a non-empty `id`');
+    }
+    if (node.id !== node.id.trim()) {
+      throw new Error(`node id '${node.id}' must not contain surrounding whitespace`);
+    }
+    if (ids.has(node.id)) throw new Error(`duplicate node id '${node.id}'`);
+    ids.add(node.id);
+    indexOf.set(node.id, idx);
+  }
+
+  for (const node of nodes) {
+    const allowedKeys = WF_NODE_KEYS[node.kind];
+    if (!allowedKeys) {
+      throw new Error(`node '${node.id}' has unknown kind ${JSON.stringify(node.kind)}`);
+    }
+    for (const k of Object.keys(node)) {
+      if (!allowedKeys.has(k)) {
+        throw new Error(`node '${node.id}' (${node.kind}) has unknown field '${k}'`);
+      }
+    }
+    if (node.join !== undefined && node.join !== 'all' && node.join !== 'any') {
+      throw new Error(`node '${node.id}' has invalid join '${node.join}'`);
+    }
+    const deps = node.dependsOn === undefined ? [] : node.dependsOn;
+    if (!Array.isArray(deps) || deps.some((d) => typeof d !== 'string')) {
+      throw new Error(`node '${node.id}' dependsOn must be an array of strings`);
+    }
+    for (const dep of deps) {
+      if (dep === node.id) throw new Error(`node '${node.id}' cannot depend on itself`);
+      if (!ids.has(dep)) throw new Error(`node '${node.id}' depends on unknown node '${dep}'`);
+    }
+    for (const [label, target] of [
+      ['next', node.next],
+      ['onExceed', node.onExceed],
+    ]) {
+      if (target !== undefined && target !== null) {
+        if (typeof target !== 'string' || (!isSpecialWorkflowTarget(target) && !ids.has(target))) {
+          throw new Error(`node '${node.id}' references unknown ${label} target '${target}'`);
+        }
+      }
+    }
+    if (node.kind === 'agent') {
+      if (node.session !== undefined && node.session !== 'run' && node.session !== 'new') {
+        throw new Error(`agent node '${node.id}' invalid session '${node.session}'`);
+      }
+      if (node.worktree !== undefined && node.worktree !== 'current' && node.worktree !== 'isolated') {
+        throw new Error(`agent node '${node.id}' invalid worktree '${node.worktree}'`);
+      }
+      const hasPrompt = isNonEmptyString(node.prompt);
+      const hasPromptFile = isNonEmptyString(node.promptFile);
+      if (!hasPrompt && !hasPromptFile) {
+        throw new Error(`agent node '${node.id}' requires \`prompt\` or \`promptFile\``);
+      }
+      if (node.promptFile !== undefined && node.promptFile !== null) {
+        resolveInsideSandbox(wfDir, node.promptFile);
+      }
+      if (node.outputSchema !== undefined && node.outputSchema !== null) {
+        if (typeof node.outputSchema === 'string') {
+          const schemaPath = resolveInsideSandbox(wfDir, node.outputSchema);
+          const rawSchema = fs.readFileSync(schemaPath, 'utf8');
+          const parsedSchema = parseYamlText(rawSchema, node.outputSchema);
+          if (!isPlainObject(parsedSchema)) {
+            throw new Error(`outputSchema '${node.outputSchema}' must be a JSON/YAML object`);
+          }
+        } else if (!isPlainObject(node.outputSchema)) {
+          throw new Error(`agent node '${node.id}' outputSchema must be an object or file path`);
+        }
+      }
+    } else if (node.kind === 'shell') {
+      if (!isNonEmptyString(node.command)) {
+        throw new Error(`shell node '${node.id}' requires non-empty \`command\``);
+      }
+    } else if (node.kind === 'code') {
+      if (!isNonEmptyString(node.script) && !isNonEmptyString(node.uses)) {
+        throw new Error(`code node '${node.id}' requires \`script\` or \`uses\``);
+      }
+      if (typeof node.uses === 'string') {
+        const { rel } = splitUsesSpec(node.uses);
+        resolveInsideSandbox(wfDir, rel);
+      }
+    } else if (node.kind === 'gate') {
+      const cases = node.cases === undefined ? [] : node.cases;
+      if (!Array.isArray(cases)) throw new Error(`gate node '${node.id}' cases must be an array`);
+      for (const c of cases) {
+        if (!isPlainObject(c)) throw new Error(`gate node '${node.id}' case must be an object`);
+        for (const k of Object.keys(c)) {
+          if (!WF_GATE_CASE_KEYS.has(k)) throw new Error(`gate node '${node.id}' case has unknown field '${k}'`);
+        }
+        if (!isNonEmptyString(c.when)) throw new Error(`gate node '${node.id}' has case with empty \`when\``);
+        if (typeof c.next !== 'string' || (!isSpecialWorkflowTarget(c.next) && !ids.has(c.next))) {
+          throw new Error(`gate node '${node.id}' references unknown case.next target '${c.next}'`);
+        }
+      }
+      if (node.onFail !== undefined && node.onFail !== null) {
+        if (!isPlainObject(node.onFail)) throw new Error(`gate node '${node.id}' onFail must be an object`);
+        for (const k of Object.keys(node.onFail)) {
+          if (!WF_GATE_TARGET_KEYS.has(k)) throw new Error(`gate node '${node.id}' onFail has unknown field '${k}'`);
+        }
+        if (
+          typeof node.onFail.next !== 'string' ||
+          (!isSpecialWorkflowTarget(node.onFail.next) && !ids.has(node.onFail.next))
+        ) {
+          throw new Error(`gate node '${node.id}' references unknown onFail.next target '${node.onFail.next}'`);
+        }
+      }
+      if (node.default !== undefined && node.default !== null) {
+        if (typeof node.default !== 'string' || (!isSpecialWorkflowTarget(node.default) && !ids.has(node.default))) {
+          throw new Error(`gate node '${node.id}' references unknown default target '${node.default}'`);
+        }
+      }
+      if (node.check !== undefined && node.check !== null) {
+        if (!isPlainObject(node.check)) throw new Error(`gate node '${node.id}' check must be an object`);
+        for (const k of Object.keys(node.check)) {
+          if (!WF_GATE_CHECK_KEYS.has(k)) throw new Error(`gate node '${node.id}' check has unknown field '${k}'`);
+        }
+        if (node.check.kind === 'shell') {
+          if (!isNonEmptyString(node.check.command)) {
+            throw new Error(`gate node '${node.id}' shell check requires \`command\``);
+          }
+        } else if (node.check.kind === 'code') {
+          if (!isNonEmptyString(node.check.script) && !isNonEmptyString(node.check.uses)) {
+            throw new Error(`gate node '${node.id}' code check requires \`script\` or \`uses\``);
+          }
+          if (typeof node.check.uses === 'string') {
+            const { rel } = splitUsesSpec(node.check.uses);
+            resolveInsideSandbox(wfDir, rel);
+          }
+        } else {
+          throw new Error(`gate node '${node.id}' check has invalid kind '${node.check.kind}'`);
+        }
+      }
+    } else if (node.kind === 'map') {
+      if (!isNonEmptyString(node.forEach)) {
+        throw new Error(`map node '${node.id}' requires \`forEach\``);
+      }
+      validateWorkflowNodes(node.nodes, null, wfDir);
+    }
+  }
+
+  // DAG acyclicity check over dependsOn (matches Kahn's algorithm in schema.rs)
+  const indegree = new Array(nodes.length).fill(0);
+  const depChildren = Array.from({ length: nodes.length }, () => []);
+  for (let idx = 0; idx < nodes.length; idx += 1) {
+    const seen = new Set();
+    for (const dep of Array.isArray(nodes[idx].dependsOn) ? nodes[idx].dependsOn : []) {
+      if (!seen.has(dep)) {
+        seen.add(dep);
+        indegree[idx] += 1;
+        depChildren[indexOf.get(dep)].push(idx);
+      }
+    }
+  }
+  const queue = [];
+  for (let idx = 0; idx < indegree.length; idx += 1) {
+    if (indegree[idx] === 0) queue.push(idx);
+  }
+  let visitedDag = 0;
+  while (queue.length > 0) {
+    const cur = queue.shift();
+    visitedDag += 1;
+    for (const child of depChildren[cur]) {
+      indegree[child] -= 1;
+      if (indegree[child] === 0) queue.push(child);
+    }
+  }
+  if (visitedDag !== nodes.length) {
+    throw new Error('workflow `dependsOn` graph contains a cycle');
+  }
+
+  let entries = [];
+  if (typeof explicitStart === 'string') {
+    const startTrimmed = explicitStart.trim();
+    if (!startTrimmed) throw new Error('workflow `start` must not be empty');
+    if (!indexOf.has(startTrimmed)) throw new Error(`workflow \`start\` references unknown node '${startTrimmed}'`);
+    const startIdx = indexOf.get(startTrimmed);
+    if ((nodes[startIdx].dependsOn || []).length > 0) {
+      throw new Error(`workflow \`start\` node '${startTrimmed}' cannot have \`dependsOn\` prerequisites`);
+    }
+    entries = [startIdx];
+  } else {
+    const targetedForward = new Set();
+    for (let srcIdx = 0; srcIdx < nodes.length; srcIdx += 1) {
+      for (const target of forwardTargetsOfNode(nodes[srcIdx])) {
+        const dstIdx = indexOf.get(target);
+        if (dstIdx !== undefined && dstIdx > srcIdx) targetedForward.add(target);
+      }
+    }
+    entries = nodes
+      .map((n, idx) => ((n.dependsOn || []).length === 0 && !targetedForward.has(n.id) ? idx : -1))
+      .filter((idx) => idx !== -1);
+  }
+  if (entries.length === 0) {
+    throw new Error('workflow has no entry nodes (specify `start` or add a root node with no forward target)');
+  }
+
+  const adj = Array.from({ length: nodes.length }, () => []);
+  for (let srcIdx = 0; srcIdx < nodes.length; srcIdx += 1) {
+    for (const dep of nodes[srcIdx].dependsOn || []) {
+      adj[indexOf.get(dep)].push(srcIdx);
+    }
+    for (const target of forwardTargetsOfNode(nodes[srcIdx])) {
+      const dstIdx = indexOf.get(target);
+      if (dstIdx !== undefined) adj[srcIdx].push(dstIdx);
+    }
+  }
+  const reachable = new Array(nodes.length).fill(false);
+  const bfs = [...entries];
+  for (const idx of entries) reachable[idx] = true;
+  while (bfs.length > 0) {
+    const cur = bfs.shift();
+    for (const nxt of adj[cur]) {
+      if (!reachable[nxt]) {
+        reachable[nxt] = true;
+        bfs.push(nxt);
+      }
+    }
+  }
+  for (let idx = 0; idx < reachable.length; idx += 1) {
+    if (!reachable[idx]) {
+      throw new Error(`node '${nodes[idx].id}' is unreachable from workflow entry`);
+    }
+  }
+}
+
+function verifyWorkflowDir(wfId, wfDir) {
+  let manifestPath = null;
+  for (const name of ['workflow.yaml', 'workflow.yml']) {
+    const candidate = path.join(wfDir, name);
+    if (!fs.existsSync(candidate)) continue;
+    if (fs.lstatSync(candidate).isSymbolicLink() || !fs.statSync(candidate).isFile()) continue;
+    resolveInsideSandbox(wfDir, name);
+    manifestPath = candidate;
+    break;
+  }
+  if (!manifestPath) {
+    throw new Error(`workflow '${wfId}' is missing workflows/${wfId}/workflow.yaml`);
+  }
+  const yamlText = fs.readFileSync(manifestPath, 'utf8');
+  if (yamlText.includes('\r')) {
+    throw new Error(`CR character found in workflows/${wfId}/${path.basename(manifestPath)}`);
+  }
+  const spec = parseYamlText(yamlText, `workflows/${wfId}/${path.basename(manifestPath)}`);
+  if (!isPlainObject(spec)) {
+    throw new Error('workflow manifest must be a YAML mapping/object');
+  }
+  for (const k of Object.keys(spec)) {
+    if (!WF_ROOT_KEYS.has(k)) {
+      throw new Error(`unknown workflow field '${k}'`);
+    }
+  }
+  if (spec.id !== undefined && spec.id !== null) {
+    if (typeof spec.id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(spec.id)) {
+      throw new Error(`invalid workflow id '${spec.id}'`);
+    }
+  }
+  if (spec.trigger !== undefined && spec.trigger !== null) {
+    if (!isPlainObject(spec.trigger)) throw new Error('workflow `trigger` must be an object');
+    for (const k of Object.keys(spec.trigger)) {
+      if (!WF_TRIGGER_KEYS.has(k)) throw new Error(`unknown trigger field '${k}'`);
+    }
+  }
+  if (spec.inputs !== undefined && spec.inputs !== null) {
+    if (!isPlainObject(spec.inputs)) throw new Error('workflow `inputs` must be a mapping');
+    for (const [inputName, inputSpec] of Object.entries(spec.inputs)) {
+      if (!isPlainObject(inputSpec)) throw new Error(`workflow input '${inputName}' must be an object`);
+      for (const k of Object.keys(inputSpec)) {
+        if (!WF_INPUT_KEYS.has(k)) throw new Error(`workflow input '${inputName}' has unknown field '${k}'`);
+      }
+    }
+  }
+  if (spec.budget !== undefined && spec.budget !== null) {
+    if (!isPlainObject(spec.budget)) throw new Error('workflow `budget` must be an object');
+    for (const k of Object.keys(spec.budget)) {
+      if (!WF_BUDGET_KEYS.has(k)) throw new Error(`unknown budget field '${k}'`);
+    }
+  }
+  if (spec.state !== undefined && spec.state !== null && !isPlainObject(spec.state)) {
+    throw new Error('workflow `state` must be a mapping/object');
+  }
+  validateWorkflowNodes(spec.nodes, spec.start ?? null, wfDir);
+}
+
+function verifyDeckManifest(entry, deckDir, deckJsonPath, errors) {
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(deckJsonPath, 'utf8'));
+  } catch (err) {
+    errors.push(`[deck:${entry.id}] Invalid JSON in deck.json: ${err.message}`);
+    return;
+  }
+  if (!isPlainObject(manifest)) {
+    errors.push(`[deck:${entry.id}] deck.json must be a JSON object`);
+    return;
+  }
+  for (const key of Object.keys(manifest)) {
+    if (!DECK_FIELDS.has(key)) {
+      errors.push(`[deck:${entry.id}] deck.json has unknown field ${JSON.stringify(key)}`);
+    }
+  }
+  for (const key of [
+    'id',
+    'title',
+    'description',
+    'category',
+    'author',
+    'homepage',
+    'icon',
+    'entry',
+    'lib',
+    'loadout',
+    'version',
+  ]) {
+    if (key in manifest && !isNonEmptyString(manifest[key])) {
+      errors.push(`[deck:${entry.id}] deck.json.${key} must be a non-empty string`);
+    }
+  }
+  if (typeof manifest.id === 'string' && manifest.id !== entry.id) {
+    errors.push(`[deck:${entry.id}] deck.json.id ${JSON.stringify(manifest.id)} does not match folder ${JSON.stringify(entry.id)}`);
+  }
+  if (typeof manifest.homepage === 'string' && !/^https?:\/\//.test(manifest.homepage)) {
+    errors.push(`[deck:${entry.id}] deck.json.homepage must be an http:// or https:// URL`);
+  }
+  const entryPath = typeof manifest.entry === 'string' ? manifest.entry : 'index.html';
+  if (!validDeckRelativePath(entryPath)) {
+    errors.push(`[deck:${entry.id}] deck.json.entry ${JSON.stringify(entryPath)} must be a relative path inside the Deck folder`);
+  } else {
+    try {
+      resolveInsideSandbox(deckDir, entryPath);
+    } catch (err) {
+      errors.push(`[deck:${entry.id}] deck.json.entry invalid: ${err.message}`);
+    }
+  }
+  if (typeof manifest.lib === 'string' && !validLibRange(manifest.lib)) {
+    errors.push(`[deck:${entry.id}] deck.json.lib ${JSON.stringify(manifest.lib)} is not a valid version range`);
+  }
+  if (typeof manifest.version === 'string') {
+    if (!/^\d+\.\d+\.\d+$/.test(manifest.version)) {
+      errors.push(`[deck:${entry.id}] deck.json.version ${JSON.stringify(manifest.version)} must be major.minor.patch`);
+    } else if (typeof entry.version === 'string' && manifest.version !== entry.version) {
+      errors.push(
+        `[deck:${entry.id}] deck.json.version ${JSON.stringify(manifest.version)} does not match marketplace.json version ${JSON.stringify(entry.version)}`,
+      );
+    }
+  }
+  if (manifest.uses !== undefined) {
+    if (!isPlainObject(manifest.uses)) {
+      errors.push(`[deck:${entry.id}] deck.json.uses must be an object`);
+    } else {
+      for (const [k, v] of Object.entries(manifest.uses)) {
+        if (!DECK_USES_KEYS.has(k)) {
+          errors.push(`[deck:${entry.id}] deck.json.uses has unknown key ${JSON.stringify(k)}`);
+        } else if (!Array.isArray(v) || v.some((x) => typeof x !== 'string')) {
+          errors.push(`[deck:${entry.id}] deck.json.uses.${k} must be an array of strings`);
+        }
+      }
+    }
+  }
+  if (manifest.permissions !== undefined) {
+    if (!Array.isArray(manifest.permissions) || manifest.permissions.some((x) => typeof x !== 'string')) {
+      errors.push(`[deck:${entry.id}] deck.json.permissions must be an array of strings`);
+    } else {
+      for (const perm of manifest.permissions) {
+        if (!DECK_PERMISSIONS.has(perm)) {
+          errors.push(`[deck:${entry.id}] unknown permission ${JSON.stringify(perm)}`);
+        }
+      }
+    }
+  }
+  if (manifest.agent !== undefined) {
+    if (!isPlainObject(manifest.agent)) {
+      errors.push(`[deck:${entry.id}] deck.json.agent must be an object`);
+    } else {
+      for (const [k, v] of Object.entries(manifest.agent)) {
+        if (!DECK_AGENT_KEYS.has(k)) {
+          errors.push(`[deck:${entry.id}] deck.json.agent has unknown key ${JSON.stringify(k)}`);
+        } else if (k === 'plan') {
+          if (typeof v !== 'boolean') errors.push(`[deck:${entry.id}] deck.json.agent.plan must be a boolean`);
+        } else if (!isNonEmptyString(v)) {
+          errors.push(`[deck:${entry.id}] deck.json.agent.${k} must be a non-empty string`);
+        } else if (k === 'permissions' && !VALID_TIERS.has(v)) {
+          errors.push(`[deck:${entry.id}] unknown deck.json.agent.permissions tier ${JSON.stringify(v)}`);
+        }
+      }
+    }
+  }
+  if (manifest.capabilities !== undefined) {
+    if (!isPlainObject(manifest.capabilities)) {
+      errors.push(`[deck:${entry.id}] deck.json.capabilities must be an object`);
+    } else {
+      for (const [k, v] of Object.entries(manifest.capabilities)) {
+        if (!DECK_CAPABILITY_KEYS.has(k)) {
+          errors.push(`[deck:${entry.id}] deck.json.capabilities has unknown key ${JSON.stringify(k)}`);
+        } else if (!Array.isArray(v) || v.some((x) => typeof x !== 'string')) {
+          errors.push(`[deck:${entry.id}] deck.json.capabilities.${k} must be an array of strings`);
+        } else if (k === 'files') {
+          for (const pat of v) {
+            if (!validDeckRelativePath(pat) || pat.trim() !== pat) {
+              errors.push(`[deck:${entry.id}] invalid capabilities.files pattern ${JSON.stringify(pat)}`);
+            }
+          }
+        } else if (k === 'exec') {
+          for (const cmd of v) {
+            if (!validExecCommand(cmd)) {
+              errors.push(`[deck:${entry.id}] invalid capabilities.exec command ${JSON.stringify(cmd)}`);
+            }
+          }
+        } else if (k === 'fetch' || k === 'open') {
+          for (const origin of v) {
+            if (!validOriginPattern(origin)) {
+              errors.push(`[deck:${entry.id}] invalid capabilities.${k} origin ${JSON.stringify(origin)}`);
+            }
+          }
+        }
+      }
+    }
+  }
+  if (manifest.store !== undefined) {
+    if (!isPlainObject(manifest.store)) {
+      errors.push(`[deck:${entry.id}] deck.json.store must be an object`);
+    } else {
+      for (const k of Object.keys(manifest.store)) {
+        if (!DECK_STORE_KEYS.has(k)) {
+          errors.push(`[deck:${entry.id}] deck.json.store has unknown key ${JSON.stringify(k)}`);
+        }
+      }
+      if (manifest.store.scope !== undefined && manifest.store.scope !== 'project' && manifest.store.scope !== 'user') {
+        errors.push(`[deck:${entry.id}] unknown deck.json.store.scope ${JSON.stringify(manifest.store.scope)}`);
+      }
+      if (manifest.store.migrations !== undefined) {
+        if (!Array.isArray(manifest.store.migrations) || manifest.store.migrations.some((m) => !validDeckRelativePath(m))) {
+          errors.push(`[deck:${entry.id}] deck.json.store.migrations must be relative paths inside the Deck folder`);
+        }
+      }
+    }
+  }
+  if (manifest.i18n !== undefined) {
+    if (!isPlainObject(manifest.i18n)) {
+      errors.push(`[deck:${entry.id}] deck.json.i18n must be an object`);
+    } else {
+      for (const [locale, locObj] of Object.entries(manifest.i18n)) {
+        if (!locale.trim() || !isPlainObject(locObj)) {
+          errors.push(`[deck:${entry.id}] deck.json.i18n.${locale} must be an object`);
+          continue;
+        }
+        for (const [k, v] of Object.entries(locObj)) {
+          if (!DECK_I18N_KEYS.has(k)) {
+            errors.push(`[deck:${entry.id}] deck.json.i18n.${locale} has unknown key ${JSON.stringify(k)}`);
+          } else if (!isNonEmptyString(v)) {
+            errors.push(`[deck:${entry.id}] deck.json.i18n.${locale}.${k} must be a non-empty string`);
+          }
+        }
+      }
+    }
+  }
+  if (manifest.workflows !== undefined) {
+    if (!Array.isArray(manifest.workflows) || manifest.workflows.some((w) => typeof w !== 'string')) {
+      errors.push(`[deck:${entry.id}] deck.json.workflows must be an array of strings`);
+    } else if (manifest.workflows.length > 0) {
+      const wfRoot = path.join(deckDir, 'workflows');
+      if (!fs.existsSync(wfRoot)) {
+        errors.push(`[deck:${entry.id}] workflows directory does not exist`);
+      } else {
+        const canonRoot = fs.realpathSync(wfRoot);
+        for (const wfId of manifest.workflows) {
+          if (!/^[A-Za-z0-9_-]{1,128}$/.test(wfId)) {
+            errors.push(`[deck:${entry.id}] invalid workflow id ${JSON.stringify(wfId)}`);
+            continue;
+          }
+          const wfDir = path.join(wfRoot, wfId);
+          if (!fs.existsSync(wfDir)) {
+            errors.push(`[deck:${entry.id}] workflow ${JSON.stringify(wfId)} directory workflows/${wfId} does not exist`);
+            continue;
+          }
+          const canonDir = fs.realpathSync(wfDir);
+          if (!canonDir.startsWith(canonRoot + path.sep) || !fs.statSync(canonDir).isDirectory()) {
+            errors.push(`[deck:${entry.id}] workflow ${JSON.stringify(wfId)} resolves outside workflows/`);
+            continue;
+          }
+          try {
+            verifyWorkflowDir(wfId, canonDir);
+          } catch (err) {
+            errors.push(`[deck:${entry.id}] workflow ${JSON.stringify(wfId)} failed to parse: ${err.message}`);
+          }
+        }
+      }
+    }
+  }
+}
+
 function verifyRepository() {
   const marketplace = JSON.parse(fs.readFileSync(MARKETPLACE_PATH, 'utf8'));
   const errors = [];
@@ -1538,8 +2258,15 @@ function verifyRepository() {
     if (yamlText.includes('\r')) {
       errors.push(`[${entry.id}] CR character found in loadout.yaml`);
     }
-    if (!yamlText.includes(`id: ${entry.id}`)) {
-      errors.push(`[${entry.id}] loadout.yaml id mismatch`);
+    try {
+      const loadoutDoc = parseYamlText(yamlText, `${rel}/loadout.yaml`);
+      if (!isPlainObject(loadoutDoc)) {
+        errors.push(`[${entry.id}] loadout.yaml must be a YAML mapping/object`);
+      } else if (loadoutDoc.id !== entry.id) {
+        errors.push(`[${entry.id}] loadout.yaml id mismatch (got ${JSON.stringify(loadoutDoc.id)})`);
+      }
+    } catch (err) {
+      errors.push(`[${entry.id}] Invalid YAML in loadout.yaml: ${err.message}`);
     }
     for (const k of ['skills', 'agents', 'rules', 'hooks', 'mcp', 'plugins']) {
       for (const n of inv[k]) {
@@ -1588,6 +2315,7 @@ function verifyRepository() {
         `[${entry.id}] Exceeds Lumzel preview byte cap: ${(bytes / (1024 * 1024)).toFixed(2)} MiB > 20 MiB`,
       );
     }
+    verifyDeckManifest(entry, deckDir, deckJsonPath, errors);
     const expectedCounts = computeItemCounts(deckDir, 'deck');
     if (normalizeCountsJson(entry.counts) !== normalizeCountsJson(expectedCounts)) {
       errors.push(
@@ -1600,7 +2328,7 @@ function verifyRepository() {
     throw new Error(`Hub verification failed:\n  - ${errors.join('\n  - ')}`);
   }
   console.log(
-    `✓ Verified ${(marketplace.loadouts || []).length} Loadouts and ${(marketplace.decks || []).length} Decks in marketplace.json (counts & preview limits OK).`,
+    `✓ Verified ${(marketplace.loadouts || []).length} Loadouts and ${(marketplace.decks || []).length} Decks in marketplace.json (manifests, workflows, counts & preview limits OK).`,
   );
 }
 

@@ -1,0 +1,40 @@
+# Validates marketplace.json, Loadout & Deck manifests, workflow YAMLs, counts, and preview bounds
+# on every pull request and push to main.
+name: Verify Hub
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'marketplace.json'
+      - 'upstreams.json'
+      - 'loadouts/**'
+      - 'decks/**'
+      - 'tools/**'
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - 'marketplace.json'
+      - 'upstreams.json'
+      - 'loadouts/**'
+      - 'decks/**'
+      - 'tools/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+concurrency:
+  group: verify-hub-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify catalog, Deck manifests, workflow YAMLs & preview bounds
+        run: node tools/sync-upstreams.mjs --verify
