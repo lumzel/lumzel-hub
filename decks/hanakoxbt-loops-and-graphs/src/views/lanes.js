@@ -76,13 +76,13 @@ export function createLanesRenderer(layerEl, store, host) {
       s(
         'text',
         { class: 'map-chip-txt neutral', x: concX + 17, y: hy + 12.5, 'text-anchor': 'middle' },
-        isReview ? '∥ 4' : '∥ 3',
+        isReview ? '∥ 4' : '∥ 1',
       ),
     );
 
     const wtX = concX + 42;
-    const wtText = isReview ? 'worktree: current' : 'worktree: isolated';
-    const wtW = isReview ? 114 : 120;
+    const wtText = 'worktree: current';
+    const wtW = 114;
     root.appendChild(s('rect', { class: 'map-chip-rect neutral', x: wtX, y: hy, width: wtW, height: 18, rx: 3 }));
     root.appendChild(
       s('text', { class: 'map-chip-txt neutral', x: wtX + wtW / 2, y: hy + 12.5, 'text-anchor': 'middle' }, wtText),

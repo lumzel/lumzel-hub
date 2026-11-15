@@ -31,10 +31,26 @@ async function runCheck(ctx) {
   return { ok: c.ok, reason: c.ok ? '' : 'full check failed', code: c.code, tail: tail(c.stdout + '\n' + c.stderr) };
 }
 
+async function collectWorkingTreeDiff(ctx, sh) {
+  const ns = parseNumstat((await sh('git diff --numstat HEAD', { timeoutSec: 60 })).stdout);
+  const stOut = (await sh('git status --porcelain=v1 -uall', { timeoutSec: 30 })).stdout;
+  const seen = new Set(ns.files.map(f => f.path));
+  for (const rawLine of stOut.split('\n')) {
+    if (!rawLine.startsWith('?? ')) continue;
+    const p = rawLine.slice(3).trim();
+    if (!p || p.startsWith('.lumzel/') || seen.has(p)) continue;
+    const content = ctx.fsReadOrEmpty(p);
+    const lines = content ? content.split('\n').length : 0;
+    ns.files.push({ path: p, add: lines, del: 0 });
+    ns.insertions += lines;
+  }
+  return ns;
+}
+
 export async function integrate(ctx) {
   const { outputs, state, sh } = ctx;
   const results = (outputs.units && outputs.units.results) || [];
-  const passed = results.filter(r => r && r.ok && r.branch);
+  const passed = results.filter(r => r && r.ok);
   const failed = results
     .filter(r => r && !r.ok)
     .map(r => ({
@@ -45,34 +61,21 @@ export async function integrate(ctx) {
       phase: r.outputs && r.outputs.red_gate && r.outputs.red_gate.ok ? 'green' : 'red',
     }));
   const branch = await line(ctx, 'git rev-parse --abbrev-ref HEAD');
-  const baseSha = await line(ctx, 'git rev-parse HEAD');
-  const merged = [];
-  const conflicted = [];
-  for (const p of passed) {
-    const m = await sh(`git merge --no-ff --no-edit -m "merge(${p.item.id})" ${p.branch}`, { timeoutSec: 300 });
-    if (m.ok) merged.push({ id: p.item.id, branch: p.branch });
-    else {
-      await sh('git merge --abort', { timeoutSec: 60 });
-      conflicted.push({ id: p.item.id, branch: p.branch, tail: tail(m.stdout + '\n' + m.stderr, 20) });
-    }
-    tel(ctx, p.item.id, 'merge', m.ok ? 'pass' : 'fail', 0, m.ok ? '' : 'conflict');
-  }
-  const check = merged.length ? await runCheck(ctx) : { ok: false, reason: 'no unit passed', tail: '' };
-  const ns = parseNumstat((await sh(`git diff --numstat ${baseSha}..HEAD`, { timeoutSec: 60 })).stdout);
-  for (const m of merged) await sh(`git branch -D ${m.branch}`, { timeoutSec: 30 });
+  const sha = await line(ctx, 'git rev-parse HEAD');
+  const merged = passed.map(p => ({ id: p.item.id }));
+  const check = passed.length ? await runCheck(ctx) : { ok: false, reason: 'no unit passed', tail: '' };
+  const ns = await collectWorkingTreeDiff(ctx, sh);
   const extra = [];
   if (!check.ok) extra.push({ level: 'high', label: `full check: ${check.reason}` });
-  if (conflicted.length) extra.push({ level: 'medium', label: `${conflicted.length} unit(s) excluded by merge conflict` });
   if (failed.length) extra.push({ level: 'low', label: `${failed.length} unit(s) failed after bounded retries — excluded` });
   const risk = assessRisk(ns, extra);
-  const sha = await line(ctx, 'git rev-parse HEAD');
   state.candidate = {
     source: 'integrate',
     round: 0,
     branch,
     sha,
-    baseSha,
-    passed: merged.length,
+    baseSha: sha,
+    passed: passed.length,
     total: results.length,
     checkOk: check.ok,
     checkReason: check.reason,
@@ -85,33 +88,24 @@ export async function integrate(ctx) {
     risk,
     mergeMessage: safeMessage(`feat(loops-and-graphs): ${state.slug || 'ship'}`),
   };
-  state.branches = [branch].concat(conflicted.map(c => c.branch));
-  return { shippable: merged.length > 0 && check.ok, merged, conflicted, failed, check, risk, branch, sha };
+  state.branches = [];
+  return { shippable: passed.length > 0 && check.ok, merged, conflicted: [], failed, check, risk, branch, sha };
 }
 
 export async function reverify(ctx) {
-  const { outputs, state, sh } = ctx;
-  const c = state.candidate;
+  const { state, sh } = ctx;
+  const c = state.candidate || {};
   const round = (state.reworks || 0) + 1;
   state.reworks = round;
-  const rb = outputs.rework && outputs.rework.branch;
-  const own = await line(ctx, 'git rev-parse --abbrev-ref HEAD');
-  state.branches = (state.branches || []).concat([own]);
-  if (!rb) return { ok: false, round, reason: 'rework produced no branch' };
-  state.branches.push(rb);
-  if (!(await sh(`git merge-base --is-ancestor ${c.sha} ${rb}`, { timeoutSec: 30 })).ok) {
-    return { ok: false, round, reason: 'rework is not based on the candidate commit — ignored' };
-  }
-  await sh(`git reset --hard ${rb}`, { timeoutSec: 60 });
+  const branch = await line(ctx, 'git rev-parse --abbrev-ref HEAD');
   const sha = await line(ctx, 'git rev-parse HEAD');
-  if (sha === c.sha) return { ok: false, round, reason: 'rework made no commit' };
   const check = await runCheck(ctx);
-  const ns = parseNumstat((await sh(`git diff --numstat ${c.baseSha}..HEAD`, { timeoutSec: 60 })).stdout);
+  const ns = await collectWorkingTreeDiff(ctx, sh);
   const extra = check.ok ? [] : [{ level: 'high', label: `full check after rework: ${check.reason}` }];
   state.candidate = Object.assign({}, c, {
     source: 'rework',
     round,
-    branch: rb,
+    branch,
     sha,
     checkOk: check.ok,
     checkReason: check.reason,
@@ -122,5 +116,5 @@ export async function reverify(ctx) {
     files: ns.files.sort((a, b) => b.add + b.del - (a.add + a.del)).slice(0, 12),
     risk: assessRisk(ns, extra),
   });
-  return { ok: check.ok, round, branch: rb, sha, check };
+  return { ok: check.ok, round, branch, sha, check };
 }

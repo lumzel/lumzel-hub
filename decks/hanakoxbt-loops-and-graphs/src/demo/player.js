@@ -37,7 +37,7 @@ export function createDemoPlayer(store) {
           inputJson: args.id === 'split' ? JSON.stringify({ requirement: getDemoGoal(preset) }) : null,
           outputJson: null,
           error: null,
-          worktreePath: args.id === 'units' || args.id === 'rework' ? '.lumzel/worktrees/wf-3c1e7a04' : null,
+          worktreePath: null,
           sessionId: args.id === 'split' ? 'demo-sess-split' : args.id === 'distill' ? 'demo-sess-distill' : null,
           startedAt: evSec,
           finishedAt: null,
@@ -179,7 +179,7 @@ export function createDemoPlayer(store) {
       if (state === 'waiting_gate') {
         pausedGate = {
           nodeId: 'human_gate',
-          prompt: 'Ship 4/5 units into main?',
+          prompt: 'Accept 4/5 unit(s) in current worktree (main)?',
           inputs: {},
           state: { ...workflowState },
           outputs,

@@ -34,8 +34,10 @@ export async function retro(ctx) {
     .join('\n')
     .slice(0, 6000);
   const cleaned = [];
+  const currentBranch = outputs.preflight && outputs.preflight.branch;
   if (shipped) {
     for (const b of state.branches || []) {
+      if (!b || b === currentBranch) continue;
       if ((await sh(`git branch -D ${b}`, { timeoutSec: 30 })).ok) cleaned.push(b);
     }
   }

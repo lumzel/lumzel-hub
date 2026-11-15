@@ -6,23 +6,23 @@ disable-model-invocation: true
 
 # Loops and Graphs (@hanakoxbt) Guide
 
-Loops and Graphs runs structured intra-node correction loops over a live topology graph: deterministic setup/checks, isolated parallel Workers, bounded retry edges, one irreversible Human Gate, and a Learning Edge that feeds lessons back into future splits.
+Loops and Graphs runs structured intra-node correction loops over a live topology graph: deterministic setup/checks, sequential Workers in the current worktree (for `feature-ship`) or parallel read-only reviewers (for `code-review`), bounded retry edges, one Human Gate, and a Learning Edge that feeds lessons back into future splits.
 
 ## 1. Node Roles and Edges
 
 - **Splitter (`split`)**: Read-only (`ask`) agent that turns a feature requirement + active constraints into 2–5 independent vertical slices.
-- **Worker (`write_check`, `impl`, `rework`, `review`)**: Focused agent operating inside an isolated git worktree (for `feature-ship`) or read-only current worktree (for `code-review`).
-- **Code & Shell (`preflight`, `plan`, `setup`, `verify_*`, `commit*`, `integrate`, `retro`, `record`, `scope`, `merge`, `learn`)**: Zero-token deterministic steps—command checks, git diffs, schema validation, deduplication.
-- **Gate (`*_gate`, `human_gate`)**: Evaluates verifiable conditions. Only `human_gate` pauses for human approval before the irreversible `git merge --no-ff` (`ship`).
-- **Correction Edge (orange dashed)**: Bounded back-edges (`red_gate -> write_check` max 2, `green_gate -> impl` max 3, `reverify -> human_gate` max 3, `evidence_gate -> review` max 2). Failures stay isolated to their unit/lens.
+- **Worker (`write_check`, `impl`, `rework`, `review`)**: Focused agent operating directly inside the current git worktree (`write_check`/`impl`/`rework` sequentially in `feature-ship`, or parallel read-only in `code-review`).
+- **Code & Shell (`preflight`, `plan`, `setup`, `verify_*`, `integrate`, `retro`, `record`, `scope`, `merge`, `learn`)**: Zero-token deterministic steps—command checks, working tree diffs, schema validation, deduplication.
+- **Gate (`*_gate`, `human_gate`)**: Evaluates verifiable conditions. Only `human_gate` pauses for human approval before `ship` confirms completion with changes kept in the working tree.
+- **Correction Edge (orange dashed)**: Bounded back-edges (`red_gate -> write_check` max 2, `green_gate -> impl` max 3, `reverify -> human_gate` max 3, `evidence_gate -> review` max 2). Failures stay bounded to their unit/lens.
 - **Learning Edge (green dotted)**: `record -> preflight` inlet. Distilled lessons are proposed to the Vault and, once accepted, mirrored to `.lumzel/hanakoxbt-loops-and-graphs/lessons.md` and injected into the next Splitter run.
 
 ## 2. Unit Splitting Rules
 
 - **Vertical slices**: Each unit delivers one cohesive, independently testable slice of behaviour (schema + logic + API or UI + test), not horizontal layers.
-- **Disjoint file ownership**: Two units must **never** overlap in `checkFiles` or `implFiles`. Overlapping files create merge conflicts in `integrate`.
+- **Disjoint file ownership**: Two units must **never** overlap in `checkFiles` or `implFiles`. Overlapping files create interference when running sequentially in the same worktree.
 - **Bounded count**: Keep units between 2 and 5 (hard cap 6 via `maxUnits`).
-- **Self-contained brief**: A Worker starts in a fresh session with no shared memory—include exact file paths, public contracts, and edge cases in `prompt`.
+- **Self-contained brief**: A Worker starts in a fresh subsession with no shared memory—include exact file paths, public contracts, and edge cases in `prompt`.
 
 ## 3. `checkCmd` Specification
 
@@ -41,7 +41,7 @@ Loops and Graphs runs structured intra-node correction loops over a live topolog
 
 ## 5. Troubleshooting Failures
 
-- **Dirty working tree (`preflight_gate -> $fail`)**: Commit or stash changes outside `.lumzel/hanakoxbt-loops-and-graphs/` and click **Retry from here** on `preflight`.
+- **Not a git repository (`preflight_gate -> $fail`)**: Ensure the active project root is inside a git worktree and click **Retry from here** on `preflight`. Existing uncommitted changes in the working tree are allowed.
 - **Environment failure in `red_gate`**: Missing binaries or modules (`ENOENT`, `Cannot find module`, exit 126/127) mean `setupCmd` is missing or wrong—configure `setupCmd` in the Checks popover.
-- **Modified test files in `green_gate`**: `commit_red` pins acceptance tests; if `impl` modifies `checkFiles`, `green_gate` deterministically checks out `HEAD` on those files and fails the attempt.
-- **Merge conflict at `integrate` / `ship`**: Failed units are already isolated and excluded. If `ship` hits a conflict on the main worktree, resolve it manually and click **Retry from here** on `ship`.
+- **Modified test files in `green_gate`**: `redCheck` hashes `checkFiles` after red verification passes; if `impl` modifies `checkFiles`, `green_gate` detects the hash mismatch and fails the attempt.
+- **Rework at `human_gate`**: Rejecting with a note runs `rework` directly in the current working tree and re-verifies with `reverify` before returning to `human_gate`.

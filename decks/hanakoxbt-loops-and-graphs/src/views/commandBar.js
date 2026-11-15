@@ -144,16 +144,6 @@ export function mountCommandBar(store, host) {
           h('div', { class: 'stepper' }, decBtn, valSpan, incBtn),
         ),
       );
-
-      const flagsInput = h('input', {
-        type: 'text',
-        value: prefs.commitFlags || '',
-        placeholder: '--no-verify',
-        onInput: e => host.savePrefs({ commitFlags: e.target.value }),
-      });
-      checksPop.appendChild(
-        h('div', { class: 'field-row' }, h('label', null, t('commitFlagsLabel')), flagsInput),
-      );
     } else {
       const revCheckInput = h('input', {
         type: 'text',

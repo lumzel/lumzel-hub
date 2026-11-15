@@ -201,17 +201,6 @@ export function renderNodePanel(container, store, host, view) {
     );
   }
 
-  // Dirty preflight hint
-  if (node.id === 'preflight' && node.output && node.output.clean === false && node.output.dirty?.length) {
-    container.appendChild(
-      h(
-        'div',
-        { class: 'sec' },
-        h('div', { class: 'error-box' }, `${t('dirtyTitle')}${node.output.dirty.join(', ')}`),
-      ),
-    );
-  }
-
   // Telemetry KV
   container.appendChild(
     h(

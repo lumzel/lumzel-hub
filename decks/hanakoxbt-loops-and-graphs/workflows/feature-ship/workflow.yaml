@@ -1,5 +1,5 @@
 id: feature-ship
-description: 约束注入 → 拆分 → 每单元先红后绿（隔离 Worktree，≤3 次纠错）→ 确定性集成 → 唯一人工闸门 → 合入 → 沉淀约束
+description: 约束注入 → 拆分 → 每单元先红后绿（当前 Worktree 顺序执行，≤3 次纠错）→ 确定性集成 → 唯一人工闸门 → 完成验收 → 沉淀约束
 trigger:
   autoRun: false
   inputHint: 描述要交付的 Feature（一句话即可；越具体，拆分越准）
@@ -22,7 +22,7 @@ inputs:
   setupCmd:
     type: string
     default: auto
-    description: 每个新 Worktree 的依赖安装命令；auto = 自动探测；空串 = 不执行
+    description: 当前 Worktree 初始化命令；auto = 跳过（沿用当前环境）；空串 = 不执行
   units:
     type: array
     default: []
@@ -33,7 +33,7 @@ inputs:
   commitFlags:
     type: string
     default: ""
-    description: 例如 --no-verify
+    description: 兼容保留字段（当前工作流不自动提交）
   checkPrefixes:
     type: array
     default: ["pnpm ", "npm ", "npx ", "yarn ", "bun ", "vitest", "jest", "cargo test", "pytest", "python -m pytest", "uv run pytest", "go test", "deno test", "swift test", "make test"]
@@ -54,7 +54,7 @@ nodes:
     kind: gate
     dependsOn: [preflight]
     cases:
-      - when: "!outputs.preflight.clean"
+      - when: "outputs.preflight.isGit === false"
         next: $fail
       - when: "outputs.preflight.presetUnits.length > 0"
         next: plan
@@ -79,8 +79,7 @@ nodes:
     kind: map
     dependsOn: [plan]
     forEach: "outputs.plan.units"
-    concurrency: 3
-    worktree: isolated
+    concurrency: 1
     nodes:
       - id: lane_start
         kind: code
@@ -113,14 +112,9 @@ nodes:
         onFail:
           next: write_check
         onExceed: $fail
-      - id: commit_red
-        kind: shell
-        dependsOn: [red_gate]
-        command: 'git add -A && git commit {{inputs.commitFlags}} -m "test({{item.id}}): failing acceptance check"'
-        timeoutSec: 120
       - id: impl
         kind: agent
-        dependsOn: [commit_red]
+        dependsOn: [red_gate]
         session: new
         permissions: auto
         timeoutSec: 1800
@@ -141,20 +135,14 @@ nodes:
         onFail:
           next: impl
         onExceed: $fail
-      - id: commit
-        kind: shell
-        dependsOn: [green_gate]
-        command: 'git add -A && git commit {{inputs.commitFlags}} -m "{{item.commitMessage}}"'
-        timeoutSec: 120
       - id: unit_report
         kind: code
-        dependsOn: [commit]
+        dependsOn: [green_gate]
         uses: ./scripts/unit.js#unitReport
 
   - id: integrate
     kind: code
     dependsOn: [units]
-    worktree: isolated
     uses: ./scripts/integrate.js#integrate
 
   - id: integrate_gate
@@ -169,7 +157,7 @@ nodes:
     dependsOn: [integrate_gate]
     pause: true
     prompt: |
-      Ship {{state.candidate.passed}}/{{state.candidate.total}} unit(s) from {{state.candidate.branch}} into {{outputs.preflight.branch}}?
+      Accept {{state.candidate.passed}}/{{state.candidate.total}} unit(s) in current worktree ({{outputs.preflight.branch}})?
       Full check: {{state.candidate.checkOk ? 'PASS' : 'FAIL'}} · {{state.candidate.filesChanged}} files (+{{state.candidate.insertions}} −{{state.candidate.deletions}}) · risk {{state.candidate.risk.level}}
     onFail:
       next: rework
@@ -177,7 +165,6 @@ nodes:
   - id: rework
     kind: agent
     session: new
-    worktree: isolated
     permissions: auto
     timeoutSec: 1800
     promptFile: ./prompts/rework.md
@@ -185,7 +172,6 @@ nodes:
   - id: reverify
     kind: code
     dependsOn: [rework]
-    worktree: isolated
     uses: ./scripts/integrate.js#reverify
     next: human_gate
     maxIterations: 3
@@ -194,8 +180,8 @@ nodes:
   - id: ship
     kind: shell
     dependsOn: [human_gate]
-    timeoutSec: 300
-    command: 'git merge --no-ff --no-edit -m "{{state.candidate.mergeMessage}}" {{state.candidate.branch}}'
+    timeoutSec: 60
+    command: 'echo "Changes kept in working tree on {{outputs.preflight.branch}}"'
 
   - id: retro
     kind: code

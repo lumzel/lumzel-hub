@@ -13,14 +13,14 @@ export const LANE = {
   head: 36,
   pad: 8,
   labelW: 200,
-  chipW: 76,
+  chipW: 92,
   chipH: 20,
-  chipGap: 20,
+  chipGap: 24,
   chipX0: 216,
   meterX: 692,
 };
 
-export const PHASES = ['CHECK', 'RED', 'IMPL', 'GREEN', 'COMMIT'];
+export const PHASES = ['CHECK', 'RED', 'IMPL', 'GREEN'];
 
 export const META = {
   preflight: { role: 'code', kind: 'CODE', shape: 'main', max: 1 },
@@ -47,11 +47,9 @@ export const CHILD_NODE_IDS = [
   'write_check',
   'verify_red',
   'red_gate',
-  'commit_red',
   'impl',
   'verify_green',
   'green_gate',
-  'commit',
   'unit_report',
 ];
 

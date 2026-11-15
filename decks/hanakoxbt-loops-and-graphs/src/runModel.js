@@ -79,7 +79,7 @@ function buildFeatureShipLanes(run, telemetryByUnit) {
       title: '—',
       branch: '',
       status: 'pending',
-      phases: ['pending', 'pending', 'pending', 'pending', 'pending'],
+      phases: ['pending', 'pending', 'pending', 'pending'],
       attempts: { red: [], green: [] },
       conflict: false,
       error: '',
@@ -123,11 +123,11 @@ function buildFeatureShipLanes(run, telemetryByUnit) {
 
       let phases;
       if (r.ok) {
-        phases = ['pass', 'pass', 'pass', 'pass', 'pass'];
+        phases = ['pass', 'pass', 'pass', 'pass'];
       } else if (redGate.ok === false) {
-        phases = ['pass', 'fail', 'skip', 'skip', 'skip'];
+        phases = ['pass', 'fail', 'skip', 'skip'];
       } else {
-        phases = ['pass', 'pass', 'pass', 'fail', 'skip'];
+        phases = ['pass', 'pass', 'pass', 'fail'];
       }
 
       const error =
@@ -160,7 +160,7 @@ function buildFeatureShipLanes(run, telemetryByUnit) {
         title: u.title || u.id,
         branch: '',
         status: tel.status || 'pending',
-        phases: tel.phases || ['pending', 'pending', 'pending', 'pending', 'pending'],
+        phases: tel.phases || ['pending', 'pending', 'pending', 'pending'],
         attempts: { red: tel.attempts.red || [], green: tel.attempts.green || [] },
         conflict: isConflicted,
         error: '',
@@ -178,7 +178,7 @@ function buildFeatureShipLanes(run, telemetryByUnit) {
       title: u.title || u.id,
       branch: '',
       status: 'pending',
-      phases: ['pending', 'pending', 'pending', 'pending', 'pending'],
+      phases: ['pending', 'pending', 'pending', 'pending'],
       attempts: { red: [], green: [] },
       conflict: false,
       error: '',

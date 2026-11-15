@@ -82,8 +82,8 @@ export function createGatePanelRenderer(store, host) {
         'div',
         { class: 'gate-prompt' },
         cand.passed !== undefined
-          ? `Ship ${cand.passed}/${cand.total} units into ${baseBranch}?`
-          : activeGate?.prompt || 'Approve merge?',
+          ? `Accept ${cand.passed}/${cand.total} unit(s) in current worktree (${baseBranch})?`
+          : activeGate?.prompt || 'Approve and finish?',
       ),
     );
 

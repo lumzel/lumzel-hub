@@ -26,7 +26,7 @@ export function mountGateDock(store) {
       const cand = g.candidate || {};
       const title =
         cand.passed !== undefined
-          ? `Ship ${cand.passed}/${cand.total} units into main?`
+          ? `Accept ${cand.passed}/${cand.total} unit(s) in current worktree?`
           : g.prompt || 'Human approval required';
 
       clear(dockEl);

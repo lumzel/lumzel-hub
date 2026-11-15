@@ -38,7 +38,7 @@ function ensureUnit(byUnit, id, isReview = false) {
       status: 'pending',
       phases: isReview
         ? ['pending', 'pending', 'pending']
-        : ['pending', 'pending', 'pending', 'pending', 'pending'],
+        : ['pending', 'pending', 'pending', 'pending'],
       attempts: { red: [], green: [], evidence: [] },
       events: [],
       conflict: false,
@@ -89,10 +89,10 @@ export function applyNoticeToMap(byUnit, notice, preset = 'feature-ship') {
     return;
   }
 
-  // Feature-ship phases: [CHECK(0), RED(1), IMPL(2), GREEN(3), COMMIT(4)]
+  // Feature-ship phases: [CHECK(0), RED(1), IMPL(2), GREEN(3)]
   if (p === 'queued') {
     if (rec.status === 'pending') {
-      rec.phases = ['pending', 'pending', 'pending', 'pending', 'pending'];
+      rec.phases = ['pending', 'pending', 'pending', 'pending'];
     }
   } else if (p === 'start') {
     rec.status = 'running';
@@ -110,7 +110,6 @@ export function applyNoticeToMap(byUnit, notice, preset = 'feature-ship') {
       rec.phases[1] = 'fail';
       rec.phases[2] = 'skip';
       rec.phases[3] = 'skip';
-      rec.phases[4] = 'skip';
       rec.status = 'fail';
       rec.finishedAt = t;
     } else {
@@ -123,11 +122,9 @@ export function applyNoticeToMap(byUnit, notice, preset = 'feature-ship') {
     if (s === 'pass') {
       rec.phases[2] = 'pass';
       rec.phases[3] = 'pass';
-      rec.phases[4] = 'running';
     } else if (a >= 3) {
       rec.phases[2] = 'pass';
       rec.phases[3] = 'fail';
-      rec.phases[4] = 'skip';
       rec.status = 'fail';
       rec.finishedAt = t;
     } else {
@@ -135,7 +132,7 @@ export function applyNoticeToMap(byUnit, notice, preset = 'feature-ship') {
       rec.phases[3] = 'fail';
     }
   } else if (p === 'done') {
-    rec.phases = ['pass', 'pass', 'pass', 'pass', 'pass'];
+    rec.phases = ['pass', 'pass', 'pass', 'pass'];
     rec.status = 'pass';
     rec.finishedAt = t;
   } else if (p === 'merge' && s === 'fail') {

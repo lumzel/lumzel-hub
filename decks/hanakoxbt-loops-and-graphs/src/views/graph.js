@@ -612,28 +612,6 @@ export function mountGraph(store, host) {
       return;
     }
 
-    // Check dirty preflight failure for friendly banner (§10.5)
-    const pre = st.run && st.run.outputs && st.run.outputs.preflight;
-    if (st.run && st.run.state === 'failed' && pre && pre.clean === false && Array.isArray(pre.dirty) && pre.dirty.length) {
-      bannerEl.hidden = false;
-      setAttr(bannerEl, 'data-tone', 'fail');
-      clear(bannerEl);
-      const files = pre.dirty.slice(0, 4).join(', ') + (pre.dirty.length > 4 ? ` +${pre.dirty.length - 4}` : '');
-      bannerEl.appendChild(h('span', { class: 'banner-msg' }, t('dirtyMsg', { files })));
-      bannerEl.appendChild(
-        h(
-          'button',
-          {
-            type: 'button',
-            class: 'secondary',
-            onClick: () => host.retryNode('preflight'),
-          },
-          t('retryPreflight'),
-        ),
-      );
-      return;
-    }
-
     if (st.banner) {
       bannerEl.hidden = false;
       setAttr(bannerEl, 'data-tone', st.banner.tone || 'warn');

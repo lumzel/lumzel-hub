@@ -1,10 +1,10 @@
-You are a WORKER implementing unit `{{item.id}}` — {{item.title}} in an isolated worktree.
+You are a WORKER implementing unit `{{item.id}}` — {{item.title}} in the current worktree.
 Brief:
 {{item.prompt}}
 
 Make `{{item.checkCmd}}` pass. Likely files: {{item.implFiles.join(', ') || 'decide yourself'}}.
-FORBIDDEN: modifying {{item.checkFiles.join(', ')}} (the workflow detects and reverts it, and the attempt fails).
-Do not commit. Attempt {{(state.greenAttempts || 0) + 1}} of 3.
+FORBIDDEN: modifying {{item.checkFiles.join(', ')}} (the workflow hashes checkFiles after redCheck and fails the attempt if their contents change).
+Do not run git commit; leave changes in the working tree. Attempt {{(state.greenAttempts || 0) + 1}} of 3.
 
 Constraints:
 {{outputs.preflight.constraintsText}}

@@ -4,7 +4,7 @@ const OWN = '.lumzel/hanakoxbt-loops-and-graphs/';
 export async function preflight(ctx) {
   const { inputs, sh, fsReadOrEmpty } = ctx;
   if (!(await sh('git rev-parse --is-inside-work-tree', { timeoutSec: 15 })).ok) {
-    return { clean: false, reason: 'not a git repository', presetUnits: [] };
+    return { isGit: false, clean: false, dirty: [], dirtyCount: 0, reason: 'not a git repository', presetUnits: [] };
   }
   const st = await sh('git status --porcelain=v1', { timeoutSec: 30 });
   const dirty = st.stdout
@@ -15,11 +15,13 @@ export async function preflight(ctx) {
   const fileLessons = parseLessonsMd(fsReadOrEmpty(inputs.lessonsFile || OWN + 'lessons.md'));
   const merged = composeConstraints([...(inputs.constraints || []), ...fileLessons.map(l => l.text)]);
   const det = await detect(ctx);
-  const setupCmd = inputs.setupCmd === 'auto' ? det.setupCmd : (inputs.setupCmd || '');
+  const setupCmd = inputs.setupCmd === 'auto' ? '' : (inputs.setupCmd || '');
   return {
-    clean: dirty.length === 0,
+    isGit: true,
+    clean: true,
     dirty: dirty.slice(0, 20),
-    reason: dirty.length ? 'working tree has uncommitted changes' : '',
+    dirtyCount: dirty.length,
+    reason: '',
     branch: await line(ctx, 'git rev-parse --abbrev-ref HEAD'),
     headSha: await line(ctx, 'git rev-parse HEAD'),
     constraintsText: merged.text || '(none)',

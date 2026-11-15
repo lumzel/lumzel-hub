@@ -1,13 +1,13 @@
 {
   "id": "hanakoxbt-loops-and-graphs",
   "title": "Loops and Graphs (@hanakoxbt)",
-  "description": "Based on @hanakoxbt's Loops and Graphs architecture: split a feature into isolated test-first units, run bounded intra-node loops in parallel worktrees, merge deterministically, ship through one human gate, and feed lessons back to the splitter.",
+  "description": "Based on @hanakoxbt's Loops and Graphs architecture: split a feature into test-first units, run bounded intra-node loops sequentially in the current worktree, verify deterministically, accept through one human gate, and feed lessons back to the splitter.",
   "category": "Workflow",
   "author": "hanakoxbt",
   "homepage": "https://agent-layers.vercel.app",
   "icon": "branch",
   "entry": "index.html",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "permissions": ["workflow", "db", "files", "agent", "open"],
   "capabilities": {
     "files": [".lumzel/hanakoxbt-loops-and-graphs/**"]
@@ -25,11 +25,11 @@
   "i18n": {
     "en": {
       "title": "Loops and Graphs (@hanakoxbt)",
-      "description": "Based on @hanakoxbt's Loops and Graphs architecture: split a feature into isolated test-first units, run bounded intra-node loops in parallel worktrees, merge deterministically, ship through one human gate, and feed lessons back to the splitter."
+      "description": "Based on @hanakoxbt's Loops and Graphs architecture: split a feature into test-first units, run bounded intra-node loops sequentially in the current worktree, verify deterministically, accept through one human gate, and feed lessons back to the splitter."
     },
     "zh-CN": {
       "title": "Loops & Graphs 工作台 (@hanakoxbt)",
-      "description": "基于 @hanakoxbt《Loops and Graphs》工作流架构的实时拓扑台：将需求拆为先写测试的垂直单元，在隔离 Worktree 并行执行与有限纠错循环，确定性归并后经唯一人工闸门合入，并把经验沉淀为约束回流到拆分器。"
+      "description": "基于 @hanakoxbt《Loops and Graphs》工作流架构的实时拓扑台：将需求拆为先写测试的垂直单元，在当前 Worktree 顺序执行与有限纠错循环，确定性归并后经唯一人工闸门确认交付，并把经验沉淀为约束回流到拆分器。"
     }
   }
 }

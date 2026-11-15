@@ -1,4 +1,4 @@
-import { tel, tail, parseNumstat, line } from './lib.js';
+import { tel, tail, parseNumstat, line, fnv1a } from './lib.js';
 const ENV_FAIL = /command not found|Cannot find module|ERR_MODULE_NOT_FOUND|ENOENT|No such file or directory|could not find `Cargo\.toml`|No module named/i;
 const SIG = /(FAIL|✗|×|panicked at|AssertionError|Error:|expected .* received|assert)/i;
 
@@ -8,12 +8,20 @@ export function laneStart(ctx) {
 }
 
 export async function redCheck(ctx) {
-  const { item, outputs, state, sh } = ctx;
+  const { item, outputs, state, sh, fsReadOrEmpty } = ctx;
   const a = (state.redAttempts || 0) + 1;
   state.redAttempts = a;
   const r = outputs.verify_red || {};
   const out = `${r.stdout || ''}\n${r.stderr || ''}`;
-  const wrote = (await sh('git status --porcelain=v1', { timeoutSec: 30 })).stdout.trim().length > 0;
+  let wrote = Array.isArray(item.checkFiles) && item.checkFiles.length > 0;
+  if (wrote) {
+    for (const f of item.checkFiles) {
+      if (!(await sh(`test -e '${f}'`, { timeoutSec: 5 })).ok) {
+        wrote = false;
+        break;
+      }
+    }
+  }
   let ok = true;
   let reason = '';
   if (!wrote) {
@@ -26,21 +34,30 @@ export async function redCheck(ctx) {
     ok = false;
     reason = 'check failed for an environment reason (see setupCmd), not a missing behaviour';
   }
+  if (ok) {
+    const pinned = {};
+    for (const f of item.checkFiles) {
+      pinned[f] = fnv1a(fsReadOrEmpty(f));
+    }
+    state.pinnedCheckHashes = pinned;
+  }
   tel(ctx, item.id, 'red', ok ? 'pass' : 'fail', a, reason);
   return { ok, reason, attempt: a, max: 2, code: r.code, tail: tail(out) };
 }
 
 export async function greenCheck(ctx) {
-  const { item, outputs, state, sh } = ctx;
+  const { item, outputs, state, fsReadOrEmpty } = ctx;
   const a = (state.greenAttempts || 0) + 1;
   state.greenAttempts = a;
   const r = outputs.verify_green || {};
   const out = `${r.stdout || ''}\n${r.stderr || ''}`;
-  const files = item.checkFiles.map(f => `'${f}'`).join(' ');
-  const touched = (await sh(`git diff --name-only HEAD -- ${files}`, { timeoutSec: 30 })).stdout
-    .split('\n')
-    .filter(Boolean);
-  if (touched.length) await sh(`git checkout HEAD -- ${files}`, { timeoutSec: 30 });
+  const pinned = state.pinnedCheckHashes || {};
+  const touched = [];
+  for (const f of item.checkFiles || []) {
+    if (pinned[f] !== undefined && fnv1a(fsReadOrEmpty(f)) !== pinned[f]) {
+      touched.push(f);
+    }
+  }
   const ok = !!r.ok && touched.length === 0;
   const reason = touched.length
     ? `implementation modified check files: ${touched.join(', ')}`
@@ -60,7 +77,9 @@ const stripLines = s =>
 export async function unitReport(ctx) {
   const { item, state } = ctx;
   const sha = await line(ctx, 'git rev-parse HEAD');
-  const ns = parseNumstat((await ctx.sh('git diff --numstat HEAD~2..HEAD', { timeoutSec: 30 })).stdout);
+  const paths = [...(item.checkFiles || []), ...(item.implFiles || [])].map(f => `'${f}'`).join(' ');
+  const diffCmd = paths ? `git diff --numstat HEAD -- ${paths}` : 'git diff --numstat HEAD';
+  const ns = parseNumstat((await ctx.sh(diffCmd, { timeoutSec: 30 })).stdout);
   tel(ctx, item.id, 'done', 'pass', state.greenAttempts || 1, sha.slice(0, 7));
   return {
     unit: item.id,

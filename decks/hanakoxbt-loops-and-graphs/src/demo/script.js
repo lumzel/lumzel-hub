@@ -198,15 +198,18 @@ export function buildFeatureShipOutputs(tMs, reworks = 0, approved = false) {
 
   if (tMs >= 1200) {
     out.preflight = {
+      isGit: true,
       clean: true,
       dirty: [],
+      dirtyCount: 0,
+      reason: '',
       branch: 'main',
       headSha: '8c14a9b2f0e3d19a',
       constraintsText: cList.map((c, i) => `C${i + 1}. ${c.text}`).join('\n'),
       constraintCount: cList.length,
       constraintIds: cList.map(c => c.id),
       fullCheckCmd: 'pnpm test',
-      setupCmd: 'pnpm install --frozen-lockfile --prefer-offline',
+      setupCmd: '',
       repoHints: 'node/pnpm, tests: vitest, dirs: src tests',
       presetUnits: [],
     };
@@ -238,34 +241,34 @@ export function buildFeatureShipOutputs(tMs, reworks = 0, approved = false) {
           index: 0,
           item: out.plan.units[0],
           ok: true,
-          branch: 'lumzel/wf-c18f2a90',
+          branch: null,
           retries: 0,
           outputs: {
             lane_start: { unit: 'csv-serializer', startedAt: BASE_EPOCH + 10 },
             red_gate: { ok: true, attempt: 1, max: 2 },
             green_gate: { ok: true, attempt: 1, max: 3 },
-            unit_report: { unit: 'csv-serializer', sha: 'c18f2a9', insertions: 120, deletions: 4, attempts: 1 },
+            unit_report: { unit: 'csv-serializer', sha: '8c14a9b', insertions: 120, deletions: 4, attempts: 1 },
           },
         },
         {
           index: 1,
           item: out.plan.units[1],
           ok: true,
-          branch: 'lumzel/wf-9a4e10b2',
+          branch: null,
           retries: 1,
           outputs: {
             lane_start: { unit: 'export-endpoint', startedAt: BASE_EPOCH + 10 },
             red_gate: { ok: true, attempt: 1, max: 2 },
             green_gate: { ok: true, attempt: 2, max: 3, signature: 'expected 200 received 404' },
             verify_green: { ok: true, code: 0, stdout: 'PASS src/api/routes/export.test.ts (6 tests)', stderr: '' },
-            unit_report: { unit: 'export-endpoint', sha: '9a4e10b', insertions: 108, deletions: 22, attempts: 2 },
+            unit_report: { unit: 'export-endpoint', sha: '8c14a9b', insertions: 108, deletions: 22, attempts: 2 },
           },
         },
         {
           index: 2,
           item: out.plan.units[2],
           ok: false,
-          branch: '',
+          branch: null,
           retries: 3,
           error: "node 'green_gate' exceeded maxIterations (3)",
           outputs: {
@@ -290,26 +293,26 @@ export function buildFeatureShipOutputs(tMs, reworks = 0, approved = false) {
           index: 3,
           item: out.plan.units[3],
           ok: true,
-          branch: 'lumzel/wf-4d20c8e1',
+          branch: null,
           retries: 0,
           outputs: {
             lane_start: { unit: 'filter-query', startedAt: BASE_EPOCH + 31 },
             red_gate: { ok: true, attempt: 1, max: 2 },
             green_gate: { ok: true, attempt: 1, max: 3 },
-            unit_report: { unit: 'filter-query', sha: '4d20c8e', insertions: 96, deletions: 38, attempts: 1 },
+            unit_report: { unit: 'filter-query', sha: '8c14a9b', insertions: 96, deletions: 38, attempts: 1 },
           },
         },
         {
           index: 4,
           item: out.plan.units[4],
           ok: true,
-          branch: 'lumzel/wf-b831f024',
+          branch: null,
           retries: 0,
           outputs: {
             lane_start: { unit: 'export-button', startedAt: BASE_EPOCH + 31 },
             red_gate: { ok: true, attempt: 1, max: 2 },
             green_gate: { ok: true, attempt: 1, max: 3 },
-            unit_report: { unit: 'export-button', sha: 'b831f02', insertions: 88, deletions: 24, attempts: 1 },
+            unit_report: { unit: 'export-button', sha: '8c14a9b', insertions: 88, deletions: 24, attempts: 1 },
           },
         },
       ],
@@ -319,8 +322,8 @@ export function buildFeatureShipOutputs(tMs, reworks = 0, approved = false) {
   const candidate = {
     source: reworks > 0 ? 'rework' : 'integrate',
     round: reworks,
-    branch: 'lumzel/wf-3c1e7a04',
-    sha: reworks > 0 ? 'f41d8c2e' : '7e92c30a',
+    branch: 'main',
+    sha: '8c14a9b2f0e3d19a',
     baseSha: '8c14a9b2f0e3d19a',
     passed: 4,
     total: 5,
@@ -372,13 +375,13 @@ export function buildFeatureShipOutputs(tMs, reworks = 0, approved = false) {
     out.integrate_gate = { passed: true };
   }
   if (reworks > 0) {
-    out.rework = { branch: 'lumzel/wf-rework-01', text: 'Applied review changes to candidate branch.' };
-    out.reverify = { ok: true, round: reworks, branch: 'lumzel/wf-rework-01', sha: candidate.sha, check: { ok: true, code: 0 } };
+    out.rework = { text: 'Applied review changes directly in current worktree.' };
+    out.reverify = { ok: true, round: reworks, branch: 'main', sha: candidate.sha, check: { ok: true, code: 0 } };
   }
   if (approved) {
     out.human_gate = { decision: 'approve', payload: { by: 'deck', at: BASE_EPOCH + 57 } };
     if (tMs >= 61000) {
-      out.ship = { ok: true, code: 0, stdout: 'Fast-forward merged lumzel/wf-3c1e7a04 -> main', stderr: '' };
+      out.ship = { ok: true, code: 0, stdout: 'Changes kept in working tree on main', stderr: '' };
     }
     if (tMs >= 64000) {
       out.retro = { shipped: true, stats: { units: 5, passed: 4, retries: 4, reworks } };
