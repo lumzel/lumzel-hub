@@ -885,3 +885,118 @@ button { border: 0; background: none; padding: 0; cursor: pointer; }
   z-index: 60;
 }
 .toast.err { background: var(--err); color: #fff; }
+
+/* Agent / Model / Effort Controls */
+.agent-control-wrap {
+  position: relative;
+}
+.agent-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--fg);
+}
+.agent-pill:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+.agent-pill.active {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+.agent-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--faint);
+}
+.agent-pill.active .agent-dot {
+  background: var(--brand);
+}
+.agent-pill-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-caret {
+  font-size: 10px;
+  color: var(--muted);
+  flex: none;
+}
+.agent-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(300px, calc(100vw - 24px));
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  box-shadow: var(--shadow-frame);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  z-index: 50;
+}
+.agent-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+.agent-pop-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.agent-popover select {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--canvas);
+  color: var(--fg);
+  font-size: 12px;
+}
+.agent-pop-hint {
+  margin: 0;
+}
+
+.revise-agent-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 11px;
+  color: var(--muted);
+  text-align: left;
+}
+.revise-agent-btn:hover { border-color: var(--border-strong); color: var(--fg); }
+.revise-agent-val {
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modal-agent-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 560px) {
+  .modal-agent-grid {
+    grid-template-columns: 1fr;
+  }
+}

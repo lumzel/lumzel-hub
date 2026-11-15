@@ -25,6 +25,35 @@
         </nav>
 
         <div class="top-actions">
+          <div class="agent-control-wrap" id="agent-override-wrap">
+            <button type="button" class="agent-pill" id="agent-override-pill" aria-expanded="false" aria-haspopup="dialog">
+              <span class="agent-dot" id="agent-override-dot" aria-hidden="true"></span>
+              <span class="agent-pill-text" id="agent-override-label">Claude Code</span>
+              <span class="agent-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="agent-popover" id="agent-popover" role="dialog" hidden>
+              <div class="agent-pop-head">
+                <strong data-i18n="agentMenuTitle">Workflow Agent &amp; Model</strong>
+                <div class="agent-pop-actions">
+                  <span class="pill" id="od-agent-badge">Lumzel Default</span>
+                  <button type="button" class="link-btn" id="od-agent-reset" data-i18n="agentReset" hidden>Reset</button>
+                </div>
+              </div>
+              <label class="field-sm">
+                <span data-i18n="agentFieldAgent">Agent</span>
+                <select id="od-agent-select"></select>
+              </label>
+              <label class="field-sm">
+                <span data-i18n="agentFieldModel">Model</span>
+                <select id="od-model-select"></select>
+              </label>
+              <label class="field-sm" id="od-effort-row">
+                <span data-i18n="agentFieldEffort">Thinking</span>
+                <select id="od-effort-select"></select>
+              </label>
+              <p class="hint-sm agent-pop-hint" id="od-agent-hint"></p>
+            </div>
+          </div>
           <button type="button" class="sys-pill" id="active-sys-pill">
             <span class="sys-swatch" id="active-sys-swatch"></span>
             <span id="active-sys-name">Editorial Slate</span>
@@ -139,6 +168,10 @@
                 <span data-i18n="revisionInstruction">Extra revision notes</span>
                 <input id="revise-instruction" type="text" data-i18n-placeholder="revisionInstructionPh" placeholder="Optional overall steering..." />
               </label>
+              <button type="button" class="revise-agent-btn" id="revise-agent-chip">
+                <span class="revise-agent-label" data-i18n="reviseModelLabel">Run with</span>
+                <span class="revise-agent-val mono" id="revise-agent-val"></span>
+              </button>
               <button type="button" class="btn primary full" id="btn-apply-revisions" data-i18n="applyRevisions">Apply Revisions</button>
             </div>
 
@@ -286,6 +319,20 @@
             <span data-i18n="fieldBrief">Design Brief</span>
             <textarea id="new-brief" rows="3" data-i18n-placeholder="fieldBriefPh" placeholder="Describe the user goal, key workflows, real domain copy, and visual feel..."></textarea>
           </label>
+          <div class="modal-agent-grid">
+            <label>
+              <span data-i18n="agentFieldAgent">Agent</span>
+              <select id="new-agent"></select>
+            </label>
+            <label>
+              <span data-i18n="agentFieldModel">Model</span>
+              <select id="new-model"></select>
+            </label>
+            <label id="new-effort-field">
+              <span data-i18n="agentFieldEffort">Thinking</span>
+              <select id="new-effort"></select>
+            </label>
+          </div>
           <label class="check-row">
             <input type="checkbox" id="new-skip-gate" />
             <span data-i18n="skipGateLabel">Skip Direction Picker (auto-pick direction 1)</span>
@@ -325,6 +372,20 @@
             <span data-i18n="fieldSourceVal">Target Path / URL / Brief</span>
             <textarea id="ext-source-val" rows="3" data-i18n-placeholder="fieldSourceValPh" placeholder="apps/desktop/src or https://example.com or brand description"></textarea>
           </label>
+          <div class="modal-agent-grid">
+            <label>
+              <span data-i18n="agentFieldAgent">Agent</span>
+              <select id="ext-agent"></select>
+            </label>
+            <label>
+              <span data-i18n="agentFieldModel">Model</span>
+              <select id="ext-model"></select>
+            </label>
+            <label id="ext-effort-field">
+              <span data-i18n="agentFieldEffort">Thinking</span>
+              <select id="ext-effort"></select>
+            </label>
+          </div>
           <p class="err" id="ext-err"></p>
           <div class="modal-row">
             <button type="button" class="btn" id="ext-cancel" data-i18n="cancel">Cancel</button>

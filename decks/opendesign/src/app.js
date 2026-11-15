@@ -50,6 +50,36 @@ const WORKFLOW_TOPOLOGIES = {
   ],
 };
 
+const SAMPLE_AGENT_CATALOG = {
+  agents: [
+    {
+      id: 'claude',
+      name: 'Claude Code',
+      default: true,
+      defaultModel: 'claude-sonnet-4-5',
+      models: [
+        { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5', efforts: ['low', 'medium', 'high'], defaultEffort: 'medium' },
+        { id: 'claude-opus-4-1', name: 'Claude Opus 4.1', efforts: ['low', 'medium', 'high'], defaultEffort: 'medium' },
+      ],
+    },
+    {
+      id: 'codex',
+      name: 'Codex',
+      default: false,
+      defaultModel: 'gpt-5.4',
+      models: [
+        { id: 'gpt-5.4', name: 'GPT-5.4', efforts: ['low', 'medium', 'high', 'xhigh'], defaultEffort: 'medium' },
+        { id: 'gpt-5.3-codex', name: 'GPT-5.3 Codex', efforts: ['low', 'medium', 'high'], defaultEffort: 'medium' },
+      ],
+    },
+  ],
+  defaults: {
+    provider: 'claude',
+    model: 'claude-sonnet-4-5',
+    effort: 'medium',
+  },
+};
+
 const state = {
   preview: false,
   theme: 'light',
@@ -73,9 +103,13 @@ const state = {
   selectedNodeId: '',
   steeringText: '',
   lastRenderedKey: '',
+  agentCatalog: null,
+  selectedAgent: { provider: '', model: '', effort: '' },
+  agentMenuOpen: false,
 };
 
 let unsubWorkflow = null;
+let unsubAgentDefaults = null;
 let toastTimer = 0;
 
 function el(tag, attrs = {}, ...children) {
@@ -244,11 +278,171 @@ function syncCanvasFrame(forceReload = false) {
   }
 }
 
+function sanitizeSelectedAgent(raw, catalog) {
+  const clean = {
+    provider: typeof raw?.provider === 'string' ? raw.provider.trim() : '',
+    model: typeof raw?.model === 'string' ? raw.model.trim() : '',
+    effort: typeof raw?.effort === 'string' ? raw.effort.trim() : '',
+  };
+  const agents = Array.isArray(catalog?.agents) ? catalog.agents : [];
+  if (!agents.length) return clean;
+  if (clean.provider && !agents.some(a => a.id === clean.provider)) {
+    return { provider: '', model: '', effort: '' };
+  }
+  const activeProvider = clean.provider || catalog?.defaults?.provider || agents[0]?.id || '';
+  const agent = agents.find(a => a.id === activeProvider) || agents[0];
+  const models = Array.isArray(agent?.models) ? agent.models : [];
+  if (clean.model && !models.some(m => m.id === clean.model)) {
+    clean.model = '';
+    clean.effort = '';
+  }
+  const activeModel = clean.model || agent?.defaultModel || catalog?.defaults?.model || models[0]?.id || '';
+  const modelObj = models.find(m => m.id === activeModel);
+  const efforts = Array.isArray(modelObj?.efforts) ? modelObj.efforts : [];
+  if (clean.effort && !efforts.includes(clean.effort)) {
+    clean.effort = '';
+  }
+  return clean;
+}
+
+function effectiveAgentInfo(catalog = state.agentCatalog, selected = state.selectedAgent) {
+  const agents = Array.isArray(catalog?.agents) ? catalog.agents : [];
+  const defaults = catalog?.defaults || {};
+  const hostProviderId = defaults.provider || agents.find(a => a.default)?.id || agents[0]?.id || '';
+  const hostAgent = agents.find(a => a.id === hostProviderId) || agents[0] || null;
+  const providerId = selected?.provider || hostProviderId;
+  const agent = agents.find(a => a.id === providerId) || hostAgent;
+  const models = Array.isArray(agent?.models) ? agent.models : [];
+  const defaultModelId =
+    (!selected?.provider && defaults.model && models.some(m => m.id === defaults.model) ? defaults.model : '') ||
+    agent?.defaultModel ||
+    models[0]?.id ||
+    '';
+  const modelId = selected?.model && models.some(m => m.id === selected.model) ? selected.model : defaultModelId;
+  const modelObj = models.find(m => m.id === modelId) || null;
+  const efforts = Array.isArray(modelObj?.efforts) ? modelObj.efforts : [];
+  const defaultEffort =
+    (!selected?.provider && !selected?.model && defaults.effort && efforts.includes(defaults.effort) ? defaults.effort : '') ||
+    (modelObj?.defaultEffort && efforts.includes(modelObj.defaultEffort) ? modelObj.defaultEffort : efforts[0] || '');
+  const effort =
+    efforts.length === 0
+      ? ''
+      : selected?.effort && efforts.includes(selected.effort)
+        ? selected.effort
+        : defaultEffort;
+  const hasOverride = Boolean(selected?.provider || selected?.model || selected?.effort);
+  return {
+    agents,
+    hostAgent,
+    agent,
+    providerId: agent?.id || providerId,
+    providerName: agent?.name || providerId || 'Agent',
+    models,
+    modelObj,
+    modelId,
+    modelName: modelObj?.name || modelId,
+    defaultModelId,
+    efforts,
+    effort,
+    defaultEffort,
+    hasOverride,
+  };
+}
+
+function populateAgentSelectTriplet(agentSel, modelSel, effortSel, effortRow, info) {
+  if (!agentSel || !modelSel || !effortSel) return;
+  const selected = state.selectedAgent;
+  const hostName = info.hostAgent?.name || info.hostAgent?.id || 'Default';
+  agentSel.replaceChildren(
+    el('option', { value: '' }, t('agentFollowHost', { name: hostName })),
+    ...info.agents.map(a => el('option', { value: a.id }, a.name || a.id)),
+  );
+  agentSel.value = selected.provider && info.agents.some(a => a.id === selected.provider) ? selected.provider : '';
+
+  const defModelObj = info.models.find(m => m.id === info.defaultModelId);
+  const defModelLabel = defModelObj?.name || info.defaultModelId || '—';
+  modelSel.replaceChildren(
+    el('option', { value: '' }, t('agentFollowDefaultModel', { name: defModelLabel })),
+    ...info.models.map(m => el('option', { value: m.id }, m.name || m.id)),
+  );
+  modelSel.value = selected.model && info.models.some(m => m.id === selected.model) ? selected.model : '';
+
+  if (effortRow) effortRow.hidden = info.efforts.length === 0;
+  if (info.efforts.length > 0) {
+    effortSel.replaceChildren(
+      el('option', { value: '' }, t('agentFollowDefaultEffort', { effort: info.defaultEffort || info.efforts[0] })),
+      ...info.efforts.map(e => el('option', { value: e }, e)),
+    );
+    effortSel.value = selected.effort && info.efforts.includes(selected.effort) ? selected.effort : '';
+  } else {
+    effortSel.replaceChildren();
+  }
+}
+
+function renderAgentControls() {
+  const wrap = $('agent-override-wrap');
+  const info = effectiveAgentInfo();
+  const hasAgents = info.agents.length > 0;
+  if (wrap) wrap.hidden = !hasAgents;
+  for (const fieldId of ['new-agent', 'ext-agent']) {
+    const grid = $(fieldId)?.closest('.modal-agent-grid');
+    if (grid) grid.hidden = !hasAgents;
+  }
+  const reviseChip = $('revise-agent-chip');
+  if (reviseChip) reviseChip.hidden = !hasAgents;
+  if (!hasAgents) return;
+
+  const summary = [info.providerName, info.modelName || info.modelId, info.effort].filter(Boolean).join(' · ');
+  const pill = $('agent-override-pill');
+  if (pill) {
+    pill.classList.toggle('active', info.hasOverride);
+    pill.setAttribute('aria-expanded', state.agentMenuOpen ? 'true' : 'false');
+    pill.title = summary;
+  }
+  if ($('agent-override-label')) $('agent-override-label').textContent = summary;
+  if ($('revise-agent-val')) $('revise-agent-val').textContent = summary;
+
+  const pop = $('agent-popover');
+  if (pop) pop.hidden = !state.agentMenuOpen;
+  const badge = $('od-agent-badge');
+  if (badge) {
+    badge.textContent = info.hasOverride ? t('agentBadgeCustom') : t('agentBadgeHost');
+    badge.className = `pill${info.hasOverride ? ' brand' : ''}`;
+  }
+  if ($('od-agent-reset')) $('od-agent-reset').hidden = !info.hasOverride;
+  if ($('od-agent-hint')) $('od-agent-hint').textContent = info.hasOverride ? t('agentHintCustom') : t('agentHintHost');
+
+  populateAgentSelectTriplet($('od-agent-select'), $('od-model-select'), $('od-effort-select'), $('od-effort-row'), info);
+  populateAgentSelectTriplet($('new-agent'), $('new-model'), $('new-effort'), $('new-effort-field'), info);
+  populateAgentSelectTriplet($('ext-agent'), $('ext-model'), $('ext-effort'), $('ext-effort-field'), info);
+}
+
+async function setAgentOverride(partial) {
+  const next = sanitizeSelectedAgent({ ...state.selectedAgent, ...partial }, state.agentCatalog);
+  state.selectedAgent = next;
+  renderAgentControls();
+  if (!state.preview) {
+    await saveStore('meta', 'agentOverride', next);
+  }
+}
+
+function workflowAgentOptions() {
+  const selected = state.selectedAgent;
+  if (!selected.provider && !selected.model && !selected.effort) return undefined;
+  const info = effectiveAgentInfo();
+  const opts = {};
+  if (selected.provider || selected.model) opts.provider = info.providerId;
+  if (selected.model) opts.model = info.modelId;
+  if (selected.effort && info.efforts.includes(selected.effort)) opts.effort = selected.effort;
+  return Object.keys(opts).length > 0 ? opts : undefined;
+}
+
 function renderTopbar() {
   const sys = activeSystem();
   $('active-sys-name').textContent = sys.name;
   const parsed = parseTokensCss(sys.tokensCss);
   $('active-sys-swatch').style.background = parsed['--od-accent'] || '#0070e3';
+  renderAgentControls();
 
   for (const btn of document.querySelectorAll('.main-tab')) {
     btn.classList.toggle('on', btn.dataset.view === state.view);
@@ -972,16 +1166,20 @@ async function applyRevisions() {
   const snapshotPath = `.lumzel/opendesign/versions/${art.id}/v${art.version || 1}.html`;
   await window.deck.files.write(snapshotPath, art.html || '');
 
-  const run = await window.deck.workflow.run('revise-artifact', {
-    artifactId: art.id,
-    sourcePath: art.path,
-    targetPath: art.path,
-    designSystemPath: `.lumzel/opendesign/design-systems/${sys.slug}/DESIGN.md`,
-    tokensPath: `.lumzel/opendesign/design-systems/${sys.slug}/tokens.css`,
-    commentsJson: JSON.stringify(comments),
-    tweakOverridesJson: JSON.stringify(state.tweaks),
-    instruction,
-  });
+  const run = await window.deck.workflow.run(
+    'revise-artifact',
+    {
+      artifactId: art.id,
+      sourcePath: art.path,
+      targetPath: art.path,
+      designSystemPath: `.lumzel/opendesign/design-systems/${sys.slug}/DESIGN.md`,
+      tokensPath: `.lumzel/opendesign/design-systems/${sys.slug}/tokens.css`,
+      commentsJson: JSON.stringify(comments),
+      tweakOverridesJson: JSON.stringify(state.tweaks),
+      instruction,
+    },
+    workflowAgentOptions(),
+  );
   await registerWorkflowRun(run);
   state.view = 'workflows';
   renderAll();
@@ -1091,17 +1289,21 @@ async function startDesignPipeline({ id, title, surface, systemSlug, brief, skip
   state.artifacts = [art, ...state.artifacts.filter(a => a.id !== id)];
   state.artifactId = id;
 
-  const run = await window.deck.workflow.run('design-artifact', {
-    artifactId: id,
-    title,
-    surface,
-    brief,
-    systemSlug: sys.slug,
-    targetPath,
-    designSystemPath: `.lumzel/opendesign/design-systems/${sys.slug}/DESIGN.md`,
-    tokensPath: `.lumzel/opendesign/design-systems/${sys.slug}/tokens.css`,
-    skipDirectionGate: Boolean(skipDirectionGate),
-  });
+  const run = await window.deck.workflow.run(
+    'design-artifact',
+    {
+      artifactId: id,
+      title,
+      surface,
+      brief,
+      systemSlug: sys.slug,
+      targetPath,
+      designSystemPath: `.lumzel/opendesign/design-systems/${sys.slug}/DESIGN.md`,
+      tokensPath: `.lumzel/opendesign/design-systems/${sys.slug}/tokens.css`,
+      skipDirectionGate: Boolean(skipDirectionGate),
+    },
+    workflowAgentOptions(),
+  );
   await registerWorkflowRun(run);
   state.view = 'workflows';
   renderAll();
@@ -1111,13 +1313,17 @@ async function startDesignPipeline({ id, title, surface, systemSlug, brief, skip
 async function startExtractPipeline({ name, slug, sourceKind, sourceValue }) {
   if (state.preview) return toast(t('previewDisabled'), true);
   const outDir = `.lumzel/opendesign/design-systems/${slug}`;
-  const run = await window.deck.workflow.run('extract-design-system', {
-    slug,
-    name,
-    sourceKind,
-    sourceValue,
-    outDir,
-  });
+  const run = await window.deck.workflow.run(
+    'extract-design-system',
+    {
+      slug,
+      name,
+      sourceKind,
+      sourceValue,
+      outDir,
+    },
+    workflowAgentOptions(),
+  );
   await registerWorkflowRun(run);
   state.view = 'workflows';
   renderAll();
@@ -1223,16 +1429,20 @@ async function retryWorkflowNode(runId, nodeId) {
 // ---------- Modals & Init
 
 function openNewDesignModal() {
+  state.agentMenuOpen = false;
   $('new-system').replaceChildren(
     ...state.systems.map(s => el('option', { value: s.slug, selected: s.slug === state.activeSystemSlug }, s.name)),
   );
   $('new-err').textContent = '';
+  renderAgentControls();
   $('modal-new').hidden = false;
   $('new-title').focus();
 }
 
 function openExtractModal() {
+  state.agentMenuOpen = false;
   $('ext-err').textContent = '';
+  renderAgentControls();
   $('modal-extract').hidden = false;
   $('ext-name').focus();
 }
@@ -1244,6 +1454,43 @@ function bindEvents() {
       renderAll();
     });
   }
+  $('agent-override-pill').addEventListener('click', e => {
+    e.stopPropagation();
+    state.agentMenuOpen = !state.agentMenuOpen;
+    renderAgentControls();
+  });
+  $('revise-agent-chip').addEventListener('click', e => {
+    e.stopPropagation();
+    state.agentMenuOpen = true;
+    renderAgentControls();
+    $('od-model-select').focus();
+  });
+  $('od-agent-reset').addEventListener('click', () => {
+    setAgentOverride({ provider: '', model: '', effort: '' });
+  });
+  for (const [agentId, modelId, effortId] of [
+    ['od-agent-select', 'od-model-select', 'od-effort-select'],
+    ['new-agent', 'new-model', 'new-effort'],
+    ['ext-agent', 'ext-model', 'ext-effort'],
+  ]) {
+    $(agentId).addEventListener('change', e => {
+      setAgentOverride({ provider: e.target.value, model: '', effort: '' });
+    });
+    $(modelId).addEventListener('change', e => {
+      setAgentOverride({ model: e.target.value, effort: '' });
+    });
+    $(effortId).addEventListener('change', e => {
+      setAgentOverride({ effort: e.target.value });
+    });
+  }
+  document.addEventListener('pointerdown', e => {
+    if (!state.agentMenuOpen) return;
+    const wrap = $('agent-override-wrap');
+    if (wrap && !wrap.contains(e.target) && e.target !== $('revise-agent-chip')) {
+      state.agentMenuOpen = false;
+      renderAgentControls();
+    }
+  });
   $('active-sys-pill').addEventListener('click', () => {
     state.selectedSystemSlug = state.activeSystemSlug;
     state.view = 'systems';
@@ -1434,6 +1681,10 @@ function bindEvents() {
     if (e.key === 'Escape') {
       $('modal-new').hidden = true;
       $('modal-extract').hidden = true;
+      if (state.agentMenuOpen) {
+        state.agentMenuOpen = false;
+        renderAgentControls();
+      }
     }
   });
 
@@ -1481,12 +1732,20 @@ async function loadWorkspace() {
     state.versions = structuredClone(SAMPLE_VERSIONS);
     state.runs = structuredClone(SAMPLE_RUNS);
     state.selectedRunId = state.runs[0].runId;
+    state.agentCatalog = SAMPLE_AGENT_CATALOG;
+    state.selectedAgent = { provider: '', model: '', effort: '' };
     renderAll();
     return;
   }
 
   $('banner').hidden = true;
-  const activeSys = await window.deck.store.get('meta', 'activeSystem').catch(() => null);
+  const [activeSys, catalogRes, savedAgentOverride] = await Promise.all([
+    window.deck.store.get('meta', 'activeSystem').catch(() => null),
+    window.deck.agent?.catalog?.().catch(() => null),
+    window.deck.store.get('meta', 'agentOverride').catch(() => null),
+  ]);
+  state.agentCatalog = catalogRes || null;
+  state.selectedAgent = sanitizeSelectedAgent(savedAgentOverride, state.agentCatalog);
   const customSystems = await window.deck.store.list({ collection: 'systems' }).catch(() => []);
   const customMap = new Map(customSystems.map(e => [e.key, e.value]));
   state.systems = [
@@ -1559,6 +1818,32 @@ async function loadWorkspace() {
         await handleWorkflowCompleted(run);
       }
       renderAll();
+    });
+  }
+
+  if (!unsubAgentDefaults && typeof window.deck.agent?.onDefaults === 'function') {
+    unsubAgentDefaults = window.deck.agent.onDefaults(async evt => {
+      const nextDefaults = evt?.defaults || {
+        provider: evt?.provider || '',
+        model: evt?.model || '',
+        effort: evt?.effort || '',
+      };
+      if (!state.agentCatalog) {
+        state.agentCatalog = await window.deck.agent?.catalog?.().catch(() => null);
+      }
+      if (state.agentCatalog) {
+        state.agentCatalog = {
+          ...state.agentCatalog,
+          defaults: nextDefaults,
+        };
+      }
+      const prev = state.selectedAgent;
+      const next = sanitizeSelectedAgent(prev, state.agentCatalog);
+      state.selectedAgent = next;
+      if (next.provider !== prev.provider || next.model !== prev.model || next.effort !== prev.effort) {
+        saveStore('meta', 'agentOverride', next).catch(() => {});
+      }
+      renderAgentControls();
     });
   }
 
