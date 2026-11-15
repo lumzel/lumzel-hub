@@ -1,0 +1,5 @@
+interface:
+  display_name: "Loops and Graphs (@hanakoxbt) Guide"
+  short_description: "Units, checks and lessons for @hanakoxbt Loops and Graphs"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
+    <title>OpenDesign</title>
+    <link rel="stylesheet" href="styles/app.css" />
+  </head>
+  <body>
+    <div class="app" id="app" data-state="loading">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <strong data-i18n="brandTitle">OpenDesign</strong>
+          <span class="brand-sub" data-i18n="brandSub">Design Studio</span>
+        </div>
+
+        <nav class="main-tabs" role="tablist">
+          <button type="button" class="main-tab on" role="tab" data-view="canvas" data-i18n="tabCanvas">Canvas</button>
+          <button type="button" class="main-tab" role="tab" data-view="systems" data-i18n="tabSystems">Design Systems</button>
+          <button type="button" class="main-tab" role="tab" data-view="workflows">
+            <span data-i18n="tabWorkflows">Workflows</span>
+            <span class="badge-dot" id="wf-badge" hidden></span>
+          </button>
+        </nav>
+
+        <div class="top-actions">
+          <button type="button" class="sys-pill" id="active-sys-pill">
+            <span class="sys-swatch" id="active-sys-swatch"></span>
+            <span id="active-sys-name">Editorial Slate</span>
+          </button>
+          <button type="button" class="btn primary" id="btn-new-design" data-i18n="newDesignPlus">+ New Design</button>
+          <button type="button" class="btn icon-btn" id="btn-refresh" data-i18n-title="refresh" title="Refresh">↻</button>
+        </div>
+      </header>
+
+      <div class="banner" id="banner" hidden></div>
+
+      <!-- VIEW 1: CANVAS STUDIO -->
+      <section class="view-pane" id="view-canvas">
+        <aside class="rail">
+          <div class="rail-head">
+            <span data-i18n="artifactsHead">Artifacts</span>
+            <span class="count-pill" id="artifact-count">0</span>
+          </div>
+          <div class="artifact-list" id="artifact-list"></div>
+        </aside>
+
+        <main class="canvas-center" id="canvas-center">
+          <div class="canvas-toolbar" id="canvas-toolbar">
+            <div class="seg" role="group" aria-label="Canvas mode">
+              <button type="button" class="seg-btn on" data-mode="preview" data-i18n="modePreview">Preview</button>
+              <button type="button" class="seg-btn" data-mode="inspect" data-i18n="modeInspect">Inspect</button>
+              <button type="button" class="seg-btn" data-mode="tweaks" data-i18n="modeTweaks">Tweaks</button>
+              <button type="button" class="seg-btn" data-mode="code" data-i18n="modeCode">Code</button>
+            </div>
+
+            <div class="seg" id="vp-seg" role="group" aria-label="Viewport">
+              <button type="button" class="seg-btn on" data-vp="desktop" data-i18n="vpDesktop">Desktop</button>
+              <button type="button" class="seg-btn" data-vp="tablet" data-i18n="vpTablet">Tablet</button>
+              <button type="button" class="seg-btn" data-vp="mobile" data-i18n="vpMobile">Mobile</button>
+              <button type="button" class="seg-btn" data-vp="slide" data-i18n="vpSlide">Slide 16:9</button>
+            </div>
+
+            <div class="toolbar-right">
+              <button type="button" class="btn subtle" id="btn-open-file" data-i18n="openFile">Open File</button>
+              <button type="button" class="btn" id="btn-export-html" data-i18n="exportHtml">Export HTML</button>
+            </div>
+          </div>
+
+          <div class="stage" id="canvas-stage">
+            <div class="stage-frame-wrap vp-desktop" id="stage-wrap">
+              <div class="vp-bar" id="vp-bar" hidden>
+                <span id="vp-dims">1280 × 800</span>
+                <span id="artifact-path-pill" class="mono"></span>
+              </div>
+              <iframe
+                id="canvas-iframe"
+                class="canvas-iframe"
+                title="OpenDesign Canvas"
+                sandbox="allow-scripts"
+              ></iframe>
+            </div>
+
+            <div class="code-pane" id="code-pane" hidden>
+              <div class="code-head">
+                <span class="mono" id="code-path"></span>
+                <button type="button" class="btn" id="btn-copy-html" data-i18n="copyHtml">Copy HTML</button>
+              </div>
+              <textarea id="code-editor" class="code-editor mono" spellcheck="false"></textarea>
+            </div>
+
+            <div class="empty-canvas" id="empty-canvas" hidden>
+              <div class="empty-card">
+                <div class="empty-mark">✦</div>
+                <h2 data-i18n="emptyTitle">Design with structure, not prompts alone</h2>
+                <p data-i18n="emptyHint">Pick a DESIGN.md system, propose visual directions, inspect elements on the live canvas, and iterate with pinned comments.</p>
+                <div class="empty-actions">
+                  <button type="button" class="btn primary" id="empty-create-btn" data-i18n="createFirstBtn">+ Create First Design</button>
+                  <button type="button" class="btn" id="empty-starter-btn" data-i18n="loadStarterBtn">Load Sample Starter</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <aside class="inspector" id="inspector">
+          <div class="inspector-tabs" role="tablist">
+            <button type="button" class="ins-tab on" data-instab="comments">
+              <span data-i18n="tabComments">Comments</span>
+              <span class="count-pill" id="comment-count">0</span>
+            </button>
+            <button type="button" class="ins-tab" data-instab="tweaks" data-i18n="tabTweaks">Tweaks</button>
+            <button type="button" class="ins-tab" data-instab="versions" data-i18n="tabVersions">Versions</button>
+          </div>
+
+          <div class="ins-body" id="ins-comments">
+            <div class="selected-box" id="selected-box">
+              <div class="selected-label" data-i18n="selectedElement">Selected element</div>
+              <div class="selected-val" id="selected-val" data-i18n="noSelection">Whole canvas (or click an element in Inspect mode)</div>
+            </div>
+
+            <div class="comment-compose">
+              <textarea id="comment-input" rows="3" data-i18n-placeholder="commentPlaceholder" placeholder="Describe the exact visual, layout, or copy change..."></textarea>
+              <div class="row-between">
+                <span class="hint-sm" data-i18n="inspectHint">Switch to Inspect mode and click any canvas element to pin a revision note.</span>
+                <button type="button" class="btn primary" id="btn-pin-comment" data-i18n="pinComment">Pin Comment</button>
+              </div>
+            </div>
+
+            <div class="section-head">
+              <span data-i18n="queuedComments">Revision Queue</span>
+              <button type="button" class="link-btn" id="btn-clear-comments" data-i18n="clearResolved">Clear</button>
+            </div>
+            <div class="comment-list" id="comment-list"></div>
+
+            <div class="revise-box">
+              <label class="field-sm">
+                <span data-i18n="revisionInstruction">Extra revision notes</span>
+                <input id="revise-instruction" type="text" data-i18n-placeholder="revisionInstructionPh" placeholder="Optional overall steering..." />
+              </label>
+              <button type="button" class="btn primary full" id="btn-apply-revisions" data-i18n="applyRevisions">Apply Revisions</button>
+            </div>
+
+            <div class="critique-card" id="critique-card" hidden></div>
+          </div>
+
+          <div class="ins-body" id="ins-tweaks" hidden>
+            <div class="tweak-group">
+              <div class="section-head" data-i18n="tweakPalette">Palette &amp; Surface</div>
+              <div id="tweak-colors" class="tweak-list"></div>
+            </div>
+            <div class="tweak-group">
+              <div class="section-head" data-i18n="tweakGeometry">Spacing, Radius &amp; Type</div>
+              <div id="tweak-sliders" class="tweak-list"></div>
+            </div>
+            <div class="tweak-actions">
+              <button type="button" class="btn" id="btn-reset-tweaks" data-i18n="resetTweaks">Reset</button>
+              <button type="button" class="btn" id="btn-save-tokens" data-i18n="saveTokensCss">Save to System</button>
+              <button type="button" class="btn primary full" id="btn-bake-artifact" data-i18n="bakeArtifact">Bake into Artifact</button>
+            </div>
+          </div>
+
+          <div class="ins-body" id="ins-versions" hidden>
+            <div class="version-list" id="version-list"></div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- VIEW 2: DESIGN SYSTEMS -->
+      <section class="view-pane view-systems" id="view-systems" hidden>
+        <aside class="rail sys-rail">
+          <div class="rail-head">
+            <span data-i18n="systemsHead">Design Systems</span>
+            <button type="button" class="btn subtle sm" id="btn-open-extract" data-i18n="extractSystemPlus">+ Extract</button>
+          </div>
+          <div class="system-list" id="system-list"></div>
+        </aside>
+
+        <main class="sys-main" id="sys-main">
+          <header class="sys-head">
+            <div>
+              <div class="sys-title-row">
+                <h2 id="sys-title">Editorial Slate</h2>
+                <span class="mono slug-pill" id="sys-slug">editorial-slate</span>
+                <span class="pill ok" id="sys-active-pill" hidden data-i18n="systemActivePill">Active</span>
+              </div>
+              <p id="sys-tagline" class="muted-line"></p>
+            </div>
+            <div class="sys-head-actions">
+              <button type="button" class="btn" id="btn-export-designmd" data-i18n="exportDesignMd">Export DESIGN.md</button>
+              <button type="button" class="btn primary" id="btn-activate-system" data-i18n="activateSystem">Activate System</button>
+            </div>
+          </header>
+
+          <div class="subtabs">
+            <button type="button" class="subtab on" data-systab="specimen" data-i18n="sysTabSpecimen">Specimen</button>
+            <button type="button" class="subtab" data-systab="contract" data-i18n="sysTabContract">DESIGN.md</button>
+            <button type="button" class="subtab" data-systab="tokens" data-i18n="sysTabTokens">tokens.css</button>
+          </div>
+
+          <div class="sys-body" id="sys-specimen"></div>
+          <div class="sys-body" id="sys-contract" hidden>
+            <pre class="md-viewer mono" id="sys-md-pre"></pre>
+          </div>
+          <div class="sys-body" id="sys-tokens" hidden>
+            <div class="tokens-editor-wrap">
+              <textarea id="sys-tokens-editor" class="code-editor mono" spellcheck="false"></textarea>
+              <div class="row-end">
+                <button type="button" class="btn primary" id="btn-save-sys-tokens" data-i18n="saveSystemTokens">Save tokens.css</button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </section>
+
+      <!-- VIEW 3: WORKFLOWS -->
+      <section class="view-pane view-workflows" id="view-workflows" hidden>
+        <aside class="rail wf-rail">
+          <div class="rail-head">
+            <span data-i18n="workflowsHead">Workflow Runs</span>
+          </div>
+          <div class="wf-quick">
+            <button type="button" class="btn primary full" id="btn-wf-new-design" data-i18n="startDesignRun">New Design Pipeline</button>
+            <button type="button" class="btn full" id="btn-wf-extract" data-i18n="startExtractRun">Extract Design System</button>
+          </div>
+          <div class="run-list" id="run-list"></div>
+        </aside>
+
+        <main class="wf-main" id="wf-main">
+          <div class="wf-empty" id="wf-empty">
+            <p data-i18n="noRunsYet">No workflow runs started yet.</p>
+          </div>
+          <div class="wf-detail" id="wf-detail" hidden>
+            <header class="wf-head">
+              <div>
+                <div class="sys-title-row">
+                  <h2 id="wf-run-title">design-artifact</h2>
+                  <span class="mono slug-pill" id="wf-run-id"></span>
+                  <span class="pill" id="wf-run-status"></span>
+                </div>
+                <p class="muted-line" id="wf-run-sub"></p>
+              </div>
+              <div class="sys-head-actions">
+                <button type="button" class="btn" id="btn-wf-stop" hidden data-i18n="stopRun">Stop Run</button>
+              </div>
+            </header>
+
+            <div class="wf-graph-card" id="wf-graph-card"></div>
+
+            <div class="direction-picker" id="direction-picker" hidden></div>
+
+            <div class="node-detail-card" id="node-detail-card"></div>
+          </div>
+        </main>
+      </section>
+
+      <!-- MODAL: NEW DESIGN -->
+      <div class="scrim" id="modal-new" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-new-h">
+          <h3 id="modal-new-h" data-i18n="modalNewTitle">New Design Artifact</h3>
+          <div class="modal-grid">
+            <label>
+              <span data-i18n="fieldTitle">Title</span>
+              <input id="new-title" data-i18n-placeholder="fieldTitlePh" placeholder="e.g. Usage & Billing Console" autocomplete="off" />
+            </label>
+            <label>
+              <span data-i18n="fieldId">Artifact ID</span>
+              <input id="new-id" placeholder="usage-billing-console" autocomplete="off" spellcheck="false" />
+            </label>
+            <label>
+              <span data-i18n="fieldSurface">Surface</span>
+              <select id="new-surface">
+                <option value="prototype" data-i18n="surfacePrototype">Prototype</option>
+                <option value="dashboard" data-i18n="surfaceDashboard">Dashboard</option>
+                <option value="mobile" data-i18n="surfaceMobile">Mobile</option>
+                <option value="slides" data-i18n="surfaceSlides">Slides</option>
+              </select>
+            </label>
+            <label>
+              <span data-i18n="fieldSystem">Design System</span>
+              <select id="new-system"></select>
+            </label>
+          </div>
+          <label>
+            <span data-i18n="fieldBrief">Design Brief</span>
+            <textarea id="new-brief" rows="3" data-i18n-placeholder="fieldBriefPh" placeholder="Describe the user goal, key workflows, real domain copy, and visual feel..."></textarea>
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="new-skip-gate" />
+            <span data-i18n="skipGateLabel">Skip Direction Picker (auto-pick direction 1)</span>
+          </label>
+          <p class="err" id="new-err"></p>
+          <div class="modal-row">
+            <button type="button" class="btn" id="new-cancel" data-i18n="cancel">Cancel</button>
+            <button type="button" class="btn" id="new-starter" data-i18n="createQuick">Create Starter</button>
+            <button type="button" class="btn primary" id="new-run" data-i18n="runPipeline">Run Design Pipeline</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: EXTRACT DESIGN SYSTEM -->
+      <div class="scrim" id="modal-extract" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-extract-h">
+          <h3 id="modal-extract-h" data-i18n="modalExtractTitle">Extract Design System</h3>
+          <div class="modal-grid">
+            <label>
+              <span data-i18n="fieldSysName">System Name</span>
+              <input id="ext-name" data-i18n-placeholder="fieldSysNamePh" placeholder="e.g. Studio Dark" autocomplete="off" />
+            </label>
+            <label>
+              <span data-i18n="fieldSysSlug">System Slug</span>
+              <input id="ext-slug" placeholder="studio-dark" autocomplete="off" spellcheck="false" />
+            </label>
+          </div>
+          <label>
+            <span data-i18n="fieldSourceKind">Source</span>
+            <select id="ext-source-kind">
+              <option value="codebase" data-i18n="sourceCodebase">Current Codebase</option>
+              <option value="url" data-i18n="sourceUrl">Website URL</option>
+              <option value="brief" data-i18n="sourceBrief">Text Brief</option>
+            </select>
+          </label>
+          <label>
+            <span data-i18n="fieldSourceVal">Target Path / URL / Brief</span>
+            <textarea id="ext-source-val" rows="3" data-i18n-placeholder="fieldSourceValPh" placeholder="apps/desktop/src or https://example.com or brand description"></textarea>
+          </label>
+          <p class="err" id="ext-err"></p>
+          <div class="modal-row">
+            <button type="button" class="btn" id="ext-cancel" data-i18n="cancel">Cancel</button>
+            <button type="button" class="btn primary" id="ext-run" data-i18n="runExtract">Extract System</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast" role="status" hidden></div>
+    </div>
+    <script src="/sdk.js"></script>
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>

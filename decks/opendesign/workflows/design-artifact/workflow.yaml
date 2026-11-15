@@ -1,0 +1,193 @@
+id: design-artifact
+description: Structured OpenDesign pipeline: load DESIGN.md -> propose visual directions -> optional direction gate -> build tagged HTML artifact -> deterministic anti-slop lint & 5-axis critique loop.
+
+inputs:
+  artifactId:
+    type: string
+    required: true
+  title:
+    type: string
+    required: true
+  surface:
+    type: string
+    default: prototype
+  brief:
+    type: string
+    required: true
+  systemSlug:
+    type: string
+    default: editorial-slate
+  targetPath:
+    type: string
+    required: true
+  designSystemPath:
+    type: string
+    default: .lumzel/opendesign/design-systems/editorial-slate/DESIGN.md
+  tokensPath:
+    type: string
+    default: .lumzel/opendesign/design-systems/editorial-slate/tokens.css
+  skipDirectionGate:
+    type: boolean
+    default: false
+
+budget:
+  maxMinutes: 45
+  maxIterations: 8
+
+state:
+  round: 0
+
+nodes:
+  - id: load_context
+    kind: code
+    uses: ./scripts/lint-artifact.js#loadDesignContext
+
+  - id: propose_directions
+    kind: agent
+    dependsOn: [load_context]
+    session: new
+    prompt: |
+      You are running the Discovery & Direction stage of OpenDesign for "{{inputs.title}}" (surface: {{inputs.surface}}).
+
+      Brief:
+      {{inputs.brief}}
+
+      Active DESIGN.md contract:
+      {{outputs.load_context.designMd}}
+
+      Do NOT write HTML files yet. Return ONLY a JSON object matching the schema with:
+      - 2-3 concise discovery assumptions/clarifications
+      - 3 distinct visual directions (id, name, rationale, palette, typography, layoutIdea) tailored to the brief and DESIGN.md.
+    outputSchema:
+      type: object
+      required: [assumptions, directions]
+      properties:
+        assumptions:
+          type: array
+          items:
+            type: string
+        directions:
+          type: array
+          minItems: 2
+          items:
+            type: object
+            required: [id, name, rationale, palette, typography, layoutIdea]
+            properties:
+              id: { type: string }
+              name: { type: string }
+              rationale: { type: string }
+              palette: { type: string }
+              typography: { type: string }
+              layoutIdea: { type: string }
+
+  - id: route_direction
+    kind: gate
+    dependsOn: [propose_directions]
+    cases:
+      - when: "Boolean(inputs.skipDirectionGate)"
+        next: build_artifact
+    default: direction_gate
+
+  - id: direction_gate
+    kind: gate
+    pause: true
+    prompt: "Choose a visual direction for \"{{inputs.title}}\" or add steering notes before generating the artifact."
+    onFail:
+      next: $fail
+
+  - id: build_artifact
+    kind: agent
+    dependsOn: [route_direction, direction_gate]
+    join: any
+    session: run
+    prompt: |
+      Use the `opendesign-studio` skill rules to generate a single-file, self-contained interactive HTML artifact at:
+      {{inputs.targetPath}}
+
+      Title: {{inputs.title}}
+      Surface: {{inputs.surface}}
+      Design System Slug: {{inputs.systemSlug}}
+
+      User Brief:
+      {{inputs.brief}}
+
+      Selected Direction / Steering:
+      {{outputs.direction_gate ? JSON.stringify(outputs.direction_gate.payload || {}) : JSON.stringify(outputs.propose_directions.directions[0] || {})}}
+
+      Proposed Directions Reference:
+      {{JSON.stringify(outputs.propose_directions.directions)}}
+
+      Active DESIGN.md:
+      {{outputs.load_context.designMd}}
+
+      Active tokens.css (inline into <style id="od-tokens"> with fallback values):
+      {{outputs.load_context.tokensCss}}
+
+      Requirements:
+      1. Write the complete HTML file directly to `{{inputs.targetPath}}` (create parent directories if needed).
+      2. Tag all major structural & interactive elements with unique kebab-case `data-od-id="..."` attributes.
+      3. Include `<meta name="viewport" content="width=device-width, initial-scale=1">` and zero external CDN links.
+      4. Make interactions genuinely work in vanilla JS (tabs, filters, drawers, forms, or slide navigation for `slides` surface).
+      5. Avoid Lorem ipsum, Acme Corp, unprompted purple gradients, or generic boilerplate.
+
+  - id: lint_artifact
+    kind: code
+    dependsOn: [build_artifact]
+    uses: ./scripts/lint-artifact.js#lintArtifact
+
+  - id: critique_artifact
+    kind: agent
+    dependsOn: [lint_artifact]
+    session: new
+    prompt: |
+      Use the `opendesign-critique` skill (Mode A: 5-Axis Design Critique) to inspect `{{inputs.targetPath}}` against `{{inputs.designSystemPath}}` and the brief:
+      "{{inputs.brief}}"
+
+      Deterministic lint result:
+      {{JSON.stringify(outputs.lint_artifact)}}
+
+      Read `{{inputs.targetPath}}` and score 0-100 across Philosophy, Hierarchy, Execution, Specificity, and Restraint.
+      Return ONLY JSON matching the schema.
+    outputSchema:
+      type: object
+      required: [score, passed, summary, findings]
+      properties:
+        score: { type: number }
+        passed: { type: boolean }
+        summary: { type: string }
+        axes:
+          type: object
+        findings:
+          type: array
+          items:
+            type: string
+
+  - id: quality_gate
+    kind: gate
+    dependsOn: [critique_artifact]
+    maxIterations: 2
+    onExceed: finalize
+    cases:
+      - when: "!outputs.lint_artifact.ok || (outputs.critique_artifact && outputs.critique_artifact.score < 78)"
+        next: revise_from_critique
+        advanceRound: true
+
+  - id: revise_from_critique
+    kind: agent
+    session: run
+    next: lint_artifact
+    prompt: |
+      Revise `{{inputs.targetPath}}` to resolve all deterministic lint issues and design critique findings.
+
+      Lint issues:
+      {{outputs.lint_artifact.summary}}
+
+      Critique score ({{outputs.critique_artifact.score}}/100) findings:
+      {{JSON.stringify(outputs.critique_artifact.findings)}}
+
+      Preserve existing `data-od-id` attributes, keep all styles/scripts self-contained, and overwrite `{{inputs.targetPath}}` cleanly.
+
+  - id: finalize
+    kind: code
+    dependsOn: [quality_gate]
+    uses: ./scripts/lint-artifact.js#finalizeArtifact

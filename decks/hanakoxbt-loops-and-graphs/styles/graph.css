@@ -1,0 +1,486 @@
+@keyframes ag-march {
+  to { stroke-dashoffset: -12; }
+}
+@keyframes ag-breathe {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+@keyframes ag-flow {
+  to { stroke-dashoffset: -16; }
+}
+
+svg.graph * {
+  vector-effect: non-scaling-stroke;
+}
+
+.band-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: var(--faint);
+}
+
+/* Edges */
+.edge path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.edge .e-base {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  transition: stroke var(--t-mid) var(--ease), opacity var(--t-mid) var(--ease);
+}
+.edge .e-flow {
+  stroke: none;
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.edge[data-state='ghost'] .e-base {
+  opacity: 0.25;
+}
+.edge[data-kind='correct'][data-state='ghost'] .e-base,
+.edge[data-kind='learn'][data-state='idle'] .e-base {
+  opacity: 0.22;
+}
+.edge[data-state='done'] .e-base {
+  stroke: var(--ink-2);
+}
+.edge[data-state='active'] .e-base {
+  stroke: var(--ink-2);
+}
+.edge[data-state='active'] .e-flow {
+  stroke: var(--ink-2);
+  stroke-dasharray: 2 6;
+  animation: ag-flow var(--flow) linear infinite;
+}
+
+.edge[data-kind='fail'] .e-base {
+  stroke: var(--faint);
+  stroke-dasharray: 2 3;
+}
+.edge[data-kind='fail'][data-state='done'] .e-base {
+  stroke: var(--muted);
+}
+
+.edge[data-kind='correct'] .e-base {
+  stroke: var(--correct);
+  stroke-dasharray: 4 3;
+  stroke-width: 1.25;
+}
+.edge[data-kind='correct'][data-state='taken'] .e-base,
+.edge[data-kind='correct'][data-state='active'] .e-base {
+  opacity: 1;
+}
+
+.edge[data-kind='learn'] .e-base {
+  stroke: var(--learn);
+  stroke-dasharray: 1 5;
+  stroke-linecap: round;
+  stroke-width: 1.75;
+}
+.edge[data-kind='learn'][data-state='armed'] .e-base {
+  opacity: 1;
+}
+.edge[data-kind='learn'][data-state='armed'] .e-flow {
+  stroke: var(--learn);
+  stroke-dasharray: 1 7;
+  animation: ag-flow 1.4s linear infinite;
+}
+
+.e-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  fill: var(--muted);
+  pointer-events: none;
+}
+.edge[data-kind='correct'] .e-label {
+  fill: var(--correct);
+}
+.edge[data-kind='learn'] .e-label {
+  fill: var(--learn);
+}
+.edge[data-state='ghost'] .e-label {
+  opacity: 0.45;
+}
+
+/* Inlet socket */
+.inlet {
+  cursor: pointer;
+}
+.inlet-ring {
+  fill: var(--surface);
+  stroke: var(--learn);
+  stroke-width: 1.5;
+}
+.inlet:hover .inlet-ring {
+  fill: var(--learn-soft);
+}
+.inlet-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  fill: var(--learn);
+}
+
+/* Nodes */
+.node {
+  cursor: pointer;
+  outline: none;
+}
+.node[data-role='split'] { --role: var(--split); --role-soft: var(--split-soft); }
+.node[data-role='worker'] { --role: var(--worker); --role-soft: var(--worker-soft); }
+.node[data-role='code'] { --role: var(--code); --role-soft: var(--code-soft); }
+.node[data-role='shell'] { --role: var(--code); --role-soft: var(--code-soft); }
+.node[data-role='gate'] { --role: var(--gate); --role-soft: var(--gate-soft); }
+.node[data-role='human'] { --role: var(--gate); --role-soft: var(--gate-soft); }
+.node[data-role='learn'] { --role: var(--learn); --role-soft: var(--learn-soft); }
+
+.node .n-ring {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.node .n-body {
+  fill: var(--surface);
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  transition: fill var(--t-mid) var(--ease), stroke var(--t-mid) var(--ease);
+}
+.node .n-inner {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+  pointer-events: none;
+}
+.node .n-tick {
+  fill: var(--role);
+  transition: fill var(--t-mid) var(--ease);
+}
+.node .n-glyph path, .node .n-glyph circle, .node .n-glyph rect {
+  fill: none;
+  stroke: var(--role);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.node .n-glyph text {
+  fill: var(--role);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.node .n-title {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.node .n-kind {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  fill: var(--faint);
+}
+.node .n-sep {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.node .n-status {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  fill: var(--muted);
+}
+.node .n-meter {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  fill: var(--muted);
+}
+.node .n-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--ok);
+}
+
+/* Node states */
+.node[data-status='queued'] .n-body { stroke: var(--line); }
+.node[data-status='queued'] .n-title { fill: var(--ink-2); }
+.node[data-status='queued'] .n-status { fill: var(--faint); }
+
+.node[data-status='running'] .n-body { stroke: var(--role); }
+.node[data-status='running'] .n-ring {
+  stroke: var(--role);
+  stroke-dasharray: 3 3;
+  animation: ag-march 0.6s linear infinite, ag-breathe var(--pulse) var(--ease) infinite;
+}
+.node[data-status='running'] .n-status { fill: var(--role); font-weight: 600; }
+
+.node[data-status='ok'] .n-tick { fill: var(--ok); }
+.node[data-status='ok'] .n-status { fill: var(--ok); }
+
+.node[data-status='fail'] .n-body {
+  fill: var(--fail-soft);
+  stroke: var(--fail);
+}
+.node[data-status='fail'] .n-tick { fill: var(--fail); }
+.node[data-status='fail'] .n-status { fill: var(--fail); font-weight: 600; }
+.node[data-status='fail'] .n-badge { fill: var(--fail); }
+
+.node[data-status='waiting'] .n-body {
+  fill: var(--gate-soft);
+  stroke: var(--gate);
+}
+.node[data-status='waiting'] .n-inner {
+  stroke: var(--gate);
+  opacity: 0.55;
+}
+.node[data-status='waiting'] .n-ring {
+  stroke: var(--gate);
+  animation: ag-breathe 2.4s var(--ease) infinite;
+}
+.node[data-status='waiting'] .n-status { fill: var(--gate); font-weight: 600; }
+
+.node[data-status='skipped'] {
+  opacity: 0.45;
+}
+.node[data-status='skipped'] .n-body {
+  fill: url(#hatch);
+  stroke: var(--line);
+}
+
+.node[data-status='stopped'] .n-body {
+  stroke: var(--muted);
+  stroke-dasharray: 4 3;
+}
+
+.node[data-selected='true'] .n-body {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.node:hover .n-body {
+  stroke: var(--ink-2);
+}
+.node:focus-visible .n-ring {
+  stroke: var(--focus);
+  stroke-dasharray: none;
+  opacity: 1;
+}
+
+/* Gate diamonds */
+.gate-diamond .n-body {
+  fill: var(--surface);
+  stroke: var(--gate);
+  stroke-width: 1.2;
+}
+.gate-diamond[data-status='queued'] .n-body {
+  stroke: var(--line-strong);
+}
+.gate-diamond[data-status='ok'] .n-body {
+  fill: var(--ok-soft);
+  stroke: var(--ok);
+}
+.gate-diamond[data-status='fail'] .n-body {
+  fill: var(--fail-soft);
+  stroke: var(--fail);
+}
+.gate-diamond .g-lbl {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  fill: var(--muted);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* Map Frame & Lanes */
+.map-frame {
+  fill: var(--surface-2);
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+.map-tick {
+  fill: var(--worker);
+}
+.map-head-sep {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.map-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.map-chip-rect {
+  fill: var(--worker-soft);
+  stroke: var(--worker);
+  stroke-width: 1;
+}
+.map-chip-rect.neutral {
+  fill: var(--surface);
+  stroke: var(--line-strong);
+}
+.map-chip-txt {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  fill: var(--worker);
+}
+.map-chip-txt.neutral {
+  fill: var(--muted);
+}
+.map-summary {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  fill: var(--muted);
+}
+
+.lane {
+  cursor: pointer;
+}
+.lane-bg {
+  fill: transparent;
+  transition: fill var(--t-fast) var(--ease);
+}
+.lane:hover .lane-bg {
+  fill: var(--surface-hover);
+}
+.lane[data-selected='true'] .lane-bg {
+  fill: var(--surface-hover);
+}
+.lane-sel-tick {
+  fill: transparent;
+}
+.lane[data-selected='true'] .lane-sel-tick {
+  fill: var(--ink);
+}
+.lane-div {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.lane-dot {
+  fill: var(--queued);
+}
+.lane[data-status='running'] .lane-dot {
+  fill: var(--worker);
+  animation: ag-breathe var(--pulse) var(--ease) infinite;
+}
+.lane[data-status='pass'] .lane-dot { fill: var(--ok); }
+.lane[data-status='fail'] .lane-dot { fill: var(--fail); }
+
+.lane-id {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.lane-title {
+  font-size: 11px;
+  fill: var(--ink-2);
+}
+.lane-branch {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  fill: var(--faint);
+}
+
+.phase-conn {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+.phase-rect {
+  fill: var(--surface);
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+.phase-txt {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  fill: var(--faint);
+}
+.phase[data-state='running'] .phase-rect {
+  fill: var(--worker-soft);
+  stroke: var(--worker);
+  stroke-dasharray: 3 3;
+  animation: ag-march 0.6s linear infinite;
+}
+.phase[data-state='running'] .phase-txt {
+  fill: var(--worker);
+}
+.phase[data-state='pass'] .phase-rect {
+  fill: var(--ok-soft);
+  stroke: var(--ok);
+  stroke-dasharray: none;
+}
+.phase[data-state='pass'] .phase-txt {
+  fill: var(--ok);
+}
+.phase[data-state='fail'] .phase-rect {
+  fill: var(--fail-soft);
+  stroke: var(--fail);
+  stroke-dasharray: none;
+}
+.phase[data-state='fail'] .phase-txt {
+  fill: var(--fail);
+}
+.phase[data-state='skip'] .phase-rect {
+  fill: url(#hatch);
+  stroke: var(--line);
+  stroke-dasharray: none;
+}
+
+.lane-arc {
+  fill: none;
+  stroke: var(--correct);
+  stroke-width: 1.25;
+  stroke-dasharray: 4 3;
+}
+.lane-arc[data-active='false'] {
+  opacity: 0.18;
+}
+.lane-arc-lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  fill: var(--correct);
+}
+
+.attempt-sq {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  fill: transparent;
+}
+.attempt-sq[data-state='fail'] { fill: var(--fail); stroke: var(--fail); }
+.attempt-sq[data-state='pass'] { fill: var(--ok); stroke: var(--ok); }
+.attempt-sq[data-state='cur'] {
+  fill: var(--ink);
+  stroke: var(--ink);
+  animation: ag-breathe var(--pulse) var(--ease) infinite;
+}
+.lane-meter {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  fill: var(--muted);
+}
+.lane-conflict {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--fail);
+}
+
+/* LOD */
+.lod-low .n-meter,
+.lod-low .lane-branch,
+.lod-low .e-label {
+  display: none;
+}

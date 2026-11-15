@@ -1,0 +1,81 @@
+id: extract-design-system
+description: Extract or synthesize a portable DESIGN.md brand contract and tokens.css stylesheet from a website URL, local codebase, or design brief.
+
+inputs:
+  slug:
+    type: string
+    required: true
+  name:
+    type: string
+    required: true
+  sourceKind:
+    type: string
+    default: brief
+  sourceValue:
+    type: string
+    required: true
+  outDir:
+    type: string
+    required: true
+
+budget:
+  maxMinutes: 25
+  maxIterations: 6
+
+state:
+  round: 0
+
+nodes:
+  - id: probe_source
+    kind: code
+    uses: ./scripts/validate-tokens.js#probeSource
+
+  - id: author_system
+    kind: agent
+    dependsOn: [probe_source]
+    session: new
+    prompt: |
+      Use the `opendesign-system-extract` skill to create a complete design system package in:
+      {{inputs.outDir}}
+
+      System Name: {{inputs.name}} ({{inputs.slug}})
+      Source Kind: {{inputs.sourceKind}}
+      Source Target / Brief: {{inputs.sourceValue}}
+
+      Probe Context:
+      {{JSON.stringify(outputs.probe_source)}}
+
+      Requirements:
+      1. Create `{{inputs.outDir}}/DESIGN.md` with concrete sections: Atmosphere & Voice, Color Palette, Typography, Spacing & Radius, Core Components, and Anti-Patterns.
+      2. Create `{{inputs.outDir}}/tokens.css` defining `:root` custom properties `--od-bg`, `--od-surface`, `--od-surface-2`, `--od-fg`, `--od-muted`, `--od-accent`, `--od-accent-fg`, `--od-border`, `--od-radius`, `--od-space`, `--od-font-scale`, `--od-font-sans`, `--od-font-mono`.
+      3. If `sourceKind` is `codebase`, inspect the repo's CSS/Tailwind/theme files first so the extracted tokens match the actual codebase.
+
+  - id: validate_tokens
+    kind: code
+    dependsOn: [author_system]
+    uses: ./scripts/validate-tokens.js#validateSystem
+
+  - id: repair_gate
+    kind: gate
+    dependsOn: [validate_tokens]
+    maxIterations: 2
+    onExceed: finalize_system
+    cases:
+      - when: "!outputs.validate_tokens.ok"
+        next: repair_system
+        advanceRound: true
+
+  - id: repair_system
+    kind: agent
+    session: run
+    next: validate_tokens
+    prompt: |
+      Fix the design system files in `{{inputs.outDir}}` to resolve these validation errors:
+      {{outputs.validate_tokens.summary}}
+
+      Ensure both `{{inputs.outDir}}/DESIGN.md` and `{{inputs.outDir}}/tokens.css` satisfy the OpenDesign contract.
+
+  - id: finalize_system
+    kind: code
+    dependsOn: [repair_gate]
+    uses: ./scripts/validate-tokens.js#finalizeSystem

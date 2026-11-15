@@ -1,0 +1,1571 @@
+import { applyI18n, setLocale, t } from './i18n.js';
+import { PRESET_SYSTEMS } from './presets.js';
+import {
+  SAMPLE_ARTIFACTS,
+  SAMPLE_COMMENTS,
+  SAMPLE_RUNS,
+  SAMPLE_VERSIONS,
+  buildStarterHtml,
+} from './sample.js';
+import {
+  TOKEN_DEFAULTS,
+  buildSrcdocHtml,
+  buildStandaloneHtml,
+  normalizeHex,
+  parsePx,
+  parseTokensCss,
+  serializeTokensCss,
+} from './canvasBridge.js';
+
+const $ = id => document.getElementById(id);
+
+const WORKFLOW_TOPOLOGIES = {
+  'design-artifact': [
+    { id: 'load_context', label: 'Load Context', x: 16, y: 46, next: ['propose_directions'] },
+    { id: 'propose_directions', label: 'Directions', x: 132, y: 46, next: ['route_direction'] },
+    { id: 'route_direction', label: 'Route', x: 248, y: 46, next: ['direction_gate', 'build_artifact'] },
+    { id: 'direction_gate', label: 'Pick Gate', x: 364, y: 12, next: ['build_artifact'] },
+    { id: 'build_artifact', label: 'Build HTML', x: 364, y: 80, next: ['lint_artifact'] },
+    { id: 'lint_artifact', label: 'Anti-Slop Lint', x: 484, y: 80, next: ['critique_artifact'] },
+    { id: 'critique_artifact', label: '5-Axis Critique', x: 604, y: 80, next: ['quality_gate'] },
+    { id: 'quality_gate', label: 'Quality Gate', x: 724, y: 80, next: ['revise_from_critique', 'finalize'] },
+    { id: 'revise_from_critique', label: 'Revise Fix', x: 604, y: 12, next: ['lint_artifact'] },
+    { id: 'finalize', label: 'Finalize', x: 844, y: 80, next: [] },
+  ],
+  'extract-design-system': [
+    { id: 'probe_source', label: 'Probe Source', x: 24, y: 52, next: ['author_system'] },
+    { id: 'author_system', label: 'Author System', x: 170, y: 52, next: ['validate_tokens'] },
+    { id: 'validate_tokens', label: 'Validate CSS', x: 316, y: 52, next: ['repair_gate'] },
+    { id: 'repair_gate', label: 'Repair Gate', x: 462, y: 52, next: ['repair_system', 'finalize_system'] },
+    { id: 'repair_system', label: 'Repair Tokens', x: 462, y: 12, next: ['validate_tokens'] },
+    { id: 'finalize_system', label: 'Finalize', x: 610, y: 52, next: [] },
+  ],
+  'revise-artifact': [
+    { id: 'prepare_revision', label: 'Prepare Queue', x: 24, y: 52, next: ['apply_revisions'] },
+    { id: 'apply_revisions', label: 'Apply Revisions', x: 170, y: 52, next: ['lint_revision'] },
+    { id: 'lint_revision', label: 'Lint HTML', x: 316, y: 52, next: ['revision_gate'] },
+    { id: 'revision_gate', label: 'Lint Gate', x: 462, y: 52, next: ['fix_lint', 'finalize_revision'] },
+    { id: 'fix_lint', label: 'Fix Lint', x: 462, y: 12, next: ['lint_revision'] },
+    { id: 'finalize_revision', label: 'Finalize', x: 610, y: 52, next: [] },
+  ],
+};
+
+const state = {
+  preview: false,
+  theme: 'light',
+  view: 'canvas', // canvas | systems | workflows
+  mode: 'preview', // preview | inspect | tweaks | code
+  viewport: 'desktop', // desktop | tablet | mobile | slide
+  insTab: 'comments', // comments | tweaks | versions
+  sysTab: 'specimen', // specimen | contract | tokens
+  systems: PRESET_SYSTEMS.map(s => ({ ...s })),
+  activeSystemSlug: 'editorial-slate',
+  selectedSystemSlug: 'editorial-slate',
+  artifacts: [],
+  artifactId: '',
+  comments: {}, // artifactId -> []
+  versions: {}, // artifactId -> []
+  activeVersion: null, // null = latest, else version number
+  selectedEl: null, // { oid, tag, selector, text, styles }
+  tweaks: {}, // --od-* overrides
+  runs: [],
+  selectedRunId: '',
+  selectedNodeId: '',
+  steeringText: '',
+  lastRenderedKey: '',
+};
+
+let unsubWorkflow = null;
+let toastTimer = 0;
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value == null || value === false) continue;
+    if (key === 'class') node.className = value;
+    else if (key === 'dataset') Object.assign(node.dataset, value);
+    else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
+    else node.setAttribute(key, value === true ? '' : value);
+  }
+  for (const child of children.flat()) {
+    if (child != null && child !== false) node.append(child);
+  }
+  return node;
+}
+
+function toast(msg, isError = false) {
+  const box = $('toast');
+  box.textContent = msg;
+  box.classList.toggle('err', isError);
+  box.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    box.hidden = true;
+  }, 3600);
+}
+
+function slugify(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+}
+
+function currentArtifact() {
+  return state.artifacts.find(a => a.id === state.artifactId) || null;
+}
+
+function systemBySlug(slug) {
+  return state.systems.find(s => s.slug === slug) || state.systems[0];
+}
+
+function activeSystem() {
+  return systemBySlug(state.activeSystemSlug);
+}
+
+function selectedSystem() {
+  return systemBySlug(state.selectedSystemSlug);
+}
+
+function surfaceLabel(surface) {
+  const map = {
+    prototype: t('surfacePrototype'),
+    dashboard: t('surfaceDashboard'),
+    mobile: t('surfaceMobile'),
+    slides: t('surfaceSlides'),
+  };
+  return map[surface] || surface || 'Prototype';
+}
+
+function statusPillClass(st) {
+  if (st === 'completed') return 'ok';
+  if (st === 'waiting_gate' || st === 'limit') return 'warn';
+  if (st === 'failed' || st === 'interrupted') return 'err';
+  if (st === 'running') return 'brand';
+  return '';
+}
+
+function statusLabel(st) {
+  const map = {
+    running: t('statusRunning'),
+    waiting_gate: t('statusWaiting'),
+    completed: t('statusCompleted'),
+    failed: t('statusFailed'),
+    stopped: t('statusCanceled'),
+  };
+  return map[st] || st || '';
+}
+
+function postToCanvas(msg) {
+  const frame = $('canvas-iframe');
+  if (frame?.contentWindow) {
+    frame.contentWindow.postMessage(msg, '*');
+  }
+}
+
+function syncCanvasFrame(forceReload = false) {
+  const art = currentArtifact();
+  const wrap = $('stage-wrap');
+  const codePane = $('code-pane');
+  const empty = $('empty-canvas');
+  const vpBar = $('vp-bar');
+  const frame = $('canvas-iframe');
+
+  if (!art) {
+    wrap.hidden = true;
+    codePane.hidden = true;
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+
+  const displayedHtml =
+    state.activeVersion != null
+      ? (state.versions[art.id] || []).find(v => v.version === state.activeVersion)?.html || art.html || ''
+      : art.html || '';
+
+  if (state.mode === 'code') {
+    wrap.hidden = true;
+    codePane.hidden = false;
+    $('code-path').textContent = art.path;
+    $('code-editor').value = displayedHtml;
+    return;
+  }
+
+  codePane.hidden = true;
+  wrap.hidden = false;
+  wrap.className = `stage-frame-wrap vp-${state.viewport}`;
+
+  const vpDims = {
+    desktop: 'Desktop · Fluid (<= 1280px)',
+    tablet: '820 × 1180 · Tablet',
+    mobile: '390 × 844 · Mobile',
+    slide: '1280 × 720 · Slide 16:9',
+  };
+  vpBar.hidden = state.viewport === 'desktop';
+  $('vp-dims').textContent = vpDims[state.viewport] || '';
+  $('artifact-path-pill').textContent =
+    state.activeVersion != null
+      ? t('openInCanvas', { v: state.activeVersion })
+      : art.path;
+
+  const sys = systemBySlug(art.systemSlug || state.activeSystemSlug);
+  const canUseWorktreeRoute =
+    !state.preview &&
+    state.activeVersion == null &&
+    typeof art.path === 'string' &&
+    art.path.startsWith('docs/') &&
+    art.fromDisk !== false;
+
+  const renderKey = canUseWorktreeRoute
+    ? `wt:${art.id}:${art.path}:${art.updatedAt || ''}`
+    : `sd:${art.id}:${state.activeVersion ?? 'latest'}:${displayedHtml.length}:${art.updatedAt || ''}`;
+
+  if (forceReload || state.lastRenderedKey !== renderKey) {
+    state.lastRenderedKey = renderKey;
+    if (canUseWorktreeRoute) {
+      frame.removeAttribute('srcdoc');
+      frame.src = `worktree/${art.path.split('/').map(encodeURIComponent).join('/')}`;
+    } else {
+      frame.removeAttribute('src');
+      frame.srcdoc = buildSrcdocHtml(displayedHtml, sys.tokensCss, state.tweaks);
+    }
+  } else {
+    postToCanvas({
+      type: 'od:tokens',
+      tokensCss: sys.tokensCss,
+      tweaks: state.tweaks,
+    });
+    postToCanvas({
+      type: 'od:mode',
+      mode: state.mode === 'inspect' ? 'inspect' : 'preview',
+    });
+  }
+}
+
+function renderTopbar() {
+  const sys = activeSystem();
+  $('active-sys-name').textContent = sys.name;
+  const parsed = parseTokensCss(sys.tokensCss);
+  $('active-sys-swatch').style.background = parsed['--od-accent'] || '#0070e3';
+
+  for (const btn of document.querySelectorAll('.main-tab')) {
+    btn.classList.toggle('on', btn.dataset.view === state.view);
+  }
+  const hasActiveRun = state.runs.some(r => r.state === 'running' || r.state === 'waiting_gate');
+  $('wf-badge').hidden = !hasActiveRun;
+
+  $('view-canvas').hidden = state.view !== 'canvas';
+  $('view-systems').hidden = state.view !== 'systems';
+  $('view-workflows').hidden = state.view !== 'workflows';
+}
+
+function renderArtifactRail() {
+  $('artifact-count').textContent = String(state.artifacts.length);
+  const list = $('artifact-list');
+  if (!state.artifacts.length) {
+    list.replaceChildren(el('p', { class: 'hint-sm', style: 'padding:8px 4px;' }, t('emptyArtifacts')));
+    return;
+  }
+  list.replaceChildren(
+    ...state.artifacts.map(art =>
+      el(
+        'button',
+        {
+          type: 'button',
+          class: `rail-item${art.id === state.artifactId ? ' on' : ''}`,
+          onclick: () => {
+            state.artifactId = art.id;
+            state.activeVersion = null;
+            state.selectedEl = null;
+            state.lastRenderedKey = '';
+            renderAll();
+          },
+        },
+        el('b', {}, art.title || art.id),
+        el(
+          'div',
+          { class: 'rail-meta' },
+          el('span', { class: 'pill' }, surfaceLabel(art.surface)),
+          el(
+            'span',
+            { class: 'mono' },
+            `${art.version ? `v${art.version}` : 'v1'}${art.critique?.score ? ` · ${art.critique.score}` : ''}`,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+function renderInspector() {
+  const art = currentArtifact();
+  for (const tab of document.querySelectorAll('.ins-tab')) {
+    tab.classList.toggle('on', tab.dataset.instab === state.insTab);
+  }
+  $('ins-comments').hidden = state.insTab !== 'comments';
+  $('ins-tweaks').hidden = state.insTab !== 'tweaks';
+  $('ins-versions').hidden = state.insTab !== 'versions';
+
+  const comments = art ? state.comments[art.id] || [] : [];
+  $('comment-count').textContent = String(comments.length);
+
+  const selVal = $('selected-val');
+  if (state.selectedEl) {
+    selVal.replaceChildren(
+      state.selectedEl.oid ? el('span', { class: 'oid-chip' }, state.selectedEl.oid) : null,
+      el('span', { class: 'mono' }, `<${state.selectedEl.tag}>`),
+      state.selectedEl.text ? ` — ${state.selectedEl.text.slice(0, 64)}` : '',
+    );
+  } else {
+    selVal.textContent = t('noSelection');
+  }
+
+  const cList = $('comment-list');
+  if (!comments.length) {
+    cList.replaceChildren(el('p', { class: 'hint-sm' }, t('noComments')));
+  } else {
+    cList.replaceChildren(
+      ...comments.map(c =>
+        el(
+          'div',
+          {
+            class: 'comment-card',
+            onclick: () => {
+              if (c.oid) postToCanvas({ type: 'od:highlight', oid: c.oid });
+            },
+          },
+          el(
+            'div',
+            { class: 'row-between' },
+            el('span', { class: 'oid-chip' }, c.oid || c.selector || 'canvas'),
+            el(
+              'button',
+              {
+                type: 'button',
+                class: 'link-btn',
+                onclick: e => {
+                  e.stopPropagation();
+                  removeComment(art.id, c.id);
+                },
+              },
+              '×',
+            ),
+          ),
+          el('p', {}, c.note),
+        ),
+      ),
+    );
+  }
+
+  const critCard = $('critique-card');
+  if (art?.critique) {
+    critCard.hidden = false;
+    const axes = art.critique.axes || {};
+    critCard.replaceChildren(
+      el(
+        'div',
+        { class: 'row-between' },
+        el('strong', { style: 'font-size:11.5px;' }, t('critiqueCardTitle')),
+        el('span', { class: `pill ${art.critique.score >= 78 ? 'ok' : 'warn'}` }, `${art.critique.score}/100`),
+      ),
+      art.critique.summary ? el('div', { class: 'hint-sm' }, art.critique.summary) : null,
+      Object.keys(axes).length
+        ? el(
+            'div',
+            { class: 'axes-grid' },
+            ...Object.entries(axes).map(([k, v]) =>
+              el('div', { class: 'axis-row' }, el('span', {}, k), el('b', {}, String(v))),
+            ),
+          )
+        : null,
+      art.lint
+        ? el(
+            'div',
+            { class: `pill ${art.lint.ok ? 'ok' : 'warn'}`, style: 'align-self:flex-start;' },
+            art.lint.ok ? t('lintOk') : t('lintIssues', { n: (art.lint.issues || []).length }),
+          )
+        : null,
+    );
+  } else {
+    critCard.hidden = true;
+  }
+
+  renderTweaksTab();
+  renderVersionsTab(art);
+}
+
+function renderTweaksTab() {
+  const sys = systemBySlug(currentArtifact()?.systemSlug || state.activeSystemSlug);
+  const baseVars = parseTokensCss(sys.tokensCss);
+  const eff = { ...baseVars, ...state.tweaks };
+
+  const colorFields = [
+    ['--od-bg', t('tweakBg')],
+    ['--od-surface', t('tweakSurface')],
+    ['--od-fg', t('tweakFg')],
+    ['--od-accent', t('tweakAccent')],
+    ['--od-border', t('tweakBorder')],
+  ];
+
+  $('tweak-colors').replaceChildren(
+    ...colorFields.map(([prop, label]) => {
+      const hex = normalizeHex(eff[prop], TOKEN_DEFAULTS[prop] || '#0070e3');
+      const colorInp = el('input', {
+        type: 'color',
+        value: hex,
+        oninput: e => updateTweak(prop, e.target.value),
+      });
+      const textInp = el('input', {
+        type: 'text',
+        value: eff[prop] || hex,
+        onchange: e => updateTweak(prop, e.target.value),
+      });
+      return el(
+        'div',
+        { class: 'tweak-row' },
+        el('div', { class: 'tweak-top' }, el('span', {}, label), el('span', { class: 'mono' }, prop)),
+        el('div', { class: 'color-pair' }, colorInp, textInp),
+      );
+    }),
+  );
+
+  const radiusNum = parsePx(eff['--od-radius'], 8);
+  const spaceNum = parsePx(eff['--od-space'], 16);
+  const scaleNum = parseFloat(eff['--od-font-scale'] || '1') || 1;
+
+  $('tweak-sliders').replaceChildren(
+    el(
+      'div',
+      { class: 'tweak-row' },
+      el('div', { class: 'tweak-top' }, el('span', {}, t('tweakRadius')), el('span', { class: 'mono' }, `${radiusNum}px`)),
+      el('input', {
+        type: 'range',
+        min: 0,
+        max: 20,
+        step: 1,
+        value: radiusNum,
+        oninput: e => updateTweak('--od-radius', `${e.target.value}px`),
+      }),
+    ),
+    el(
+      'div',
+      { class: 'tweak-row' },
+      el('div', { class: 'tweak-top' }, el('span', {}, t('tweakSpace')), el('span', { class: 'mono' }, `${spaceNum}px`)),
+      el('input', {
+        type: 'range',
+        min: 10,
+        max: 24,
+        step: 1,
+        value: spaceNum,
+        oninput: e => updateTweak('--od-space', `${e.target.value}px`),
+      }),
+    ),
+    el(
+      'div',
+      { class: 'tweak-row' },
+      el('div', { class: 'tweak-top' }, el('span', {}, t('tweakFontScale')), el('span', { class: 'mono' }, `${scaleNum.toFixed(2)}x`)),
+      el('input', {
+        type: 'range',
+        min: 0.85,
+        max: 1.25,
+        step: 0.05,
+        value: scaleNum,
+        oninput: e => updateTweak('--od-font-scale', String(e.target.value)),
+      }),
+    ),
+  );
+}
+
+function updateTweak(prop, value) {
+  state.tweaks = { ...state.tweaks, [prop]: value };
+  postToCanvas({ type: 'od:tweak', tweaks: state.tweaks });
+  renderTweaksTab();
+}
+
+function renderVersionsTab(art) {
+  const list = $('version-list');
+  const vers = art ? state.versions[art.id] || [] : [];
+  if (!vers.length) {
+    list.replaceChildren(el('p', { class: 'hint-sm' }, t('versionsEmpty')));
+    return;
+  }
+  list.replaceChildren(
+    ...vers.map(v => {
+      const isCurrent = state.activeVersion == null ? v.version === vers[0].version : state.activeVersion === v.version;
+      return el(
+        'div',
+        { class: `version-card${isCurrent ? ' on' : ''}` },
+        el(
+          'div',
+          {},
+          el('b', { style: 'font-size:12px;display:block;' }, v.label || `v${v.version}`),
+          el('small', { class: 'hint-sm mono' }, v.createdAt || ''),
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            class: 'btn sm',
+            onclick: () => {
+              state.activeVersion = v.version === vers[0].version ? null : v.version;
+              state.lastRenderedKey = '';
+              renderAll();
+            },
+          },
+          t('restoreVersion'),
+        ),
+      );
+    }),
+  );
+}
+
+function renderSystemsView() {
+  const sysList = $('system-list');
+  sysList.replaceChildren(
+    ...state.systems.map(sys =>
+      el(
+        'button',
+        {
+          type: 'button',
+          class: `rail-item${sys.slug === state.selectedSystemSlug ? ' on' : ''}`,
+          onclick: () => {
+            state.selectedSystemSlug = sys.slug;
+            renderSystemsView();
+          },
+        },
+        el(
+          'div',
+          { class: 'row-between' },
+          el('b', {}, sys.name),
+          sys.slug === state.activeSystemSlug ? el('span', { class: 'pill ok' }, t('systemActivePill')) : null,
+        ),
+        el(
+          'div',
+          { class: 'rail-meta' },
+          el(
+            'div',
+            { class: 'swatch-strip' },
+            ...(sys.swatches || []).slice(0, 5).map(hex => el('span', { class: 'swatch-dot', style: `background:${hex}` })),
+          ),
+          el('span', { class: 'mono' }, sys.slug),
+        ),
+      ),
+    ),
+  );
+
+  const sys = selectedSystem();
+  $('sys-title').textContent = sys.name;
+  $('sys-slug').textContent = sys.slug;
+  $('sys-tagline').textContent = sys.tagline || '';
+  const isActive = sys.slug === state.activeSystemSlug;
+  $('sys-active-pill').hidden = !isActive;
+  $('btn-activate-system').hidden = isActive;
+
+  for (const tab of document.querySelectorAll('.subtab')) {
+    tab.classList.toggle('on', tab.dataset.systab === state.sysTab);
+  }
+  $('sys-specimen').hidden = state.sysTab !== 'specimen';
+  $('sys-contract').hidden = state.sysTab !== 'contract';
+  $('sys-tokens').hidden = state.sysTab !== 'tokens';
+
+  $('sys-md-pre').textContent = sys.designMd || '';
+  $('sys-tokens-editor').value = sys.tokensCss || '';
+
+  const vars = parseTokensCss(sys.tokensCss);
+  const inlineVars = Object.entries(vars)
+    .map(([k, v]) => `${k}:${v}`)
+    .join(';');
+
+  $('sys-specimen').replaceChildren(
+    el(
+      'div',
+      { class: 'specimen-canvas', style: inlineVars },
+      el(
+        'div',
+        { class: 'row-between' },
+        el('div', {}, el('strong', { style: 'font-size:15px;' }, t('specimenTitle')), el('div', { style: 'color:var(--od-muted);font-size:12px;' }, t('specimenSub'))),
+        el('span', { class: 'pill', style: 'background:var(--od-surface);border:1px solid var(--od-border);color:var(--od-accent);' }, t('specimenBadge')),
+      ),
+      el(
+        'div',
+        { class: 'spec-grid' },
+        el(
+          'div',
+          { class: 'spec-card', style: 'display:flex;flex-direction:column;gap:10px;' },
+          el('h3', { style: 'margin:0;font-size:19px;letter-spacing:-0.02em;' }, t('specimenHeadline')),
+          el('p', { style: 'margin:0;color:var(--od-muted);font-size:12.5px;' }, t('specimenCopy')),
+          el(
+            'div',
+            { style: 'display:flex;gap:8px;margin-top:4px;' },
+            el('button', { type: 'button', style: 'padding:7px 14px;border-radius:calc(var(--od-radius) - 2px);background:var(--od-accent);color:var(--od-accent-fg);font-weight:600;font-size:12px;' }, t('specimenPrimaryBtn')),
+            el('button', { type: 'button', style: 'padding:7px 14px;border-radius:calc(var(--od-radius) - 2px);background:var(--od-surface-2);color:var(--od-fg);border:1px solid var(--od-border);font-size:12px;' }, t('specimenSecondaryBtn')),
+          ),
+        ),
+        el(
+          'div',
+          { class: 'spec-card', style: 'display:flex;flex-direction:column;justify-content:space-between;gap:12px;' },
+          el(
+            'div',
+            {},
+            el('div', { style: 'color:var(--od-muted);font-size:11.5px;' }, t('specimenKpiLabel')),
+            el('div', { style: 'font-family:var(--od-font-mono);font-size:26px;font-weight:700;margin-top:4px;' }, t('specimenKpiValue')),
+          ),
+          el('input', {
+            type: 'text',
+            placeholder: t('specimenInputPh'),
+            style: 'width:100%;padding:7px 10px;border-radius:calc(var(--od-radius) - 2px);border:1px solid var(--od-border);background:var(--od-bg);color:var(--od-fg);font-size:12px;',
+          }),
+        ),
+      ),
+      el(
+        'div',
+        { class: 'spec-card', style: 'display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;' },
+        ...[
+          ['--od-bg', vars['--od-bg']],
+          ['--od-surface', vars['--od-surface']],
+          ['--od-fg', vars['--od-fg']],
+          ['--od-accent', vars['--od-accent']],
+          ['--od-border', vars['--od-border']],
+        ].map(([name, hex]) =>
+          el(
+            'div',
+            { style: 'display:flex;flex-direction:column;gap:4px;' },
+            el('div', { style: `height:28px;border-radius:6px;background:${hex};border:1px solid var(--od-border);` }),
+            el('span', { class: 'mono', style: 'font-size:10.5px;color:var(--od-muted);' }, name),
+            el('span', { class: 'mono', style: 'font-size:11px;' }, hex),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+function renderWorkflowsView() {
+  const runList = $('run-list');
+  if (!state.runs.length) {
+    runList.replaceChildren(el('p', { class: 'hint-sm', style: 'padding:6px 4px;' }, t('noRunsYet')));
+    $('wf-empty').hidden = false;
+    $('wf-detail').hidden = true;
+    return;
+  }
+
+  runList.replaceChildren(
+    ...state.runs.map(r =>
+      el(
+        'button',
+        {
+          type: 'button',
+          class: `rail-item${r.runId === state.selectedRunId ? ' on' : ''}`,
+          onclick: () => {
+            state.selectedRunId = r.runId;
+            state.selectedNodeId = '';
+            renderWorkflowsView();
+          },
+        },
+        el('b', {}, r.inputs?.title || r.workflowId),
+        el(
+          'div',
+          { class: 'rail-meta' },
+          el('span', { class: 'mono' }, r.workflowId),
+          el('span', { class: `pill ${statusPillClass(r.state)}` }, statusLabel(r.state)),
+        ),
+      ),
+    ),
+  );
+
+  const run = state.runs.find(r => r.runId === state.selectedRunId) || state.runs[0];
+  state.selectedRunId = run.runId;
+  $('wf-empty').hidden = true;
+  $('wf-detail').hidden = false;
+  $('wf-run-title').textContent = run.inputs?.title || run.workflowId;
+  $('wf-run-id').textContent = run.runId;
+  const stPill = $('wf-run-status');
+  stPill.textContent = statusLabel(run.state);
+  stPill.className = `pill ${statusPillClass(run.state)}`;
+  $('wf-run-sub').textContent = `${run.workflowId} · ${run.inputs?.systemSlug || ''}`;
+  $('btn-wf-stop').hidden = !(run.state === 'running' || run.state === 'waiting_gate');
+
+  renderWorkflowGraph(run);
+  renderDirectionPicker(run);
+  renderNodeDetail(run);
+}
+
+function renderWorkflowGraph(run) {
+  const topo = WORKFLOW_TOPOLOGIES[run.workflowId] || WORKFLOW_TOPOLOGIES['design-artifact'];
+  const nodeStates = new Map((run.nodes || []).map(n => [n.nodeId, n]));
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('class', 'wf-svg');
+  svg.setAttribute('viewBox', '0 0 960 132');
+
+  const nodeW = 98;
+  const nodeH = 38;
+  const byId = new Map(topo.map(n => [n.id, n]));
+
+  for (const n of topo) {
+    for (const targetId of n.next) {
+      const target = byId.get(targetId);
+      if (!target) continue;
+      const line = document.createElementNS(ns, 'path');
+      const x1 = n.x + nodeW;
+      const y1 = n.y + nodeH / 2;
+      const x2 = target.x;
+      const y2 = target.y + nodeH / 2;
+      const d = x2 < x1 ? `M ${n.x + nodeW / 2} ${n.y} C ${n.x} ${n.y - 18}, ${target.x + nodeW} ${target.y - 18}, ${target.x + nodeW / 2} ${target.y}` : `M ${x1} ${y1} L ${x2} ${y2}`;
+      line.setAttribute('d', d);
+      line.setAttribute('fill', 'none');
+      line.setAttribute('stroke', 'var(--border-strong)');
+      line.setAttribute('stroke-width', '1.5');
+      svg.appendChild(line);
+    }
+  }
+
+  for (const n of topo) {
+    const rec = nodeStates.get(n.id);
+    const st = rec?.state || (run.pausedGate?.nodeId === n.id ? 'waiting_gate' : 'pending');
+    const selected = state.selectedNodeId === n.id;
+
+    const g = document.createElementNS(ns, 'g');
+    g.style.cursor = 'pointer';
+    g.addEventListener('click', () => {
+      state.selectedNodeId = n.id;
+      renderNodeDetail(run);
+    });
+
+    const rect = document.createElementNS(ns, 'rect');
+    rect.setAttribute('x', String(n.x));
+    rect.setAttribute('y', String(n.y));
+    rect.setAttribute('width', String(nodeW));
+    rect.setAttribute('height', String(nodeH));
+    rect.setAttribute('rx', '7');
+    rect.setAttribute('class', 'wf-node-rect');
+    rect.setAttribute('fill', st === 'waiting_gate' ? 'var(--brand-soft)' : 'var(--canvas)');
+    rect.setAttribute(
+      'stroke',
+      selected
+        ? 'var(--brand)'
+        : st === 'completed'
+          ? 'var(--ok)'
+          : st === 'failed'
+            ? 'var(--err)'
+            : st === 'waiting_gate' || st === 'running'
+              ? 'var(--brand)'
+              : 'var(--border-strong)',
+    );
+    g.appendChild(rect);
+
+    const text = document.createElementNS(ns, 'text');
+    text.setAttribute('x', String(n.x + nodeW / 2));
+    text.setAttribute('y', String(n.y + 17));
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', 'var(--fg)');
+    text.setAttribute('font-size', '10.5');
+    text.setAttribute('font-weight', '600');
+    text.textContent = n.label;
+    g.appendChild(text);
+
+    const sub = document.createElementNS(ns, 'text');
+    sub.setAttribute('x', String(n.x + nodeW / 2));
+    sub.setAttribute('y', String(n.y + 30));
+    sub.setAttribute('text-anchor', 'middle');
+    sub.setAttribute('fill', 'var(--muted)');
+    sub.setAttribute('font-size', '9');
+    sub.textContent = st;
+    g.appendChild(sub);
+
+    svg.appendChild(g);
+  }
+
+  $('wf-graph-card').replaceChildren(svg);
+}
+
+function renderDirectionPicker(run) {
+  const picker = $('direction-picker');
+  const proposed = run.outputs?.propose_directions;
+  const isWaiting = run.state === 'waiting_gate' && run.pausedGate?.nodeId === 'direction_gate';
+  if (!isWaiting || !proposed?.directions?.length) {
+    picker.hidden = true;
+    return;
+  }
+  picker.hidden = false;
+  const steeringInput = el('input', {
+    type: 'text',
+    value: state.steeringText,
+    placeholder: t('steeringPh'),
+    oninput: e => {
+      state.steeringText = e.target.value;
+    },
+  });
+
+  picker.replaceChildren(
+    el('div', { class: 'row-between' }, el('strong', {}, t('directionPickerTitle')), el('span', { class: 'pill warn' }, t('statusWaiting'))),
+    el('p', { class: 'muted-line' }, t('directionPickerSub')),
+    proposed.assumptions?.length
+      ? el(
+          'ul',
+          { style: 'margin:0;padding-left:18px;font-size:12px;color:var(--muted);' },
+          ...proposed.assumptions.map(a => el('li', {}, a)),
+        )
+      : null,
+    el(
+      'div',
+      { class: 'dir-grid' },
+      ...proposed.directions.map(dir =>
+        el(
+          'div',
+          { class: 'dir-card' },
+          el('h4', {}, dir.name),
+          el('p', {}, dir.rationale),
+          el('div', { class: 'hint-sm mono' }, dir.palette),
+          el('div', { class: 'hint-sm' }, dir.layoutIdea),
+          el(
+            'button',
+            {
+              type: 'button',
+              class: 'btn primary sm',
+              onclick: () => resumeDirectionGate(run, dir),
+            },
+            t('chooseDirection'),
+          ),
+        ),
+      ),
+    ),
+    el('label', { class: 'field-sm' }, el('span', {}, t('steeringLabel')), steeringInput),
+  );
+}
+
+function renderNodeDetail(run) {
+  const card = $('node-detail-card');
+  const topo = WORKFLOW_TOPOLOGIES[run.workflowId] || WORKFLOW_TOPOLOGIES['design-artifact'];
+  const nodeId = state.selectedNodeId || run.pausedGate?.nodeId || topo[topo.length - 1].id;
+  state.selectedNodeId = nodeId;
+  const rec = (run.nodes || []).find(n => n.nodeId === nodeId);
+  const out = run.outputs?.[nodeId] ?? (rec?.outputJson ? safeJsonParse(rec.outputJson) : null);
+
+  card.replaceChildren(
+    el(
+      'div',
+      { class: 'row-between' },
+      el('div', { class: 'sys-title-row' }, el('strong', {}, t('nodeDetails')), el('span', { class: 'mono slug-pill' }, nodeId)),
+      el(
+        'div',
+        { class: 'sys-head-actions' },
+        rec?.sessionId
+          ? el(
+              'button',
+              {
+                type: 'button',
+                class: 'btn sm',
+                onclick: () => window.deck.agent.open(rec.sessionId, { closeDeck: false }).catch(err => toast(err.message, true)),
+              },
+              t('openSession'),
+            )
+          : null,
+        rec?.state === 'failed'
+          ? el(
+              'button',
+              {
+                type: 'button',
+                class: 'btn sm',
+                onclick: () => retryWorkflowNode(run.runId, nodeId),
+              },
+              t('retryNode'),
+            )
+          : null,
+      ),
+    ),
+    rec?.error ? el('p', { class: 'err' }, rec.error) : null,
+    out ? el('pre', { class: 'md-viewer mono', style: 'max-height:220px;overflow:auto;' }, JSON.stringify(out, null, 2)) : el('p', { class: 'hint-sm' }, 'No output captured yet.'),
+  );
+}
+
+function safeJsonParse(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function renderAll() {
+  renderTopbar();
+  renderArtifactRail();
+  syncCanvasFrame(false);
+  renderInspector();
+  if (state.view === 'systems') renderSystemsView();
+  if (state.view === 'workflows') renderWorkflowsView();
+}
+
+// ---------- Actions (Persistence & Workflows)
+
+async function saveStore(collection, key, value) {
+  if (state.preview) return;
+  await window.deck.store.put(collection, key, value);
+}
+
+async function ensureSystemFiles(sys) {
+  if (state.preview) return;
+  const base = `.lumzel/opendesign/design-systems/${sys.slug}`;
+  await window.deck.files.write(`${base}/DESIGN.md`, sys.designMd || '');
+  await window.deck.files.write(`${base}/tokens.css`, sys.tokensCss || '');
+}
+
+async function activateSystem(slug) {
+  state.activeSystemSlug = slug;
+  const sys = systemBySlug(slug);
+  if (!state.preview) {
+    await saveStore('meta', 'activeSystem', slug);
+    await ensureSystemFiles(sys);
+  }
+  toast(t('systemActivated', { name: sys.name }));
+  renderAll();
+}
+
+async function pinComment() {
+  const art = currentArtifact();
+  const input = $('comment-input');
+  const note = input.value.trim();
+  if (!art || !note) return;
+  const item = {
+    id: `c-${Date.now().toString(36)}`,
+    oid: state.selectedEl?.oid || '',
+    tag: state.selectedEl?.tag || 'canvas',
+    selector: state.selectedEl?.selector || 'canvas',
+    note,
+    createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  };
+  const next = [...(state.comments[art.id] || []), item];
+  state.comments[art.id] = next;
+  input.value = '';
+  if (!state.preview) await saveStore('comments', art.id, next);
+  renderInspector();
+}
+
+async function removeComment(artifactId, commentId) {
+  const next = (state.comments[artifactId] || []).filter(c => c.id !== commentId);
+  state.comments[artifactId] = next;
+  if (!state.preview) await saveStore('comments', artifactId, next);
+  renderInspector();
+}
+
+async function clearComments() {
+  const art = currentArtifact();
+  if (!art) return;
+  state.comments[art.id] = [];
+  if (!state.preview) await saveStore('comments', art.id, []);
+  renderInspector();
+}
+
+async function applyRevisions() {
+  if (state.preview) return toast(t('previewDisabled'), true);
+  const art = currentArtifact();
+  if (!art) return;
+  const comments = state.comments[art.id] || [];
+  const instruction = $('revise-instruction').value.trim();
+  if (!comments.length && !Object.keys(state.tweaks).length && !instruction) {
+    return toast(t('errRequired'), true);
+  }
+  const sys = systemBySlug(art.systemSlug || state.activeSystemSlug);
+  await ensureSystemFiles(sys);
+  const snapshotPath = `.lumzel/opendesign/versions/${art.id}/v${art.version || 1}.html`;
+  await window.deck.files.write(snapshotPath, art.html || '');
+
+  const run = await window.deck.workflow.run('revise-artifact', {
+    artifactId: art.id,
+    sourcePath: art.path,
+    targetPath: art.path,
+    designSystemPath: `.lumzel/opendesign/design-systems/${sys.slug}/DESIGN.md`,
+    tokensPath: `.lumzel/opendesign/design-systems/${sys.slug}/tokens.css`,
+    commentsJson: JSON.stringify(comments),
+    tweakOverridesJson: JSON.stringify(state.tweaks),
+    instruction,
+  });
+  await registerWorkflowRun(run);
+  state.view = 'workflows';
+  renderAll();
+  toast(t('workflowStarted', { id: 'revise-artifact' }));
+}
+
+async function saveTweaksToSystem() {
+  if (state.preview) return toast(t('previewDisabled'), true);
+  const sys = systemBySlug(currentArtifact()?.systemSlug || state.activeSystemSlug);
+  const merged = { ...parseTokensCss(sys.tokensCss), ...state.tweaks };
+  sys.tokensCss = serializeTokensCss(merged);
+  await ensureSystemFiles(sys);
+  if (!sys.builtin) {
+    await saveStore('systems', sys.slug, sys);
+  }
+  state.tweaks = {};
+  toast(t('savedMsg'));
+  renderAll();
+}
+
+async function bakeTweaksIntoArtifact() {
+  const art = currentArtifact();
+  if (!art) return;
+  const sys = systemBySlug(art.systemSlug || state.activeSystemSlug);
+  const baked = buildStandaloneHtml(art.html, sys.tokensCss, state.tweaks);
+  art.html = baked;
+  art.version = (art.version || 1) + 1;
+  art.updatedAt = new Date().toISOString();
+  const vList = state.versions[art.id] || [];
+  state.versions[art.id] = [
+    { version: art.version, label: `v${art.version} · Tweak bake`, createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), html: baked },
+    ...vList,
+  ];
+  state.tweaks = {};
+  if (!state.preview) {
+    await window.deck.files.write(art.path, baked);
+    await saveStore('artifacts', art.id, { ...art, html: undefined });
+    await saveStore('versions', art.id, state.versions[art.id]);
+  }
+  state.lastRenderedKey = '';
+  toast(t('savedMsg'));
+  renderAll();
+}
+
+async function exportCurrentArtifact() {
+  const art = currentArtifact();
+  if (!art) return;
+  const sys = systemBySlug(art.systemSlug || state.activeSystemSlug);
+  const standalone = buildStandaloneHtml(art.html, sys.tokensCss, state.tweaks);
+  if (!state.preview) {
+    const exportPath = `.lumzel/opendesign/exports/${art.id}.html`;
+    await window.deck.files.write(exportPath, standalone);
+    await window.deck.ui.open({ path: exportPath }).catch(() => {});
+    toast(t('exported'));
+  } else {
+    await navigator.clipboard?.writeText(standalone).catch(() => {});
+    toast(t('copied'));
+  }
+}
+
+async function createStarterArtifact({ id, title, surface, systemSlug, brief }) {
+  const sys = systemBySlug(systemSlug);
+  const html = buildStarterHtml({ title, surface, brief, tokensCss: sys.tokensCss });
+  const path = `docs/opendesign/${id}.html`;
+  const art = {
+    id,
+    title,
+    surface,
+    systemSlug: sys.slug,
+    path,
+    brief,
+    html,
+    version: 1,
+    updatedAt: new Date().toISOString(),
+  };
+  if (!state.preview) {
+    await window.deck.files.write(path, html);
+    await saveStore('artifacts', id, { ...art, html: undefined });
+    await saveStore('versions', id, [{ version: 1, label: 'v1 · Starter', createdAt: 'now', html }]);
+  }
+  state.artifacts = [art, ...state.artifacts.filter(a => a.id !== id)];
+  state.versions[id] = [{ version: 1, label: 'v1 · Starter', createdAt: 'now', html }];
+  state.artifactId = id;
+  state.activeVersion = null;
+  state.lastRenderedKey = '';
+  renderAll();
+}
+
+async function startDesignPipeline({ id, title, surface, systemSlug, brief, skipDirectionGate }) {
+  if (state.preview) return toast(t('previewDisabled'), true);
+  const sys = systemBySlug(systemSlug);
+  await ensureSystemFiles(sys);
+  const targetPath = `docs/opendesign/${id}.html`;
+  const art = {
+    id,
+    title,
+    surface,
+    systemSlug: sys.slug,
+    path: targetPath,
+    brief,
+    html: buildStarterHtml({ title, surface, brief, tokensCss: sys.tokensCss }),
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    fromDisk: false,
+  };
+  await saveStore('artifacts', id, { ...art, html: undefined });
+  state.artifacts = [art, ...state.artifacts.filter(a => a.id !== id)];
+  state.artifactId = id;
+
+  const run = await window.deck.workflow.run('design-artifact', {
+    artifactId: id,
+    title,
+    surface,
+    brief,
+    systemSlug: sys.slug,
+    targetPath,
+    designSystemPath: `.lumzel/opendesign/design-systems/${sys.slug}/DESIGN.md`,
+    tokensPath: `.lumzel/opendesign/design-systems/${sys.slug}/tokens.css`,
+    skipDirectionGate: Boolean(skipDirectionGate),
+  });
+  await registerWorkflowRun(run);
+  state.view = 'workflows';
+  renderAll();
+  toast(t('workflowStarted', { id: 'design-artifact' }));
+}
+
+async function startExtractPipeline({ name, slug, sourceKind, sourceValue }) {
+  if (state.preview) return toast(t('previewDisabled'), true);
+  const outDir = `.lumzel/opendesign/design-systems/${slug}`;
+  const run = await window.deck.workflow.run('extract-design-system', {
+    slug,
+    name,
+    sourceKind,
+    sourceValue,
+    outDir,
+  });
+  await registerWorkflowRun(run);
+  state.view = 'workflows';
+  renderAll();
+  toast(t('workflowStarted', { id: 'extract-design-system' }));
+}
+
+async function registerWorkflowRun(run) {
+  if (!run?.runId) return;
+  upsertRun(run);
+  state.selectedRunId = run.runId;
+  if (!state.preview) {
+    await saveStore('runs', run.runId, { runId: run.runId, workflowId: run.workflowId, inputs: run.inputs || {} });
+  }
+}
+
+function upsertRun(run) {
+  if (!run?.runId) return;
+  const idx = state.runs.findIndex(r => r.runId === run.runId);
+  if (idx >= 0) state.runs[idx] = run;
+  else state.runs.unshift(run);
+}
+
+async function handleWorkflowCompleted(run) {
+  if (!run || run.state !== 'completed') return;
+  if (run.workflowId === 'design-artifact' || run.workflowId === 'revise-artifact') {
+    const id = run.inputs?.artifactId;
+    const path = run.inputs?.targetPath;
+    if (id && path) {
+      const file = await window.deck.files.read(path).catch(() => null);
+      const art = state.artifacts.find(a => a.id === id);
+      if (art && file?.content) {
+        art.html = file.content;
+        art.fromDisk = true;
+        art.version = run.workflowId === 'revise-artifact' ? (art.version || 1) + 1 : art.version || 1;
+        art.critique = run.outputs?.critique_artifact || art.critique;
+        art.lint = run.outputs?.lint_artifact || run.outputs?.lint_revision || art.lint;
+        art.updatedAt = new Date().toISOString();
+        await saveStore('artifacts', art.id, { ...art, html: undefined });
+        const vers = state.versions[art.id] || [];
+        state.versions[art.id] = [
+          {
+            version: art.version,
+            label: `v${art.version} · ${run.workflowId === 'revise-artifact' ? 'AI revision' : 'AI build'}`,
+            createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            html: file.content,
+          },
+          ...vers,
+        ];
+        await saveStore('versions', art.id, state.versions[art.id]);
+        if (run.workflowId === 'revise-artifact') {
+          state.comments[art.id] = [];
+          await saveStore('comments', art.id, []);
+        }
+        state.lastRenderedKey = '';
+      }
+    }
+  } else if (run.workflowId === 'extract-design-system') {
+    const slug = run.inputs?.slug;
+    const outDir = run.inputs?.outDir;
+    if (slug && outDir) {
+      const md = await window.deck.files.read(`${outDir}/DESIGN.md`).catch(() => null);
+      const css = await window.deck.files.read(`${outDir}/tokens.css`).catch(() => null);
+      const parsed = parseTokensCss(css?.content || '');
+      const sys = {
+        slug,
+        name: run.inputs?.name || slug,
+        tagline: `Extracted from ${run.inputs?.sourceKind || 'project'}`,
+        builtin: false,
+        swatches: [parsed['--od-bg'], parsed['--od-surface'], parsed['--od-fg'], parsed['--od-accent'], parsed['--od-border']],
+        designMd: md?.content || '',
+        tokensCss: css?.content || '',
+      };
+      await saveStore('systems', slug, sys);
+      state.systems = [...state.systems.filter(s => s.slug !== slug), sys];
+      state.selectedSystemSlug = slug;
+    }
+  }
+}
+
+async function resumeDirectionGate(run, dir) {
+  if (state.preview) return toast(t('previewDisabled'), true);
+  await window.deck.workflow.resumeGate(run.runId, 'direction_gate', 'approve', {
+    directionId: dir.id,
+    direction: dir,
+    steering: state.steeringText,
+  });
+  state.steeringText = '';
+  const updated = await window.deck.workflow.getRun(run.runId).catch(() => null);
+  if (updated) upsertRun(updated);
+  renderWorkflowsView();
+}
+
+async function retryWorkflowNode(runId, nodeId) {
+  if (state.preview) return;
+  const updated = await window.deck.workflow.retryNode(runId, nodeId).catch(err => {
+    toast(err.message, true);
+    return null;
+  });
+  if (updated) upsertRun(updated);
+  renderWorkflowsView();
+}
+
+// ---------- Modals & Init
+
+function openNewDesignModal() {
+  $('new-system').replaceChildren(
+    ...state.systems.map(s => el('option', { value: s.slug, selected: s.slug === state.activeSystemSlug }, s.name)),
+  );
+  $('new-err').textContent = '';
+  $('modal-new').hidden = false;
+  $('new-title').focus();
+}
+
+function openExtractModal() {
+  $('ext-err').textContent = '';
+  $('modal-extract').hidden = false;
+  $('ext-name').focus();
+}
+
+function bindEvents() {
+  for (const btn of document.querySelectorAll('.main-tab')) {
+    btn.addEventListener('click', () => {
+      state.view = btn.dataset.view;
+      renderAll();
+    });
+  }
+  $('active-sys-pill').addEventListener('click', () => {
+    state.selectedSystemSlug = state.activeSystemSlug;
+    state.view = 'systems';
+    renderAll();
+  });
+  $('btn-new-design').addEventListener('click', openNewDesignModal);
+  $('empty-create-btn').addEventListener('click', openNewDesignModal);
+  $('btn-wf-new-design').addEventListener('click', openNewDesignModal);
+  $('btn-open-extract').addEventListener('click', openExtractModal);
+  $('btn-wf-extract').addEventListener('click', openExtractModal);
+  $('btn-refresh').addEventListener('click', () => loadWorkspace());
+
+  $('empty-starter-btn').addEventListener('click', () => {
+    createStarterArtifact({
+      id: 'meridian-billing',
+      title: SAMPLE_ARTIFACTS[0].title,
+      surface: 'prototype',
+      systemSlug: state.activeSystemSlug,
+      brief: SAMPLE_ARTIFACTS[0].brief,
+    });
+  });
+
+  for (const btn of document.querySelectorAll('[data-mode]')) {
+    btn.addEventListener('click', () => {
+      state.mode = btn.dataset.mode;
+      for (const b of document.querySelectorAll('[data-mode]')) b.classList.toggle('on', b === btn);
+      if (state.mode === 'tweaks') state.insTab = 'tweaks';
+      if (state.mode === 'inspect') state.insTab = 'comments';
+      syncCanvasFrame(false);
+      renderInspector();
+    });
+  }
+
+  for (const btn of document.querySelectorAll('[data-vp]')) {
+    btn.addEventListener('click', () => {
+      state.viewport = btn.dataset.vp;
+      for (const b of document.querySelectorAll('[data-vp]')) b.classList.toggle('on', b === btn);
+      syncCanvasFrame(false);
+    });
+  }
+
+  for (const btn of document.querySelectorAll('[data-instab]')) {
+    btn.addEventListener('click', () => {
+      state.insTab = btn.dataset.instab;
+      renderInspector();
+    });
+  }
+
+  for (const btn of document.querySelectorAll('[data-systab]')) {
+    btn.addEventListener('click', () => {
+      state.sysTab = btn.dataset.systab;
+      renderSystemsView();
+    });
+  }
+
+  $('btn-open-file').addEventListener('click', () => {
+    const art = currentArtifact();
+    if (!art) return;
+    if (state.preview) return toast(t('previewDisabled'), true);
+    window.deck.ui.open({ path: art.path }).catch(err => toast(err.message, true));
+  });
+  $('btn-export-html').addEventListener('click', exportCurrentArtifact);
+  $('btn-copy-html').addEventListener('click', () => {
+    navigator.clipboard?.writeText($('code-editor').value || '').catch(() => {});
+    toast(t('copied'));
+  });
+  $('code-editor').addEventListener('change', async () => {
+    const art = currentArtifact();
+    if (!art) return;
+    art.html = $('code-editor').value;
+    art.updatedAt = new Date().toISOString();
+    state.lastRenderedKey = '';
+    if (!state.preview) {
+      await window.deck.files.write(art.path, art.html);
+      await saveStore('artifacts', art.id, { ...art, html: undefined });
+    }
+    toast(t('savedMsg'));
+  });
+
+  $('btn-pin-comment').addEventListener('click', pinComment);
+  $('btn-clear-comments').addEventListener('click', clearComments);
+  $('btn-apply-revisions').addEventListener('click', applyRevisions);
+  $('btn-reset-tweaks').addEventListener('click', () => {
+    state.tweaks = {};
+    postToCanvas({ type: 'od:tweak', tweaks: {} });
+    renderTweaksTab();
+  });
+  $('btn-save-tokens').addEventListener('click', saveTweaksToSystem);
+  $('btn-bake-artifact').addEventListener('click', bakeTweaksIntoArtifact);
+
+  $('btn-activate-system').addEventListener('click', () => activateSystem(state.selectedSystemSlug));
+  $('btn-export-designmd').addEventListener('click', async () => {
+    const sys = selectedSystem();
+    if (!state.preview) {
+      await ensureSystemFiles(sys);
+      await window.deck.ui.open({ path: `.lumzel/opendesign/design-systems/${sys.slug}/DESIGN.md` }).catch(() => {});
+      toast(t('savedMsg'));
+    } else {
+      await navigator.clipboard?.writeText(sys.designMd || '').catch(() => {});
+      toast(t('copied'));
+    }
+  });
+  $('btn-save-sys-tokens').addEventListener('click', async () => {
+    if (state.preview) return toast(t('previewDisabled'), true);
+    const sys = selectedSystem();
+    sys.tokensCss = $('sys-tokens-editor').value;
+    await ensureSystemFiles(sys);
+    if (!sys.builtin) await saveStore('systems', sys.slug, sys);
+    toast(t('savedMsg'));
+    renderSystemsView();
+    syncCanvasFrame(false);
+  });
+
+  $('btn-wf-stop').addEventListener('click', async () => {
+    if (state.preview || !state.selectedRunId) return;
+    await window.deck.workflow.stop(state.selectedRunId).catch(() => {});
+  });
+
+  // Modals
+  $('new-title').addEventListener('input', e => {
+    if (!$('new-id').dataset.touched) $('new-id').value = slugify(e.target.value);
+  });
+  $('new-id').addEventListener('input', () => {
+    $('new-id').dataset.touched = '1';
+  });
+  $('new-cancel').addEventListener('click', () => ($('modal-new').hidden = true));
+  $('new-starter').addEventListener('click', async () => {
+    const title = $('new-title').value.trim();
+    const id = $('new-id').value.trim() || slugify(title);
+    if (!title || !/^[a-z0-9-]+$/.test(id)) {
+      $('new-err').textContent = !title ? t('errRequired') : t('errIdInvalid');
+      return;
+    }
+    $('modal-new').hidden = true;
+    await createStarterArtifact({
+      id,
+      title,
+      surface: $('new-surface').value,
+      systemSlug: $('new-system').value,
+      brief: $('new-brief').value.trim(),
+    });
+  });
+  $('new-run').addEventListener('click', async () => {
+    const title = $('new-title').value.trim();
+    const id = $('new-id').value.trim() || slugify(title);
+    const brief = $('new-brief').value.trim();
+    if (!title || !brief || !/^[a-z0-9-]+$/.test(id)) {
+      $('new-err').textContent = !title || !brief ? t('errRequired') : t('errIdInvalid');
+      return;
+    }
+    $('modal-new').hidden = true;
+    await startDesignPipeline({
+      id,
+      title,
+      surface: $('new-surface').value,
+      systemSlug: $('new-system').value,
+      brief,
+      skipDirectionGate: $('new-skip-gate').checked,
+    });
+  });
+
+  $('ext-name').addEventListener('input', e => {
+    if (!$('ext-slug').dataset.touched) $('ext-slug').value = slugify(e.target.value);
+  });
+  $('ext-slug').addEventListener('input', () => {
+    $('ext-slug').dataset.touched = '1';
+  });
+  $('ext-cancel').addEventListener('click', () => ($('modal-extract').hidden = true));
+  $('ext-run').addEventListener('click', async () => {
+    const name = $('ext-name').value.trim();
+    const slug = $('ext-slug').value.trim() || slugify(name);
+    const sourceValue = $('ext-source-val').value.trim();
+    if (!name || !sourceValue || !/^[a-z0-9-]+$/.test(slug)) {
+      $('ext-err').textContent = !name || !sourceValue ? t('errRequired') : t('errIdInvalid');
+      return;
+    }
+    $('modal-extract').hidden = true;
+    await startExtractPipeline({
+      name,
+      slug,
+      sourceKind: $('ext-source-kind').value,
+      sourceValue,
+    });
+  });
+
+  window.addEventListener('keydown', e => {
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.key === 'Escape') {
+      $('modal-new').hidden = true;
+      $('modal-extract').hidden = true;
+    }
+  });
+
+  window.addEventListener('message', event => {
+    const msg = event?.data;
+    if (!msg || typeof msg.type !== 'string') return;
+    if (msg.type === 'od:ready') {
+      const art = currentArtifact();
+      if (!art) return;
+      const sys = systemBySlug(art.systemSlug || state.activeSystemSlug);
+      postToCanvas({ type: 'od:tokens', tokensCss: sys.tokensCss, tweaks: state.tweaks });
+      postToCanvas({ type: 'od:mode', mode: state.mode === 'inspect' ? 'inspect' : 'preview' });
+    } else if (msg.type === 'od:select') {
+      state.selectedEl = msg;
+      state.insTab = 'comments';
+      renderInspector();
+      $('comment-input').focus();
+    }
+  });
+}
+
+async function loadWorkspace() {
+  let ctx = {};
+  try {
+    ctx = await window.deck.context();
+  } catch {
+    ctx = { preview: true, theme: 'light', locale: 'en' };
+  }
+
+  state.preview = Boolean(ctx.preview);
+  state.theme = ctx.theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = state.theme;
+  setLocale(ctx.locale || 'en');
+  applyI18n();
+
+  if (state.preview) {
+    $('banner').textContent = t('previewBanner');
+    $('banner').hidden = false;
+    state.systems = PRESET_SYSTEMS.map(s => ({ ...s }));
+    state.activeSystemSlug = 'editorial-slate';
+    state.selectedSystemSlug = 'editorial-slate';
+    state.artifacts = SAMPLE_ARTIFACTS.map(a => ({ ...a }));
+    state.artifactId = state.artifacts[0].id;
+    state.comments = structuredClone(SAMPLE_COMMENTS);
+    state.versions = structuredClone(SAMPLE_VERSIONS);
+    state.runs = structuredClone(SAMPLE_RUNS);
+    state.selectedRunId = state.runs[0].runId;
+    renderAll();
+    return;
+  }
+
+  $('banner').hidden = true;
+  const activeSys = await window.deck.store.get('meta', 'activeSystem').catch(() => null);
+  const customSystems = await window.deck.store.list({ collection: 'systems' }).catch(() => []);
+  const customMap = new Map(customSystems.map(e => [e.key, e.value]));
+  state.systems = [
+    ...PRESET_SYSTEMS.map(s => ({ ...s })),
+    ...Array.from(customMap.values()),
+  ];
+  state.activeSystemSlug = typeof activeSys === 'string' && activeSys ? activeSys : 'editorial-slate';
+  state.selectedSystemSlug = state.activeSystemSlug;
+
+  const storedArts = await window.deck.store.list({ collection: 'artifacts' }).catch(() => []);
+  const artifacts = [];
+  for (const entry of storedArts) {
+    const meta = entry.value;
+    if (!meta?.id || !meta?.path) continue;
+    const file = await window.deck.files.read(meta.path).catch(() => null);
+    artifacts.push({
+      ...meta,
+      html: file?.content || buildStarterHtml(meta),
+      fromDisk: Boolean(file?.content),
+    });
+  }
+
+  const diskFiles = await window.deck.files.list('docs/opendesign').catch(() => []);
+  for (const f of diskFiles) {
+    if (!f?.name?.endsWith('.html')) continue;
+    const id = f.name.replace(/\.html$/i, '');
+    if (artifacts.some(a => a.id === id)) continue;
+    const path = `docs/opendesign/${f.name}`;
+    const file = await window.deck.files.read(path).catch(() => null);
+    if (!file?.content) continue;
+    artifacts.push({
+      id,
+      title: id,
+      surface: 'prototype',
+      systemSlug: state.activeSystemSlug,
+      path,
+      html: file.content,
+      version: 1,
+      fromDisk: true,
+    });
+  }
+
+  state.artifacts = artifacts;
+  if (!state.artifactId || !artifacts.some(a => a.id === state.artifactId)) {
+    state.artifactId = artifacts[0]?.id || '';
+  }
+
+  const commentEntries = await window.deck.store.list({ collection: 'comments' }).catch(() => []);
+  state.comments = Object.fromEntries(commentEntries.map(e => [e.key, Array.isArray(e.value) ? e.value : []]));
+
+  const versionEntries = await window.deck.store.list({ collection: 'versions' }).catch(() => []);
+  state.versions = Object.fromEntries(versionEntries.map(e => [e.key, Array.isArray(e.value) ? e.value : []]));
+
+  const runEntries = await window.deck.store.list({ collection: 'runs' }).catch(() => []);
+  const loadedRuns = [];
+  for (const e of runEntries.slice(0, 12)) {
+    const run = await window.deck.workflow.getRun(e.key).catch(() => null);
+    if (run) loadedRuns.push(run);
+  }
+  state.runs = loadedRuns;
+  if (!state.selectedRunId && loadedRuns[0]) state.selectedRunId = loadedRuns[0].runId;
+
+  if (!unsubWorkflow) {
+    unsubWorkflow = window.deck.workflow.subscribe('*', async evt => {
+      const run = evt?.run || evt;
+      if (!run?.runId) return;
+      const prev = state.runs.find(r => r.runId === run.runId);
+      upsertRun(run);
+      if (prev?.state !== 'completed' && run.state === 'completed') {
+        await handleWorkflowCompleted(run);
+      }
+      renderAll();
+    });
+  }
+
+  renderAll();
+}
+
+bindEvents();
+loadWorkspace().then(() => {
+  $('app').dataset.state = 'ready';
+});

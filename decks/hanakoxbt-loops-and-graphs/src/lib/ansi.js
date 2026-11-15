@@ -1,0 +1,3 @@
+export function stripAnsi(s) {
+  return String(s || '').replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '');
+}

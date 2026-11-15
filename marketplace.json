@@ -386,6 +386,71 @@
         750
       ],
       "version": "1.0.0"
+    },
+    {
+      "id": "opendesign",
+      "title": "OpenDesign",
+      "icon": "spark",
+      "description": "Local-first AI design studio inspired by OpenDesign (nexu-io/open-design): DESIGN.md brand contracts, structured discovery-to-build workflows, live interactive canvas with element inspection, token tweaks, pinned comment revisions, and anti-slop quality gates.",
+      "i18n": {
+        "en": {
+          "title": "OpenDesign",
+          "description": "Local-first AI design studio inspired by OpenDesign (nexu-io/open-design): DESIGN.md brand contracts, structured discovery-to-build workflows, live interactive canvas with element inspection, token tweaks, pinned comment revisions, and anti-slop quality gates."
+        },
+        "zh-CN": {
+          "title": "OpenDesign 设计工坊",
+          "description": "参考 OpenDesign (nexu-io/open-design) 的本地优先 AI 设计工作台：基于 DESIGN.md 品牌契约与 tokens.css，提供探索选向→生成→反套路质检闭环工作流、实时画布预览、元素审查批注、Token 实时微调与多版本迭代。"
+        }
+      },
+      "category": "Design",
+      "author": "Lumzel",
+      "homepage": "https://github.com/nexu-io/open-design",
+      "counts": {
+        "skills": 3,
+        "agents": 1
+      },
+      "source": "./decks/opendesign",
+      "cover": {
+        "light": "preview/cover-light.webp",
+        "dark": "preview/cover-dark.webp"
+      },
+      "coverViewport": [
+        1200,
+        750
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "id": "hanakoxbt-loops-and-graphs",
+      "title": "Loops and Graphs (@hanakoxbt)",
+      "icon": "branch",
+      "description": "Based on @hanakoxbt's Loops and Graphs architecture: split a feature into isolated test-first units, run bounded intra-node loops in parallel worktrees, merge deterministically, ship through one human gate, and feed lessons back to the splitter.",
+      "i18n": {
+        "en": {
+          "title": "Loops and Graphs (@hanakoxbt)",
+          "description": "Based on @hanakoxbt's Loops and Graphs architecture: split a feature into isolated test-first units, run bounded intra-node loops in parallel worktrees, merge deterministically, ship through one human gate, and feed lessons back to the splitter."
+        },
+        "zh-CN": {
+          "title": "Loops & Graphs 工作台 (@hanakoxbt)",
+          "description": "基于 @hanakoxbt《Loops and Graphs》工作流架构的实时拓扑台：将需求拆为先写测试的垂直单元，在隔离 Worktree 并行执行与有限纠错循环，确定性归并后经唯一人工闸门合入，并把经验沉淀为约束回流到拆分器。"
+        }
+      },
+      "category": "Workflow",
+      "author": "hanakoxbt",
+      "homepage": "https://agent-layers.vercel.app",
+      "counts": {
+        "skills": 1
+      },
+      "source": "./decks/hanakoxbt-loops-and-graphs",
+      "cover": {
+        "light": "preview/cover-light.webp",
+        "dark": "preview/cover-dark.webp"
+      },
+      "coverViewport": [
+        1200,
+        750
+      ],
+      "version": "1.0.0"
     }
   ]
 }

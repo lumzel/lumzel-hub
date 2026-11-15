@@ -1,0 +1,54 @@
+{
+  "id": "opendesign",
+  "title": "OpenDesign",
+  "icon": "spark",
+  "category": "Design",
+  "author": "Lumzel",
+  "homepage": "https://github.com/nexu-io/open-design",
+  "description": "Local-first AI design studio inspired by OpenDesign (nexu-io/open-design): DESIGN.md brand contracts, structured discovery-to-build workflows, live interactive canvas with element inspection, token tweaks, pinned comment revisions, and anti-slop quality gates.",
+  "i18n": {
+    "en": {
+      "title": "OpenDesign",
+      "description": "Local-first AI design studio inspired by OpenDesign (nexu-io/open-design): DESIGN.md brand contracts, structured discovery-to-build workflows, live interactive canvas with element inspection, token tweaks, pinned comment revisions, and anti-slop quality gates."
+    },
+    "zh-CN": {
+      "title": "OpenDesign 设计工坊",
+      "description": "参考 OpenDesign (nexu-io/open-design) 的本地优先 AI 设计工作台：基于 DESIGN.md 品牌契约与 tokens.css，提供探索选向→生成→反套路质检闭环工作流、实时画布预览、元素审查批注、Token 实时微调与多版本迭代。"
+    }
+  },
+  "entry": "index.html",
+  "uses": {
+    "skills": [
+      "opendesign-studio",
+      "opendesign-system-extract",
+      "opendesign-critique"
+    ],
+    "agents": [
+      "opendesign-critic"
+    ]
+  },
+  "permissions": [
+    "agent",
+    "db",
+    "files",
+    "workflow",
+    "open"
+  ],
+  "capabilities": {
+    "files": [
+      ".lumzel/opendesign/**",
+      ".lumzel/opendesign/*",
+      "DESIGN.md",
+      "docs/**"
+    ]
+  },
+  "store": {
+    "scope": "project"
+  },
+  "workflows": [
+    "design-artifact",
+    "extract-design-system",
+    "revise-artifact"
+  ],
+  "version": "1.0.0"
+}

@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "required": ["units"],
+  "properties": {
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "checkFiles", "checkCmd", "prompt"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "goal": { "type": "string" },
+          "checkFiles": { "type": "array", "items": { "type": "string" } },
+          "implFiles": { "type": "array", "items": { "type": "string" } },
+          "checkCmd": { "type": "string", "minLength": 1 },
+          "prompt": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

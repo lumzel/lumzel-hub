@@ -1,0 +1,95 @@
+id: revise-artifact
+description: Apply pinned canvas element comments (data-od-id), live CSS token tweaks, and revision instructions to create a new verified artifact version.
+
+inputs:
+  artifactId:
+    type: string
+    required: true
+  sourcePath:
+    type: string
+    required: true
+  targetPath:
+    type: string
+    required: true
+  designSystemPath:
+    type: string
+    default: ""
+  tokensPath:
+    type: string
+    default: ""
+  commentsJson:
+    type: string
+    default: "[]"
+  tweakOverridesJson:
+    type: string
+    default: "{}"
+  instruction:
+    type: string
+    default: ""
+
+budget:
+  maxMinutes: 30
+  maxIterations: 6
+
+state:
+  round: 0
+
+nodes:
+  - id: prepare_revision
+    kind: code
+    uses: ./scripts/lint-artifact.js#prepareRevision
+
+  - id: apply_revisions
+    kind: agent
+    dependsOn: [prepare_revision]
+    session: new
+    prompt: |
+      Use the `opendesign-critique` skill (Mode B: Targeted Element Revision) to revise the HTML artifact.
+
+      Read source artifact: {{inputs.sourcePath}}
+      Write revised artifact to: {{inputs.targetPath}}
+
+      Pinned Canvas Comments ({{outputs.prepare_revision.commentCount}}):
+      {{outputs.prepare_revision.checklistText}}
+
+      Live CSS Token Tweaks ({{outputs.prepare_revision.tweakCount}}):
+      {{outputs.prepare_revision.tweaksCssText}}
+
+      Additional Instructions:
+      {{inputs.instruction || '(None)'}}
+
+      Active DESIGN.md:
+      {{outputs.prepare_revision.designMd}}
+
+      Requirements:
+      1. Preserve existing `data-od-id` attributes on unchanged elements.
+      2. Bake any CSS token tweaks into `:root` inside the output HTML so exported HTML matches the canvas.
+      3. Ensure all scripts/styles remain 100% self-contained with zero external network requests.
+
+  - id: lint_revision
+    kind: code
+    dependsOn: [apply_revisions]
+    uses: ./scripts/lint-artifact.js#lintArtifact
+
+  - id: revision_gate
+    kind: gate
+    dependsOn: [lint_revision]
+    maxIterations: 2
+    onExceed: finalize_revision
+    cases:
+      - when: "!outputs.lint_revision.ok"
+        next: fix_lint
+        advanceRound: true
+
+  - id: fix_lint
+    kind: agent
+    session: run
+    next: lint_revision
+    prompt: |
+      Fix the remaining lint issues in `{{inputs.targetPath}}`:
+      {{outputs.lint_revision.summary}}
+
+  - id: finalize_revision
+    kind: code
+    dependsOn: [revision_gate]
+    uses: ./scripts/lint-artifact.js#finalizeArtifact

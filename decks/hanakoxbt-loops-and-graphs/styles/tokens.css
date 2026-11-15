@@ -1,0 +1,94 @@
+:root {
+  color-scheme: light;
+  /* Warm Architectural Crisp — surfaces */
+  --bg: #f5f4f0;            /* canvas paper */
+  --bg-sunken: #eeede8;     /* terminal / code wells */
+  --surface: #ffffff;       /* panels, nodes */
+  --surface-2: #faf9f6;     /* map frame, header */
+  --surface-hover: #f2f1ec;
+  --line: #e3e0d8;
+  --line-strong: #d1cdc2;
+  --grid-dot: rgba(22, 22, 26, 0.11);
+  --grid-major: rgba(22, 22, 26, 0.045);
+  --ink: #16161a;
+  --ink-2: #45444a;
+  --muted: #75736d;
+  --faint: #a29f98;
+  --focus: #16161a;
+  --scrim: rgba(22, 22, 26, 0.14);
+  /* roles */
+  --split: #2f55d4;   --split-soft: #eaeffc;
+  --worker: #0b7a6b;  --worker-soft: #e2f2ee;
+  --code: #5e5d66;    --code-soft: #eeedf0;
+  --gate: #a46800;    --gate-soft: #fbf0db;
+  --correct: #c2410c; --correct-soft: #fcebe2;
+  --learn: #4f7a12;   --learn-soft: #edf4e1;
+  /* status */
+  --ok: #17803d;      --ok-soft: #e6f4ea;
+  --fail: #d92d20;    --fail-soft: #fdecea;
+  --wait: var(--gate);
+  --queued: #a29f98;
+  --skip: #cfcbc1;
+  /* type */
+  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  --mono: 'SF Mono', ui-monospace, 'JetBrains Mono', 'Geist Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  --fs-10: 10px; --fs-11: 11px; --fs-12: 12px; --fs-13: 13px; --fs-15: 15px; --fs-20: 20px; --fs-28: 28px;
+  --lh: 1.38;
+  --tracking-caps: 0.07em;
+  /* space (4px grid) */
+  --s1: 2px; --s2: 4px; --s3: 6px; --s4: 8px; --s5: 12px; --s6: 16px; --s7: 20px; --s8: 24px; --s9: 32px;
+  /* radius — sharp */
+  --r-chip: 3px; --r-node: 5px; --r-card: 7px; --r-pop: 10px;
+  /* elevation — neutral only */
+  --sh-1: 0 1px 0 rgba(22, 22, 26, 0.04);
+  --sh-node: 0 1px 2px rgba(22, 22, 26, 0.06);
+  --sh-pop: 0 14px 36px -10px rgba(22, 22, 26, 0.22), 0 2px 6px rgba(22, 22, 26, 0.06);
+  /* motion */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --t-fast: 120ms; --t-mid: 180ms; --t-slow: 260ms;
+  --pulse: 1.8s; --flow: 900ms;
+  /* layout */
+  --header-h: 48px; --cmd-h: 56px; --strip-h: 30px; --timeline-h: 28px; --timeline-open-h: 168px;
+  --insp-w: 380px;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  /* Obsidian Studio */
+  --bg: #0a0b0d;
+  --bg-sunken: #060708;
+  --surface: #111215;
+  --surface-2: #15161a;
+  --surface-hover: #1b1c21;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.13);
+  --grid-dot: rgba(255, 255, 255, 0.075);
+  --grid-major: rgba(255, 255, 255, 0.028);
+  --ink: #ededef;
+  --ink-2: #c4c4c9;
+  --muted: #8b8b94;
+  --faint: #6c6c76;
+  --focus: #ededef;
+  --scrim: rgba(0, 0, 0, 0.5);
+  --split: #7d96f4;   --split-soft: rgba(125, 150, 244, 0.12);
+  --worker: #36c4a9;  --worker-soft: rgba(54, 196, 169, 0.11);
+  --code: #a7a7b0;    --code-soft: rgba(167, 167, 176, 0.09);
+  --gate: #e3a63b;    --gate-soft: rgba(227, 166, 59, 0.12);
+  --correct: #f07b4b; --correct-soft: rgba(240, 123, 75, 0.12);
+  --learn: #9ccc57;   --learn-soft: rgba(156, 204, 87, 0.11);
+  --ok: #4cc777;      --ok-soft: rgba(76, 199, 119, 0.12);
+  --fail: #f2695d;    --fail-soft: rgba(242, 105, 93, 0.12);
+  --queued: #6c6c76;
+  --skip: #34343a;
+  --sh-1: 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --sh-node: 0 1px 0 rgba(0, 0, 0, 0.5);
+  --sh-pop: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 18px 44px -12px rgba(0, 0, 0, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --pulse: 0s; --flow: 0s; }
+}
+
+html.paused * {
+  animation-play-state: paused !important;
+}

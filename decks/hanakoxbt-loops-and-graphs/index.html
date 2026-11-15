@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Loops & Graphs · @hanakoxbt</title>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/graph.css">
+  <link rel="stylesheet" href="styles/panels.css">
+</head>
+<body>
+<div class="app" id="app" data-mode="boot" data-insp="open" data-tl="closed">
+  <header class="hd" id="hd">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M8 2L13.5 8 8 14 2.5 8Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="8" cy="8" r="1.8" fill="currentColor"/>
+      </svg>
+      <b data-i18n="title">Loops &amp; Graphs · @hanakoxbt</b>
+      <span class="ctx mono" id="ctx"></span>
+    </div>
+    <div class="seg" id="preset" role="tablist">
+      <button type="button" role="tab" aria-selected="true" data-preset="feature-ship" data-i18n="presetShip">Feature Ship</button>
+      <button type="button" role="tab" aria-selected="false" data-preset="code-review" data-i18n="presetReview">Code Review</button>
+    </div>
+    <div class="hd-r">
+      <span class="demo-tag" id="demo-tag" hidden data-i18n="demoTag">DEMO · 样例数据</span>
+      <div class="demo-menu-wrap" id="demo-menu-wrap" hidden>
+        <div class="pop demo-pop" id="demo-pop" hidden></div>
+      </div>
+      <span class="pill" id="run-pill">—</span>
+      <button type="button" class="ghost ico" id="demo-btn" data-i18n-title="demo" aria-label="Demo">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><polygon points="4.5,3 13,8 4.5,13" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" class="ghost ico" id="insp-btn" data-i18n-title="inspector" aria-label="Inspector">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="10.2" y1="2.5" x2="10.2" y2="13.5" stroke="currentColor" stroke-width="1.3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="cmd" id="cmd">
+    <div class="cmd-input-wrap" id="cmd-input-wrap">
+      <textarea id="goal" rows="1" data-i18n-placeholder="goalPh"></textarea>
+    </div>
+    <div class="review-fields" id="review-fields" hidden>
+      <input id="base" class="mono" data-i18n-placeholder="basePh">
+    </div>
+    <button type="button" class="chip-btn" id="constraints-btn">
+      <i class="dot learn"></i>
+      <span class="mono" id="constraints-n">0</span>
+      <span class="constraints-label" data-i18n="constraints">constraints</span>
+    </button>
+    <button type="button" class="secondary" id="checks-btn" data-i18n="checks">Checks</button>
+    <button type="button" class="primary" id="run-btn">Run</button>
+    <div class="pop checks-pop" id="checks-pop" hidden></div>
+  </section>
+
+  <div class="strip mono" id="strip" aria-live="polite"></div>
+
+  <main class="canvas" id="canvas">
+    <div class="canvas-tools" id="tools"></div>
+    <div class="legend" id="legend"></div>
+    <svg class="graph" id="graph" role="application" aria-roledescription="workflow graph">
+      <defs id="defs"></defs>
+      <g id="vp">
+        <g id="l-bands"></g>
+        <g id="l-edges"></g>
+        <g id="l-map"></g>
+        <g id="l-nodes"></g>
+        <g id="l-labels"></g>
+      </g>
+    </svg>
+    <div class="verdict-card" id="verdict-card" hidden></div>
+    <div class="hint" id="hint" hidden></div>
+    <div class="gate-dock" id="gate-dock" hidden></div>
+    <div class="banner" id="banner" hidden></div>
+  </main>
+
+  <aside class="inspector" id="insp">
+    <div class="insp-grip" id="grip" role="separator" aria-orientation="vertical" tabindex="-1"></div>
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="node" data-i18n="tabNode">Node</button>
+      <button type="button" role="tab" data-tab="gate" data-i18n="tabGate">Gate</button>
+      <button type="button" role="tab" data-tab="vault" data-i18n="tabVault">Vault</button>
+      <button type="button" role="tab" data-tab="history" data-i18n="tabHistory">History</button>
+    </nav>
+    <div class="insp-body" id="insp-body"></div>
+  </aside>
+
+  <footer class="tl" id="tl"></footer>
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+<script src="/sdk.js"></script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

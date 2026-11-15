@@ -1,0 +1,76 @@
+id: code-review
+description: 并行多视角审查当前改动（零写入）：确定性取 diff → 多 Lens Worker ∥ 全量检查 → 证据校验（≤2 次纠错）→ Code Node 去重归并 → 结论与候选约束
+trigger:
+  autoRun: true
+inputs:
+  base:
+    type: string
+    default: ""
+    description: 对比基线；空 = origin/HEAD → main → master 的 merge-base
+  checkCmd:
+    type: string
+    default: ""
+    description: 全量检查；空 = 跳过
+  lenses:
+    type: array
+    default: [correctness, security, performance, tests]
+  constraints:
+    type: array
+    default: []
+budget:
+  maxMinutes: 60
+  maxIterations: 8
+nodes:
+  - id: scope
+    kind: code
+    uses: ./scripts/scope.js#scope
+
+  - id: scope_gate
+    kind: gate
+    dependsOn: [scope]
+    cases:
+      - when: "outputs.scope.files.length === 0"
+        next: $done
+
+  - id: lenses
+    kind: map
+    dependsOn: [scope_gate]
+    forEach: "outputs.scope.lenses"
+    concurrency: 4
+    nodes:
+      - id: review
+        kind: agent
+        session: new
+        permissions: ask
+        timeoutSec: 900
+        promptFile: ./prompts/review.md
+        outputSchema: ./schemas/findings.schema.json
+      - id: evidence
+        kind: code
+        dependsOn: [review]
+        uses: ./scripts/findings.js#evidence
+      - id: evidence_gate
+        kind: gate
+        dependsOn: [evidence]
+        maxIterations: 2
+        cases:
+          - when: "!outputs.evidence.ok"
+            next: review
+        onExceed: $fail
+
+  - id: checks
+    kind: shell
+    dependsOn: [scope_gate]
+    command: "{{outputs.scope.checkCmd || 'true'}}"
+    timeoutSec: 1800
+    continueOnError: true
+
+  - id: merge
+    kind: code
+    dependsOn: [lenses, checks]
+    uses: ./scripts/findings.js#merge
+
+  - id: learn
+    kind: code
+    dependsOn: [merge]
+    uses: ./scripts/findings.js#propose

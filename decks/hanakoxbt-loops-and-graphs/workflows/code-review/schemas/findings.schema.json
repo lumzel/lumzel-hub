@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "required": ["findings"],
+  "properties": {
+    "summary": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "file", "title", "evidence"],
+        "properties": {
+          "severity": { "enum": ["high", "medium", "low"] },
+          "file": { "type": "string", "minLength": 1 },
+          "line": { "type": "integer", "minimum": 1 },
+          "title": { "type": "string", "minLength": 4 },
+          "evidence": { "type": "string", "minLength": 10 },
+          "fix": { "type": "string" },
+          "category": { "type": "string" }
+        }
+      }
+    }
+  }
+}
