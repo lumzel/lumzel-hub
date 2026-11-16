@@ -150,7 +150,7 @@ export function mountCommandBar(store, host) {
       const revCheckInput = h('input', {
         type: 'text',
         value: prefs.reviewCheckCmd || '',
-        placeholder: 'pnpm test',
+        placeholder: t('reviewCheckPh'),
         onInput: e => host.savePrefs({ reviewCheckCmd: e.target.value }),
       });
       checksPop.appendChild(
@@ -195,6 +195,10 @@ export function mountCommandBar(store, host) {
       preset: s.preset,
       goal: s.goal,
       reviewBase: s.prefs.reviewBase,
+      fullCheckCmd: s.prefs.fullCheckCmd,
+      setupCmd: s.prefs.setupCmd,
+      maxUnits: s.prefs.maxUnits,
+      reviewCheckCmd: s.prefs.reviewCheckCmd,
       locale: s.ctx.locale,
     }),
     ({ preset, goal, reviewBase }) => {
@@ -209,12 +213,21 @@ export function mountCommandBar(store, host) {
       if (baseEl.value !== (reviewBase || '')) {
         baseEl.value = reviewBase || '';
       }
-      if (!checksPop.hidden) renderChecksPopover();
+      if (!checksPop.hidden) {
+        const activeTag = document.activeElement && checksPop.contains(document.activeElement);
+        if (!activeTag || document.activeElement.tagName !== 'INPUT') {
+          renderChecksPopover();
+        }
+      }
     },
     (a, b) =>
       a.preset === b.preset &&
       a.goal === b.goal &&
       a.reviewBase === b.reviewBase &&
+      a.fullCheckCmd === b.fullCheckCmd &&
+      a.setupCmd === b.setupCmd &&
+      a.maxUnits === b.maxUnits &&
+      a.reviewCheckCmd === b.reviewCheckCmd &&
       a.locale === b.locale,
   );
 
@@ -276,8 +289,6 @@ export function mountCommandBar(store, host) {
       }
 
       const wfBroken = Boolean(wf && wf.error);
-      const missingGoal = preset === 'feature-ship' && !String(goal || '').trim();
-      const disabled = capsWf === false || wfBroken || (mode !== 'demo' && missingGoal && !run);
       // If idle or terminal, allow Run / Run again (when goal is present or code-review)
       runBtn.disabled = Boolean(capsWf === false || wfBroken || (preset === 'feature-ship' && !String(goal || '').trim()));
 

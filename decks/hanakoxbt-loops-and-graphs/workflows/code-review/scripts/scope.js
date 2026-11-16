@@ -1,4 +1,4 @@
-import { composeConstraints, line } from './lib.js';
+import { composeConstraints, line, shQuote } from './lib.js';
 const LENS = {
   correctness: {
     focus: 'logic errors, edge cases, error paths, broken contracts, races',
@@ -21,25 +21,32 @@ const PATCH_MAX = 48000;
 
 export async function scope(ctx) {
   const { inputs, sh } = ctx;
-  let base = inputs.base;
+  let base = String(inputs.base || '').trim();
   if (!base) {
     const o = await line(ctx, 'git rev-parse --abbrev-ref origin/HEAD 2>/dev/null');
-    base =
-      o && o !== 'origin/HEAD'
-        ? o
-        : (await sh('git rev-parse --verify main', { timeoutSec: 10 })).ok
-          ? 'main'
-          : 'master';
+    if (o && o !== 'origin/HEAD') {
+      base = o;
+    } else if ((await sh('git rev-parse --verify main', { timeoutSec: 10 })).ok) {
+      base = 'main';
+    } else if ((await sh('git rev-parse --verify master', { timeoutSec: 10 })).ok) {
+      base = 'master';
+    } else {
+      base = 'HEAD';
+    }
   }
-  const mb = (await line(ctx, `git merge-base HEAD ${base}`)) || 'HEAD';
-  const tracked = (await sh(`git diff --name-only ${mb}`, { timeoutSec: 30 })).stdout.split('\n').filter(Boolean);
-  const untracked = (await sh('git ls-files --others --exclude-standard', { timeoutSec: 30 })).stdout
+  const mb = (await line(ctx, `git merge-base HEAD ${shQuote(base)}`)) || 'HEAD';
+  const mbQ = shQuote(mb);
+  const tracked = (await sh(`git -c core.quotePath=false diff --name-only ${mbQ}`, { timeoutSec: 30 })).stdout
+    .split('\n')
+    .filter(Boolean);
+  const untracked = (await sh('git -c core.quotePath=false ls-files --others --exclude-standard', { timeoutSec: 30 })).stdout
     .split('\n')
     .filter(Boolean);
   const files = Array.from(new Set(tracked.concat(untracked)));
-  const full = (await sh(`git diff --unified=3 ${mb}`, { timeoutSec: 60 })).stdout;
+  const full = (await sh(`git -c core.quotePath=false diff --unified=3 ${mbQ}`, { timeoutSec: 60 })).stdout;
   const lenses = (inputs.lenses || []).filter(id => LENS[id]).map(id => Object.assign({ id }, LENS[id]));
   const c = composeConstraints(inputs.constraints);
+  const checkCmd = String(inputs.checkCmd || '').trim();
   return {
     base,
     mergeBase: mb,
@@ -48,7 +55,7 @@ export async function scope(ctx) {
     lenses,
     patch: full.slice(0, PATCH_MAX),
     truncated: full.length > PATCH_MAX,
-    checkCmd: inputs.checkCmd || '',
+    checkCmd,
     constraintsText: c.text || '(none)',
     constraintCount: c.count,
   };

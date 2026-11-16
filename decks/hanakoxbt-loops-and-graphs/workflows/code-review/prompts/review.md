@@ -4,7 +4,7 @@ Checklist:
 {{item.checklist.map(c => '- ' + c).join('\n')}}
 
 Changed files ({{outputs.scope.files.length}}): {{outputs.scope.files.join(', ')}}
-Team constraints to enforce:
+{{outputs.scope.untracked && outputs.scope.untracked.length ? 'Untracked new files (not in git diff — read directly if relevant): ' + outputs.scope.untracked.join(', ') + '\n' : ''}}Team constraints to enforce:
 {{outputs.scope.constraintsText}}
 
 Diff against {{outputs.scope.base}} ({{outputs.scope.truncated ? 'TRUNCATED — read the files for full context' : 'complete'}}):

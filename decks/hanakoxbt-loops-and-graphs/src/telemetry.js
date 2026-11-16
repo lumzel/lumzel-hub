@@ -185,10 +185,30 @@ export function applyNoticesBatch(store, events, minEpochSec, preset) {
   }));
 }
 
+const DOWNSTREAM_RETRY_NODES = new Set([
+  'integrate',
+  'integrate_gate',
+  'human_gate',
+  'ship',
+  'rework',
+  'reverify',
+  'retro',
+  'distill',
+  'record',
+  'finish',
+  'merge',
+  'learn',
+]);
+
+function isFiniteSeq(seq) {
+  return seq !== null && seq !== undefined && seq !== '' && Number.isFinite(Number(seq));
+}
+
 export function createTelemetryController(store, safe) {
   let activeSessionId = null;
   let activeRunId = null;
   let lastRunLogSeq = -1;
+  let retryWatermark = null;
   let unsubFn = null;
   let stopTimer = null;
 
@@ -221,6 +241,38 @@ export function createTelemetryController(store, safe) {
     unsubscribeNow();
     activeRunId = null;
     lastRunLogSeq = -1;
+    retryWatermark = null;
+    store.set(s => ({
+      ...s,
+      telemetry: { rev: s.telemetry.rev + 1, byUnit: {}, lastSeq: 0 },
+    }));
+  }
+
+  function prepareRetry(run, nodeId) {
+    if (DOWNSTREAM_RETRY_NODES.has(nodeId)) {
+      return;
+    }
+    unsubscribeNow();
+    let maxSeq = lastRunLogSeq;
+    let markerText = null;
+    if (run && Array.isArray(run.logs)) {
+      for (const entry of run.logs) {
+        if (!entry || !isFiniteSeq(entry.seq)) continue;
+        const seqNum = Number(entry.seq);
+        if (seqNum >= maxSeq) {
+          maxSeq = seqNum;
+          markerText = typeof entry.text === 'string' ? entry.text : null;
+        }
+      }
+    }
+    retryWatermark = {
+      runId: (run && run.runId) || activeRunId || null,
+      maxSeq,
+      markerText,
+      minSec: Math.floor(Date.now() / 1000),
+    };
+    activeRunId = (run && run.runId) || activeRunId || null;
+    lastRunLogSeq = -1;
     store.set(s => ({
       ...s,
       telemetry: { rev: s.telemetry.rev + 1, byUnit: {}, lastSeq: 0 },
@@ -241,6 +293,7 @@ export function createTelemetryController(store, safe) {
       unsubscribeNow();
       activeRunId = run.runId;
       lastRunLogSeq = -1;
+      retryWatermark = null;
       store.set(s => ({
         ...s,
         telemetry: { rev: s.telemetry.rev + 1, byUnit: {}, lastSeq: 0 },
@@ -251,8 +304,28 @@ export function createTelemetryController(store, safe) {
     const active = run.state === 'running' || run.state === 'waiting_gate';
 
     if (Array.isArray(run.logs)) {
+      if (retryWatermark && retryWatermark.runId === run.runId) {
+        const wm = retryWatermark;
+        retryWatermark = null;
+        if (wm.maxSeq >= 0) {
+          const sameLogBuffer = run.logs.some(
+            entry =>
+              entry &&
+              isFiniteSeq(entry.seq) &&
+              Number(entry.seq) === wm.maxSeq &&
+              (wm.markerText === null || entry.text === wm.markerText),
+          );
+          if (sameLogBuffer) {
+            lastRunLogSeq = wm.maxSeq;
+          }
+        }
+      }
       const freshLogs = run.logs.filter(
-        entry => entry && Number(entry.seq) > lastRunLogSeq && typeof entry.text === 'string',
+        entry =>
+          entry &&
+          isFiniteSeq(entry.seq) &&
+          Number(entry.seq) > lastRunLogSeq &&
+          typeof entry.text === 'string',
       );
       if (freshLogs.length) {
         lastRunLogSeq = Math.max(lastRunLogSeq, ...freshLogs.map(entry => Number(entry.seq)));
@@ -291,7 +364,11 @@ export function createTelemetryController(store, safe) {
 
     unsubscribeNow();
     activeSessionId = run.sessionId;
-    const minSec = minEpochOf(run);
+    let minSec = minEpochOf(run);
+    if (retryWatermark && retryWatermark.runId === run.runId) {
+      minSec = Math.max(minSec, retryWatermark.minSec || 0);
+      retryWatermark = null;
+    }
 
     const res = await safe(
       () => window.deck.agent.logs(run.sessionId, { afterSeq: 0 }),
@@ -329,5 +406,5 @@ export function createTelemetryController(store, safe) {
     }
   }
 
-  return { syncRun, reset, unsubscribeNow };
+  return { syncRun, reset, prepareRetry, unsubscribeNow };
 }

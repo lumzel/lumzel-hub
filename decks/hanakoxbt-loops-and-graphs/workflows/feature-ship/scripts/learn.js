@@ -1,4 +1,4 @@
-import { firstJson, normText, lessonId } from './lib.js';
+import { firstJson, normText, lessonId, shQuote } from './lib.js';
 const SCOPES = ['split', 'check', 'impl', 'review', 'general'];
 
 export async function retro(ctx) {
@@ -9,8 +9,10 @@ export async function retro(ctx) {
     const o = r.outputs || {};
     const g = o.green_gate || {};
     const red = o.red_gate || {};
+    const isVerifyOnly = (r.item && r.item.mode === 'verify') || (!red.attempt && !(r.item && r.item.checkFiles && r.item.checkFiles.length));
+    const phaseCounts = isVerifyOnly ? `verify-only green×${g.attempt || 0}` : `red×${red.attempt || 0} green×${g.attempt || 0}`;
     return (
-      `- ${r.item && r.item.id}: ${r.ok ? 'PASS' : 'FAIL'} · red×${red.attempt || 0} green×${g.attempt || 0}` +
+      `- ${r.item && r.item.id}: ${r.ok ? 'PASS' : 'FAIL'} · ${phaseCounts}` +
       (g.signature ? ` · sig: ${g.signature}` : '') +
       (red.ok === false ? ` · red: ${red.reason}` : '') +
       (g.ok === false ? ` · green: ${g.reason}` : '') +
@@ -19,14 +21,18 @@ export async function retro(ctx) {
   });
   const integ = outputs.integrate || {};
   const note = outputs.human_gate && outputs.human_gate.payload && outputs.human_gate.payload.note;
+  const checkLine =
+    integ.check && integ.check.skipped
+      ? 'full check: skipped'
+      : integ.check && !integ.check.ok
+        ? `full check failed: ${integ.check.reason}\n${String(integ.check.tail || '').slice(-1500)}`
+        : '';
   const digest = [
     `requirement: ${ctx.inputs.requirement}`,
     `shipped: ${shipped}`,
     'units:',
     ...rows,
-    integ.check && !integ.check.ok
-      ? `full check failed: ${integ.check.reason}\n${String(integ.check.tail || '').slice(-1500)}`
-      : '',
+    checkLine,
     (integ.conflicted || []).length ? `merge conflicts: ${integ.conflicted.map(c => c.id).join(', ')}` : '',
     note ? `reviewer requested changes (${state.reworks || 0} rework rounds): ${note}` : '',
   ]
@@ -38,7 +44,7 @@ export async function retro(ctx) {
   if (shipped) {
     for (const b of state.branches || []) {
       if (!b || b === currentBranch) continue;
-      if ((await sh(`git branch -D ${b}`, { timeoutSec: 30 })).ok) cleaned.push(b);
+      if ((await sh(`git branch -D ${shQuote(b)}`, { timeoutSec: 30 })).ok) cleaned.push(b);
     }
   }
   return {

@@ -64,14 +64,14 @@ export function safeMessage(s, max = 72) {
     .trim()
     .slice(0, max);
 }
+export function shQuote(s) {
+  return `'${String(s || '').replace(/'/g, "'\\''")}'`;
+}
 export function safePath(p) {
-  return (
-    typeof p === 'string' &&
-    p.length > 0 &&
-    !p.startsWith('/') &&
-    !p.split('/').includes('..') &&
-    !/[\s'"`$;&|<>\\]/.test(p)
-  );
+  if (typeof p !== 'string' || p.length === 0 || p.trim() !== p) return false;
+  if (p.startsWith('/') || /[\0\r\n\\]/.test(p)) return false;
+  const segs = p.split('/');
+  return !segs.some(seg => !seg || seg === '.' || seg === '..');
 }
 export function parseNumstat(stdout) {
   const files = [];

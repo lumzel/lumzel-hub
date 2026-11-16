@@ -52,7 +52,7 @@ async function runCheck(ctx) {
 }
 
 async function collectWorkingTreeDiff(ctx, sh) {
-  const ns = parseNumstat((await sh('git -c core.quotePath=false diff --numstat HEAD', { timeoutSec: 60 })).stdout);
+  const ns = parseNumstat((await sh('git -c core.quotePath=false diff --numstat --no-renames HEAD', { timeoutSec: 60 })).stdout);
   const stOut = (await sh('git -c core.quotePath=false status --porcelain=v1 -uall', { timeoutSec: 30 })).stdout;
   const seen = new Set(ns.files.map(f => f.path));
   for (const rawLine of stOut.split('\n')) {

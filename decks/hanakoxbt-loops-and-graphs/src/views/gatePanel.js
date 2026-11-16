@@ -229,7 +229,12 @@ export function createGatePanelRenderer(store, host) {
               style: { height: '22px', padding: '0 8px' },
               onClick: () => {
                 if (navigator.clipboard?.writeText) {
-                  navigator.clipboard.writeText(cand.branch).then(() => host.showToast(t('copied')));
+                  navigator.clipboard.writeText(cand.branch).then(
+                    () => host.showToast(t('copied')),
+                    () => host.showToast(cand.branch),
+                  );
+                } else {
+                  host.showToast(cand.branch);
                 }
               },
             },

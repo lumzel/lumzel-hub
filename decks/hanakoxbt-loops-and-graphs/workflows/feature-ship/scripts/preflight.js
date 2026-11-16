@@ -10,8 +10,8 @@ export async function preflight(ctx) {
   const dirty = st.stdout
     .split('\n')
     .filter(Boolean)
-    .map(l => l.slice(3))
-    .filter(p => !p.startsWith(OWN));
+    .map(l => l.slice(3).trim())
+    .filter(p => p && !p.startsWith(OWN));
   const fileLessons = parseLessonsMd(fsReadOrEmpty(inputs.lessonsFile || OWN + 'lessons.md'));
   const merged = composeConstraints([...(inputs.constraints || []), ...fileLessons.map(l => l.text)]);
   const rootEntries = await listRootEntries(ctx, st.stdout);

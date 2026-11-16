@@ -15,6 +15,11 @@ export function evidence(ctx) {
   const valid = [];
   const invalid = [];
   for (const f of list) {
+    if (!f || typeof f !== 'object') continue;
+    if (!f.file) {
+      invalid.push('finding is missing file');
+      continue;
+    }
     if (!changed.has(f.file)) {
       invalid.push(`${f.file}: file is not part of the diff`);
       continue;
@@ -39,7 +44,7 @@ export function merge(ctx) {
   const { outputs } = ctx;
   const results = (outputs.lenses && outputs.lenses.results) || [];
   const lensStatus = results.map(r => ({
-    id: r.item.id,
+    id: (r.item && r.item.id) || '',
     ok: r.ok,
     retries: r.retries || 0,
     error: r.error || '',
@@ -48,21 +53,21 @@ export function merge(ctx) {
   const byKey = new Map();
   for (const r of results) {
     if (!r.ok) continue;
-    for (const f of (r.outputs.evidence && r.outputs.evidence.valid) || []) {
+    for (const f of (r.outputs && r.outputs.evidence && r.outputs.evidence.valid) || []) {
       const key = `${f.file}:${Math.round((f.line || 0) / 4)}:${normText(f.title).slice(0, 32)}`;
       const prev = byKey.get(key);
-      if (!prev) byKey.set(key, Object.assign({}, f, { lenses: [f.lens] }));
+      if (!prev) byKey.set(key, Object.assign({}, f, { lenses: f.lens ? [f.lens] : [] }));
       else {
-        prev.lenses.push(f.lens);
-        if (RANK[f.severity] > RANK[prev.severity]) prev.severity = f.severity;
+        if (f.lens && !prev.lenses.includes(f.lens)) prev.lenses.push(f.lens);
+        if ((RANK[f.severity] || 0) > (RANK[prev.severity] || 0)) prev.severity = f.severity;
       }
     }
   }
   const findings = Array.from(byKey.values()).sort(
-    (a, b) => RANK[b.severity] - RANK[a.severity] || a.file.localeCompare(b.file),
+    (a, b) => (RANK[b.severity] || 0) - (RANK[a.severity] || 0) || String(a.file).localeCompare(String(b.file)),
   );
   const ck = outputs.checks || {};
-  const skipped = !outputs.scope.checkCmd;
+  const skipped = !(outputs.scope && outputs.scope.checkCmd);
   const checks = {
     skipped,
     ok: skipped ? null : !!ck.ok,
@@ -70,7 +75,9 @@ export function merge(ctx) {
     tail: String((ck.stdout || '') + '\n' + (ck.stderr || '')).slice(-4000),
   };
   const counts = { high: 0, medium: 0, low: 0 };
-  findings.forEach(f => counts[f.severity]++);
+  findings.forEach(f => {
+    if (Object.prototype.hasOwnProperty.call(counts, f.severity)) counts[f.severity]++;
+  });
   const verdict =
     counts.high > 0 || checks.ok === false
       ? 'block'

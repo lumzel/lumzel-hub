@@ -8,12 +8,19 @@ import { preflight } from '../workflows/feature-ship/scripts/preflight.js';
 import { plan, validateCheckCmd } from '../workflows/feature-ship/scripts/plan.js';
 import { laneStart, redCheck, greenCheck, unitReport } from '../workflows/feature-ship/scripts/unit.js';
 import { integrate, reverify } from '../workflows/feature-ship/scripts/integrate.js';
+import { retro, record } from '../workflows/feature-ship/scripts/learn.js';
+import { scope as reviewScope } from '../workflows/code-review/scripts/scope.js';
+import { evidence as reviewEvidence, merge as reviewMerge, propose as reviewPropose } from '../workflows/code-review/scripts/findings.js';
 import { applyNoticeToMap, createTelemetryController } from '../src/telemetry.js';
+import { createLessonsController } from '../src/lessons.js';
+import { createDemoPlayer } from '../src/demo/player.js';
 import { derive } from '../src/runModel.js';
 import { checkTopologyDrift } from '../src/topology/layout.js';
-import { ALL_YAML_KNOWN_IDS } from '../src/topology/feature-ship.js';
+import { ALL_YAML_KNOWN_IDS as SHIP_YAML_KNOWN_IDS } from '../src/topology/feature-ship.js';
+import { ALL_YAML_KNOWN_IDS as REVIEW_YAML_KNOWN_IDS } from '../src/topology/code-review.js';
 
 import { safePath } from '../workflows/feature-ship/scripts/lib.js';
+import { safePath as reviewSafePath } from '../workflows/code-review/scripts/lib.js';
 
 const DECK_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -165,11 +172,16 @@ test('safePath and validateCheckCmd block traversal, dot paths, no-ops, and dang
   assert.equal(safePath('/etc/passwd'), false);
   assert.equal(safePath('Tests/My App/Sample (Test).swift'), true);
   assert.equal(safePath('app/(auth)/[id]/page.test.tsx'), true);
+  assert.equal(reviewSafePath('Tests/My App/Sample (Test).swift'), true);
+  assert.equal(reviewSafePath('../secret.ts'), false);
 
   assert.match(validateCheckCmd('true'), /no-op/);
   assert.match(validateCheckCmd('exit'), /no-op/);
   assert.match(validateCheckCmd('echo ok && true'), /no-op/);
   assert.match(validateCheckCmd('rm -rf /'), /disallowed/);
+  assert.match(validateCheckCmd('sudo rm -rf /'), /disallowed/);
+  assert.match(validateCheckCmd('env rm -rf ~'), /disallowed/);
+  assert.match(validateCheckCmd('command rm -rf /*'), /disallowed/);
   assert.match(validateCheckCmd('rm -rf /*'), /disallowed/);
   assert.match(validateCheckCmd('rm -fr ~'), /disallowed/);
   assert.match(validateCheckCmd('$(rm -rf /)'), /disallowed/);
@@ -379,13 +391,15 @@ test('integrate skips fullCheckCmd gracefully, handles 0 passed units, and class
   assert.equal(zeroOut.failed[0].phase, 'red');
 });
 
-test('feature-ship workflow.yaml has zero topology drift against feature-ship.js', () => {
-  const yamlText = fs.readFileSync(path.join(DECK_ROOT, 'workflows/feature-ship/workflow.yaml'), 'utf8');
-  const unknown = checkTopologyDrift(yamlText, ALL_YAML_KNOWN_IDS);
-  assert.deepEqual(unknown, []);
+test('feature-ship and code-review workflow.yaml files have zero topology drift', () => {
+  const shipYaml = fs.readFileSync(path.join(DECK_ROOT, 'workflows/feature-ship/workflow.yaml'), 'utf8');
+  assert.deepEqual(checkTopologyDrift(shipYaml, SHIP_YAML_KNOWN_IDS), []);
+
+  const reviewYaml = fs.readFileSync(path.join(DECK_ROOT, 'workflows/code-review/workflow.yaml'), 'utf8');
+  assert.deepEqual(checkTopologyDrift(reviewYaml, REVIEW_YAML_KNOWN_IDS), []);
 });
 
-test('createTelemetryController consumes run.logs without sessionId and processes terminal completion logs', async () => {
+test('createTelemetryController consumes run.logs without sessionId, ignores null seq, and handles prepareRetry', async () => {
   let state = {
     mode: 'live',
     preset: 'feature-ship',
@@ -405,41 +419,292 @@ test('createTelemetryController consumes run.logs without sessionId and processe
     return { ok: true, v: await fn() };
   });
 
-  // First snapshot: active run without sessionId, emitting start notice in run.logs
-  await controller.syncRun({
+  // First snapshot: active run without sessionId, emitting start notice and ignoring null/empty seq
+  const runV1 = {
     runId: 'run-logs-1',
     workflowId: 'feature-ship',
     sessionId: '',
     state: 'running',
     logs: [
+      { seq: null, text: '⟦ag⟧{"v":1,"u":"u-bad","p":"start","s":"info","a":0,"m":"bad"}', timestamp: 99 },
+      { seq: '', text: '⟦ag⟧{"v":1,"u":"u-bad2","p":"start","s":"info","a":0,"m":"bad2"}', timestamp: 99 },
       { seq: 1, text: 'plain non-telemetry log', timestamp: 100 },
       { seq: 2, text: '⟦ag⟧{"v":1,"u":"u1","p":"start","s":"info","a":0,"m":"start"}', timestamp: 101 },
     ],
-  });
+  };
+  await controller.syncRun(runV1);
   assert.equal(agentLogsCalls, 0);
   assert.equal(state.telemetry.lastSeq, 2);
+  assert.equal(state.telemetry.byUnit['u-bad'], undefined);
+  assert.equal(state.telemetry.byUnit['u-bad2'], undefined);
   assert.equal(state.telemetry.byUnit.u1.status, 'running');
   assert.deepEqual(state.telemetry.byUnit.u1.phases, ['running', 'pending', 'pending', 'pending']);
 
   // Terminal snapshot: carries seq 3 (done) and must not be dropped by !active check
-  await controller.syncRun({
+  const runDone = {
     runId: 'run-logs-1',
     workflowId: 'feature-ship',
     sessionId: '',
     state: 'completed',
     logs: [
-      { seq: 1, text: 'plain non-telemetry log', timestamp: 100 },
-      { seq: 2, text: '⟦ag⟧{"v":1,"u":"u1","p":"start","s":"info","a":0,"m":"start"}', timestamp: 101 },
+      ...runV1.logs,
       { seq: 3, text: '⟦ag⟧{"v":1,"u":"u1","p":"done","s":"pass","a":0,"m":"done"}', timestamp: 105 },
     ],
-  });
+  };
+  await controller.syncRun(runDone);
   assert.equal(state.telemetry.lastSeq, 3);
   assert.equal(state.telemetry.byUnit.u1.status, 'pass');
   assert.equal(state.telemetry.byUnit.u1.events.length, 2);
   assert.deepEqual(state.telemetry.byUnit.u1.phases, ['pass', 'pass', 'pass', 'pass']);
 
+  // Downstream retry preserves existing unit telemetry
+  controller.prepareRetry(runDone, 'integrate');
+  assert.equal(state.telemetry.byUnit.u1.status, 'pass');
+  assert.equal(state.telemetry.lastSeq, 3);
+
+  // Upstream retry clears byUnit, skips appended old logs matching watermark, consumes seq 4
+  controller.prepareRetry(runDone, 'units');
+  assert.deepEqual(state.telemetry.byUnit, {});
+  assert.equal(state.telemetry.lastSeq, 0);
+  await controller.syncRun({
+    ...runDone,
+    state: 'running',
+    logs: [
+      ...runDone.logs,
+      { seq: 4, text: '⟦ag⟧{"v":1,"u":"u1","p":"start","s":"info","a":0,"m":"retry-start"}', timestamp: 110 },
+    ],
+  });
+  assert.equal(state.telemetry.lastSeq, 4);
+  assert.equal(state.telemetry.byUnit.u1.events.length, 1);
+  assert.equal(state.telemetry.byUnit.u1.events[0].m, 'retry-start');
+
+  // Upstream retry when runtime resets/truncates run.logs from seq 1 must still ingest new logs
+  controller.prepareRetry(
+    {
+      ...runDone,
+      logs: [{ seq: 4, text: 'old log 4', timestamp: 110 }],
+    },
+    'split',
+  );
+  await controller.syncRun({
+    runId: 'run-logs-1',
+    workflowId: 'feature-ship',
+    sessionId: '',
+    state: 'running',
+    logs: [{ seq: 1, text: '⟦ag⟧{"v":1,"u":"u2","p":"start","s":"info","a":0,"m":"fresh"}', timestamp: 120 }],
+  });
+  assert.equal(state.telemetry.lastSeq, 1);
+  assert.equal(state.telemetry.byUnit.u2.events[0].m, 'fresh');
+
   controller.reset();
   assert.equal(state.telemetry.lastSeq, 0);
   assert.deepEqual(state.telemetry.byUnit, {});
 });
+
+test('learn retro and record format verify-only/skipped digests, quote branches, and dedupe lessons', async () => {
+  const deletedCmds = [];
+  const ctx = makeCtx({
+    inputs: {
+      requirement: 'Add settings screen',
+      constraints: ['Existing constraint'],
+    },
+    state: {
+      reworks: 1,
+      branches: ["feat/a'b", 'main'],
+    },
+    outputs: {
+      preflight: { branch: 'main' },
+      ship: { ok: true },
+      integrate: { check: { ok: true, skipped: true }, conflicted: [] },
+      units: {
+        results: [
+          {
+            item: { id: 'ui-settings', mode: 'verify', checkFiles: [] },
+            ok: true,
+            retries: 0,
+            outputs: { green_gate: { attempt: 2 } },
+          },
+        ],
+      },
+      distill: {
+        text: JSON.stringify({
+          lessons: [
+            { text: 'existing constraint', scope: 'general', evidence: 'dup' },
+            { text: 'Always run swift build cleanly', scope: 'check', evidence: 'ui-settings' },
+            { text: 'Unknown scope clamps to general', scope: 'bogus', evidence: 'row 1' },
+          ],
+        }),
+      },
+    },
+    sh: async cmd => {
+      deletedCmds.push(cmd);
+      return { ok: true, code: 0, stdout: '', stderr: '' };
+    },
+  });
+
+  const retroOut = await retro(ctx);
+  assert.match(retroOut.digest, /verify-only green×2/);
+  assert.match(retroOut.digest, /full check: skipped/);
+  assert.deepEqual(deletedCmds, ["git branch -D 'feat/a'\\''b'"]);
+  assert.deepEqual(retroOut.cleanedBranches, ["feat/a'b"]);
+
+  ctx.outputs.retro = retroOut;
+  const recOut = record(ctx);
+  assert.equal(recOut.lessons.length, 2);
+  assert.equal(recOut.lessons[0].scope, 'check');
+  assert.equal(recOut.lessons[1].scope, 'general');
+});
+
+test('code-review scope and findings scripts handle quoting, fallback base HEAD, lens dedupe, and proposals', async () => {
+  const cmds = [];
+  const sc = await reviewScope(
+    makeCtx({
+      inputs: {
+        base: '',
+        checkCmd: '   ',
+        lenses: ['correctness', 'security', 'invalid'],
+        constraints: ['Check nil cases'],
+      },
+      sh: async cmd => {
+        cmds.push(cmd);
+        if (cmd.includes('origin/HEAD')) return { ok: false, code: 1, stdout: '', stderr: '' };
+        if (cmd.includes('--verify main') || cmd.includes('--verify master')) {
+          return { ok: false, code: 1, stdout: '', stderr: '' };
+        }
+        if (cmd.startsWith('git merge-base')) return { ok: true, code: 0, stdout: 'abc123\n', stderr: '' };
+        if (cmd.includes('diff --name-only')) return { ok: true, code: 0, stdout: 'src/a b.ts\nsrc/c.ts\n', stderr: '' };
+        if (cmd.includes('ls-files --others')) return { ok: true, code: 0, stdout: 'src/new file.ts\n', stderr: '' };
+        if (cmd.includes('diff --unified=3')) return { ok: true, code: 0, stdout: 'diff --git a/src/c.ts b/src/c.ts\n', stderr: '' };
+        return { ok: true, code: 0, stdout: '', stderr: '' };
+      },
+    }),
+  );
+
+  assert.equal(sc.base, 'HEAD');
+  assert.equal(sc.checkCmd, '');
+  assert.deepEqual(sc.files, ['src/a b.ts', 'src/c.ts', 'src/new file.ts']);
+  assert.ok(cmds.some(c => c.includes("git merge-base HEAD 'HEAD'")));
+  assert.ok(cmds.some(c => c.includes("git -c core.quotePath=false diff --name-only 'abc123'")));
+  assert.ok(cmds.some(c => c.includes("git -c core.quotePath=false ls-files --others")));
+
+  const fileContents = {
+    'src/a b.ts': 'const val = unsafeCall(userInput);',
+    'src/c.ts': 'const val2 = unsafeCall(otherInput);',
+  };
+  const ev1 = reviewEvidence(
+    makeCtx({
+      item: { id: 'correctness' },
+      state: {},
+      outputs: {
+        scope: sc,
+        review: {
+          findings: [
+            { severity: 'high', file: 'src/a b.ts', line: 1, title: 'Unsafe call', evidence: 'Uses `unsafeCall(userInput)`', category: 'validation' },
+            { severity: 'low', file: 'outside.ts', line: 1, title: 'Not in diff', evidence: 'Uses `fooBarBaz()`' },
+          ],
+        },
+      },
+      fsReadOrEmpty: p => fileContents[p] || '',
+    }),
+  );
+  assert.equal(ev1.ok, false);
+  assert.equal(ev1.dropped, 1);
+
+  const merged = reviewMerge(
+    makeCtx({
+      outputs: {
+        scope: sc,
+        checks: {},
+        lenses: {
+          results: [
+            {
+              item: { id: 'correctness' },
+              ok: true,
+              outputs: {
+                evidence: {
+                  valid: [
+                    { severity: 'medium', file: 'src/a b.ts', line: 1, title: 'Unsafe call', evidence: '`unsafeCall(userInput)`', lens: 'correctness', category: 'validation' },
+                    { severity: 'low', file: 'src/a b.ts', line: 1, title: 'Unsafe call', evidence: '`unsafeCall(userInput)`', lens: 'correctness', category: 'validation' },
+                  ],
+                },
+              },
+            },
+            {
+              item: { id: 'security' },
+              ok: true,
+              outputs: {
+                evidence: {
+                  valid: [
+                    { severity: 'high', file: 'src/a b.ts', line: 1, title: 'Unsafe call', evidence: '`unsafeCall(userInput)`', lens: 'security', category: 'validation' },
+                    { severity: 'medium', file: 'src/c.ts', line: 1, title: 'Another unsafe call', evidence: '`unsafeCall(otherInput)`', lens: 'security', category: 'validation' },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      },
+    }),
+  );
+  assert.equal(merged.verdict, 'block');
+  assert.equal(merged.checks.skipped, true);
+  assert.equal(merged.findings.length, 2);
+  assert.equal(merged.findings[0].severity, 'high');
+  assert.deepEqual(merged.findings[0].lenses, ['correctness', 'security']);
+  assert.equal(merged.counts.high, 1);
+  assert.equal(merged.counts.medium, 1);
+
+  const prop = reviewPropose(makeCtx({ outputs: { merge: merged } }));
+  assert.equal(prop.lessons.length, 1);
+  assert.equal(prop.lessons[0].scope, 'review');
+});
+
+test('lessons ingestRunResults does not double-count hits and demo stop resets mode & demo lessons', async () => {
+  let state = {
+    mode: 'live',
+    preset: 'feature-ship',
+    caps: { db: false, files: false, workflow: true, agent: true },
+    goal: '',
+    run: null,
+    selection: null,
+    lessons: {
+      rev: 0,
+      list: [{ id: 'l_1', text: 'Keep tests deterministic', scope: 'check', status: 'active', hits: 0, evidence: '', createdAt: 1, updatedAt: 1 }],
+    },
+    parsedFileEntries: [],
+    fileLessons: [],
+    fileSyncStatus: 'off',
+    telemetry: { rev: 0, byUnit: {}, lastSeq: 0 },
+    prefs: { demoSpeed: 1 },
+    ui: { demoFrame: 0, demoSpeed: 1, tick: 0, inspectorOpen: false, tab: 'node' },
+  };
+  const store = {
+    get: () => state,
+    set: fn => {
+      state = typeof fn === 'function' ? fn(state) : fn;
+    },
+  };
+  const lessonsCtrl = createLessonsController(store, async fn => ({ ok: true, v: await fn() }));
+  const completedRun = {
+    runId: 'run-hit-1',
+    workflowId: 'feature-ship',
+    state: 'completed',
+    outputs: { preflight: { constraintIds: ['l_1'] }, record: { lessons: [] } },
+  };
+  await lessonsCtrl.ingestRunResults(completedRun);
+  await lessonsCtrl.ingestRunResults(completedRun);
+  assert.equal(state.lessons.list[0].hits, 1);
+
+  // Demo seek + stop clears demo-injected lessons and sets mode to idle
+  state.lessons.list = [];
+  const demo = createDemoPlayer(store);
+  demo.seek('gate');
+  assert.equal(state.mode, 'demo');
+  assert.ok(state.lessons.list.length > 0);
+  demo.stop();
+  assert.equal(state.mode, 'idle');
+  assert.equal(state.run, null);
+  assert.equal(state.lessons.list.length, 0);
+});
+
 

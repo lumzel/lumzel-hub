@@ -668,6 +668,7 @@ export function createHost(store, demo) {
                     : null,
                 },
           }));
+          telemetry.syncRun(run);
         } else {
           upsertRunRecord(run);
         }
@@ -678,6 +679,7 @@ export function createHost(store, demo) {
   async function startRun(opts = {}) {
     const st = store.get();
     if (st.mode === 'demo') demo.stop();
+    else if (st.pending || (st.mode === 'live' && st.run && isActiveState(st.run.state))) return;
     const preset = opts.preset || st.preset;
     const goal = (opts.goal !== undefined ? opts.goal : st.goal).trim();
     if (preset === 'feature-ship' && !goal && !(opts.units && opts.units.length)) return;
@@ -765,7 +767,7 @@ export function createHost(store, demo) {
     const st = store.get();
     if (!st.run || !window.deck?.workflow?.retryNode) return;
     clearWorkflowSub();
-    telemetry.reset();
+    telemetry.prepareRetry(st.run, nodeId);
     store.set({ pending: 'starting', banner: null });
     const r = await safe(() => window.deck.workflow.retryNode(st.run.runId, nodeId), 'workflow');
     if (!r.ok || !r.v) {
@@ -841,6 +843,7 @@ export function createHost(store, demo) {
       selection: null,
       banner: null,
     }));
+    telemetry.syncRun(run);
   }
 
   async function backToLive() {
@@ -859,8 +862,11 @@ export function createHost(store, demo) {
         }));
         if (isActiveState(res.v.state)) {
           subscribeRun(res.v.runId);
-          telemetry.syncRun(res.v);
+        } else if (isTerminalState(res.v.state)) {
+          upsertRunRecord(res.v);
+          lessons.ingestRunResults(res.v);
         }
+        telemetry.syncRun(res.v);
         return;
       }
     }

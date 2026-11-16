@@ -78,7 +78,10 @@ export function renderTerminal(stdoutRaw, stderrRaw, exitCode) {
 function copyText(host, text) {
   if (!text) return;
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => host.showToast(t('copied')));
+    navigator.clipboard.writeText(text).then(
+      () => host.showToast(t('copied')),
+      () => host.showToast(text),
+    );
   } else {
     host.showToast(text);
   }
@@ -164,7 +167,7 @@ export function renderNodePanel(container, store, host, view) {
     actions.push(
       h(
         'button',
-        { type: 'button', class: 'secondary', onClick: () => host.retryNode(node.id) },
+        { type: 'button', class: 'secondary', disabled: st.pending, onClick: () => host.retryNode(node.id) },
         retryLbl,
       ),
     );
@@ -325,12 +328,14 @@ function renderLaneDetail(container, store, host, view, lane) {
       h('button', { type: 'button', class: 'secondary', onClick: () => copyText(host, lane.branch) }, t('copyBranch')),
     );
   }
-  if (!isReview && lane.item && store.get().caps.workflow !== false && store.get().mode !== 'demo') {
+  const st = store.get();
+  if (!isReview && lane.item && st.caps.workflow !== false && st.mode !== 'demo') {
+    const busy = !!(st.pending || (st.mode === 'live' && st.run && ['running', 'waiting_gate'].includes(st.run.state)));
     actions.push(
       h(
         'div',
         { style: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' } },
-        h('button', { type: 'button', class: 'secondary', onClick: () => host.rerunUnit(lane.item) }, t('rerunUnit')),
+        h('button', { type: 'button', class: 'secondary', disabled: busy, onClick: () => host.rerunUnit(lane.item) }, t('rerunUnit')),
         h('span', { style: { fontSize: '11px', color: 'var(--muted)' } }, t('rerunUnitNote')),
       ),
     );

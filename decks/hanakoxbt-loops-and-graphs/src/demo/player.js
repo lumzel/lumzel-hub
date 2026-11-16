@@ -300,12 +300,16 @@ export function createDemoPlayer(store) {
     rafId = requestAnimationFrame(step);
   }
 
+  let injectedDemoLessons = false;
+
   function start(presetOverride) {
     postGateMode = null;
     postGateTimerMs = 0;
     reworkCount = 0;
     const preset = presetOverride || store.get().preset || 'feature-ship';
     const demoLessons = getDemoConstraints();
+    const hadLessons = store.get().lessons.list.length > 0;
+    if (!hadLessons) injectedDemoLessons = true;
     store.set(s => ({
       ...s,
       mode: 'demo',
@@ -326,6 +330,7 @@ export function createDemoPlayer(store) {
     const preset = opts.preset || st.preset || 'feature-ship';
     const tMs = target === 'gate' ? (preset === 'code-review' ? 16200 : 56000) : Number(target) || 0;
     const demoLessons = getDemoConstraints();
+    if (!st.lessons.list.length) injectedDemoLessons = true;
 
     // Synchronous setup for preview/snapshot stability
     if (rafId) {
@@ -375,12 +380,15 @@ export function createDemoPlayer(store) {
     postGateMode = null;
     postGateTimerMs = 0;
     reworkCount = 0;
+    const clearDemoLessons = injectedDemoLessons;
+    injectedDemoLessons = false;
     store.set(s => ({
       ...s,
-      mode: s.liveRunId ? 'live' : 'idle',
+      mode: 'idle',
       run: null,
       goal: '',
       selection: null,
+      lessons: clearDemoLessons ? { rev: s.lessons.rev + 1, list: [] } : s.lessons,
       telemetry: { rev: s.telemetry.rev + 1, byUnit: {}, lastSeq: 0 },
     }));
   }

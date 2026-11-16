@@ -186,6 +186,8 @@ export function createLessonsController(store, safe) {
     return add(entry.text, entry.scope, 'active');
   }
 
+  const ingestedHitRuns = new Set();
+
   async function ingestRunResults(run) {
     if (!run || store.get().mode === 'demo') return;
     const outputs = run.outputs || {};
@@ -205,7 +207,8 @@ export function createLessonsController(store, safe) {
       });
     }
 
-    if (run.state === 'completed') {
+    if (run.state === 'completed' && run.runId && !ingestedHitRuns.has(run.runId)) {
+      ingestedHitRuns.add(run.runId);
       const injectedIds = new Set(
         (outputs.preflight && outputs.preflight.constraintIds) ||
           [],

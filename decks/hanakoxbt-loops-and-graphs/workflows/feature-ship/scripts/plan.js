@@ -3,7 +3,7 @@ const CONTROL_CHARS = /[\0\r\n]/;
 const NOOP_PART = '(?:true|:|exit(?:\\s+\\d+)?|echo(?:\\s+[^;&|]*)?)';
 const NOOP_CMD = new RegExp(`^${NOOP_PART}(?:\\s*(?:&&|\\|\\||;)\\s*${NOOP_PART})*$`, 'i');
 const DANGEROUS_CMD =
-  /(?:^|[;&|(`]\s*|\$\(\s*)(?:rm\s+(?:-[a-z]*[rf][a-z]*\s+)*(?:\/+\*(?=[\s);&|`]|$)|\/+(?=[\s);&|`]|$)|~(?=[\s);&|`]|$)|~\/|\.(?=[\s);&|`]|$))|git\s+(?:push\b|reset\s+--hard\b|clean\s+-[a-z]*f|checkout\s+--\s+\.(?=[\s);&|`]|$))|mkfs\b|dd\s+if=)/i;
+  /(?:^|[;&|(`]\s*|\$\(\s*|(?:^|[;&|(`]\s*|\$\(\s*)\b(?:sudo|env|command)\s+)(?:rm\s+(?:-[a-z]*[rf][a-z]*\s+)*(?:\/+\*(?=[\s);&|`]|$)|\/+(?=[\s);&|`]|$)|~(?=[\s);&|`]|$)|~\/|\.(?=[\s);&|`]|$))|git\s+(?:push\b|reset\s+--hard\b|clean\s+-[a-z]*f|checkout\s+--\s+\.(?=[\s);&|`]|$))|mkfs\b|dd\s+if=)/i;
 const arr = v => (Array.isArray(v) ? v : []);
 
 export function validateCheckCmd(cmd, prefixes = []) {
