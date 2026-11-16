@@ -268,6 +268,111 @@ export function syncDesignTicketItem(designHtml, ticketPath, nextStatus, todaySt
 }
 
 /**
+ * Remove a deleted ticket's checklist item from `design.html` and clean up
+ * any `data-doc-blocked-by` or `data-doc-links` references to it.
+ */
+export function removeDesignTicketItem(designHtml, ticketPath, todayStr, options = {}) {
+  const parse = options.parseHtml || defaultParseHtml;
+  const doc = parse(designHtml);
+  updateHeroDate(doc, todayStr);
+
+  const items = Array.from(doc.querySelectorAll('[data-doc-ticket], [data-lumzel-ticket]'));
+  const target = items.find(el => attrOf(el, 'data-doc-ticket') === ticketPath);
+  const removedNodeId = target ? attrOf(target, 'data-doc-node').trim() : '';
+  if (target) {
+    target.remove();
+  }
+
+  if (removedNodeId) {
+    const remaining = Array.from(doc.querySelectorAll('[data-doc-ticket], [data-lumzel-ticket]'));
+    for (const item of remaining) {
+      for (const attrName of ['data-doc-blocked-by', 'data-lumzel-blocked-by']) {
+        const raw = item.getAttribute(attrName);
+        if (!raw) continue;
+        const nextList = raw
+          .split(',')
+          .map(s => s.trim())
+          .filter(id => id && id !== removedNodeId);
+        if (nextList.length) item.setAttribute(attrName, nextList.join(','));
+        else item.removeAttribute(attrName);
+      }
+    }
+  }
+
+  for (const node of Array.from(doc.querySelectorAll('[data-doc-links], [data-lumzel-links]'))) {
+    for (const attrName of ['data-doc-links', 'data-lumzel-links']) {
+      const raw = node.getAttribute(attrName);
+      if (!raw) continue;
+      const nextLinks = raw
+        .split(/\s+/)
+        .map(s => s.trim())
+        .filter(link => link && link !== ticketPath && !link.startsWith(`${ticketPath}#`));
+      if (nextLinks.length) node.setAttribute(attrName, nextLinks.join(' '));
+      else node.removeAttribute(attrName);
+    }
+  }
+
+  return serializeDoc(doc);
+}
+
+/**
+ * Derive a concise preliminary feature title from a free-form requirement brief.
+ */
+export function deriveFeatureTitle(brief, maxLen = 30) {
+  const firstLine = String(brief || '')
+    .split(/\r?\n/)
+    .map(line => line.replace(/^\s*(?:[-*•]+|\d+[.)、])\s*/, '').replace(/\s+/g, ' ').trim())
+    .find(Boolean);
+  if (!firstLine) return '';
+  if (firstLine.length <= maxLen) return firstLine;
+  return `${firstLine.slice(0, Math.max(1, maxLen - 1)).trimEnd()}…`;
+}
+
+/**
+ * Generate a safe unique kebab-case Feature id from a free-form requirement brief.
+ */
+export function generateFeatureId(brief, existingIds = [], now = new Date()) {
+  const existing = new Set(existingIds);
+  const firstLine = String(brief || '')
+    .split(/\r?\n/)
+    .map(line => line.replace(/^\s*(?:[-*•]+|\d+[.)、])\s*/, '').trim())
+    .find(Boolean) || '';
+  const sample = firstLine.slice(0, 80);
+  const nonWs = sample.replace(/\s+/g, '');
+  const asciiCount = (nonWs.match(/[A-Za-z0-9\-_./]/g) || []).length;
+  const mostlyAscii = nonWs.length > 0 && asciiCount / nonWs.length >= 0.5;
+
+  let base = '';
+  if (mostlyAscii) {
+    const ascii = sample
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    if (ascii.length >= 3 && /^[a-z]/.test(ascii)) {
+      if (ascii.length <= 32) {
+        base = ascii;
+      } else {
+        const cut = ascii.slice(0, 32);
+        const lastDash = cut.lastIndexOf('-');
+        base = (lastDash >= 12 ? cut.slice(0, lastDash) : cut).replace(/-+$/g, '');
+      }
+    }
+  }
+
+  if (!base) {
+    const pad = n => String(n).padStart(2, '0');
+    base = `feat-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
+  }
+
+  if (!existing.has(base)) return base;
+  let seq = 2;
+  while (existing.has(`${base}-${seq}`)) seq += 1;
+  return `${base}-${seq}`;
+}
+
+/**
  * Convert a free-form feature name into a safe kebab-case Feature id if user leaves id blank.
  */
 export function slugifyFeatureId(title, existingIds = []) {

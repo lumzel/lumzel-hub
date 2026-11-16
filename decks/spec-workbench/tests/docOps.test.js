@@ -10,8 +10,11 @@ import {
   applyTicketDone,
   buildDesignReplyPrompt,
   buildTicketsReplyPrompt,
+  deriveFeatureTitle,
+  generateFeatureId,
   parseDesignDocQuestions,
   parseTicketChoices,
+  removeDesignTicketItem,
   slugifyFeatureId,
   sortFeaturesDesc,
   syncDesignTicketItem,
@@ -235,5 +238,48 @@ test('SAMPLE_DOCS matches sample files on disk, passes lintDoc, and derives matc
       ready: t.ready,
       blockedBy: t.blockedBy,
     })),
+  );
+});
+
+test('removeDesignTicketItem removes ticket row, cleans blockers and links, and passes lintDoc', () => {
+  const designHtml = fs.readFileSync(
+    path.join(DECK_DIR, 'sample/docs/features/invoice-cache/design.html'),
+    'utf8',
+  );
+  const ticketPath = 'docs/features/invoice-cache/tickets/02-miss-load.html';
+  const withLink = designHtml.replace(
+    'data-doc-node="store"',
+    `data-doc-node="store" data-doc-links="${ticketPath} docs/features/invoice-cache/tickets/01-read-path.html"`,
+  );
+
+  const updated = removeDesignTicketItem(withLink, ticketPath, '2026-11-16', { parseHtml });
+  const doc = parseHtml(updated);
+  assert.equal(doc.querySelector(`[data-doc-ticket="${ticketPath}"]`), null);
+  assert.equal(doc.querySelector('[data-doc-node="t03"]')?.getAttribute('data-doc-blocked-by'), null);
+  assert.equal(
+    doc.querySelector('[data-doc-node="store"]')?.getAttribute('data-doc-links'),
+    'docs/features/invoice-cache/tickets/01-read-path.html',
+  );
+  assert.deepEqual(lintDoc(extractDoc(doc)), []);
+});
+
+test('deriveFeatureTitle and generateFeatureId handle brief-only creation', () => {
+  assert.equal(deriveFeatureTitle(''), '');
+  assert.equal(deriveFeatureTitle('  - 给发票详情页加 Redis 缓存\n第二行补充说明'), '给发票详情页加 Redis 缓存');
+  assert.equal(
+    deriveFeatureTitle('1. Add an extra long description for testing title truncation behavior cleanly', 24),
+    'Add an extra long descr…',
+  );
+
+  const fixedNow = new Date(2026, 10, 16, 9, 5);
+  assert.equal(generateFeatureId('Add Redis cache for invoice details', [], fixedNow), 'add-redis-cache-for-invoice');
+  assert.equal(
+    generateFeatureId('Invoice cache v2', ['invoice-cache-v2', 'invoice-cache-v2-2'], fixedNow),
+    'invoice-cache-v2-3',
+  );
+  assert.equal(generateFeatureId('给发票详情页加 Redis 缓存', [], fixedNow), 'feat-20261116-0905');
+  assert.equal(
+    generateFeatureId('给发票详情页加 Redis 缓存', ['feat-20261116-0905'], fixedNow),
+    'feat-20261116-0905-2',
   );
 });

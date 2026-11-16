@@ -9,11 +9,13 @@ import {
   applyTicketDone,
   buildDesignReplyPrompt,
   buildTicketsReplyPrompt,
+  deriveFeatureTitle,
   featureSortTimestamp,
   formatShortTime,
+  generateFeatureId,
   parseDesignDocQuestions,
   parseTicketChoices,
-  slugifyFeatureId,
+  removeDesignTicketItem,
   sortFeaturesDesc,
   syncDesignTicketItem,
   todayIsoDate,
@@ -30,7 +32,8 @@ const inFlightSlots = new Set();
 const state = {
   index: { features: [], docs: [] },
   features: [], // merged & sorted features (pending + disk)
-  featureMeta: {}, // id -> { id, title, brief, pending, createdAt, updatedAt, previousStatus }
+  featureMeta: {}, // id -> { id, title, brief, pending, createdAt, updatedAt, previousStatus, archived, archivedAt }
+  ticketMeta: {}, // path -> { path, featureId, archived, archivedAt }
   fileMtimeMap: {}, // id -> max modifiedAt ms
   sessions: {}, // slotKey -> { slotKey, featureId, kind, ticketPath, sessionId, status, updatedAt }
   liveSessionStatus: {}, // featureId -> { designReusable, designSessionId, designStatus, ticketsReusable, ticketsSessionId, ticketsStatus }
@@ -38,6 +41,8 @@ const state = {
   designDrafts: {}, // featureId -> { answers: { [id]: val }, note: '' }
   ticketDrafts: {}, // featureId -> { answers: { [key]: val }, note: '' }
   qaCollapsed: {}, // `${featureId}:design` | `${featureId}:tickets` -> boolean
+  railCollapsed: false,
+  archivedRailOpen: false,
   theme: 'light',
   preview: false,
   featureId: '',
@@ -184,9 +189,12 @@ const worktreeUrl = (path, { hash = '', query = '' } = {}) =>
   }`;
 
 const feature = () => state.features.find(f => f.id === state.featureId) || null;
+const isFeatureArchived = id => Boolean(state.featureMeta[id]?.archived);
+const isTicketArchived = path => Boolean(state.ticketMeta[path]?.archived);
+const activeFeatureTickets = f => (f?.tickets || []).filter(x => !isTicketArchived(x.path));
 
 function progress(f) {
-  const tickets = f.tickets || [];
+  const tickets = activeFeatureTickets(f);
   const all = tickets.length;
   const done = tickets.filter(x => x.status === 'done').length;
   const run = tickets.filter(x => x.status === 'in-progress').length;
@@ -269,6 +277,42 @@ async function deleteFeatureMeta(id) {
   delete state.featureMeta[id];
   if (!state.preview && typeof window.deck?.store?.delete === 'function') {
     await window.deck.store.delete('features', id).catch(() => {});
+  }
+}
+
+async function saveTicketMeta(path, patch) {
+  const prev = state.ticketMeta[path] || { path };
+  const next = { ...prev, ...patch, path };
+  state.ticketMeta[path] = next;
+  if (canUseStore()) {
+    await window.deck.store.put('tickets', path, next).catch(() => {});
+  }
+  return next;
+}
+
+async function deleteTicketMeta(path) {
+  delete state.ticketMeta[path];
+  if (!state.preview && typeof window.deck?.store?.delete === 'function') {
+    await window.deck.store.delete('tickets', path).catch(() => {});
+  }
+}
+
+function syncRailToggle() {
+  const collapsed = Boolean(state.railCollapsed);
+  app.classList.toggle('rail-collapsed', collapsed);
+  const btn = $('rail-toggle');
+  if (!btn) return;
+  btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  const label = t(collapsed ? 'expandRail' : 'collapseRail');
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+}
+
+async function setRailCollapsed(collapsed) {
+  state.railCollapsed = Boolean(collapsed);
+  syncRailToggle();
+  if (canUseStore()) {
+    await window.deck.store.put('ui', 'railCollapsed', { collapsed: state.railCollapsed }).catch(() => {});
   }
 }
 
@@ -607,58 +651,97 @@ function renderLiveRuns() {
   );
 }
 
-function renderRail() {
-  $('feats').replaceChildren(
-    ...state.features.map(f => {
-      const p = progress(f);
-      const activeRuns = activeSessionsForFeature(f.id);
-      const hasWait = activeRuns.some(r => r.status === 'needs_input');
-      const ts = featureSortTimestamp(f, state.featureMeta[f.id], state.fileMtimeMap[f.id] || 0);
-      const timeText = formatShortTime(ts, f.updated);
-      const subText = f.pending
-        ? t('pendingStatus')
-        : p.all
-          ? t('ticketProgress', { done: p.done, all: p.all })
-          : t('noTicketsYet');
+function buildFeatureRailItem(f, archived = false) {
+  const p = progress(f);
+  const activeRuns = activeSessionsForFeature(f.id);
+  const hasWait = activeRuns.some(r => r.status === 'needs_input');
+  const ts = featureSortTimestamp(f, state.featureMeta[f.id], state.fileMtimeMap[f.id] || 0);
+  const timeText = formatShortTime(ts, f.updated);
+  const subText = f.pending
+    ? t('pendingStatus')
+    : p.all
+      ? t('ticketProgress', { done: p.done, all: p.all })
+      : t('noTicketsYet');
 
-      return el(
-        'button',
-        {
-          type: 'button',
-          class: `feat${f.id === state.featureId ? ' on' : ''}`,
-          title: f.summary || f.title || f.id,
-          onclick: () => openFeature(f.id),
-        },
-        el(
-          'div',
-          { class: 'feat-top' },
-          activeRuns.length
-            ? el('span', { class: `run-dot${hasWait ? ' warn' : ''}`, 'aria-hidden': 'true' })
-            : null,
-          el('b', {}, f.title || f.id),
-        ),
-        el(
-          'div',
-          { class: 'feat-meta' },
-          el('span', { class: 'fid' }, f.id),
-          timeText ? el('span', { class: 'ftime' }, timeText) : null,
-        ),
-        el(
-          'div',
-          { class: 'feat-sub' },
-          el('small', {}, subText),
-          el('span', { class: 'pill', dataset: { status: f.pending ? 'pending' : f.status } }, docStatusLabel(f.pending ? 'pending' : f.status)),
-        ),
-        p.all
-          ? el(
-              'span',
-              { class: 'fbar' },
-              el('i', { style: `width:${(p.done / p.all) * 100}%` }),
-              el('i', { class: 'run', style: `width:${(p.run / p.all) * 100}%` }),
-            )
-          : null,
-      );
-    }),
+  return el(
+    'button',
+    {
+      type: 'button',
+      class: `feat${f.id === state.featureId ? ' on' : ''}${archived ? ' archived' : ''}`,
+      title: f.summary || f.title || f.id,
+      onclick: () => openFeature(f.id),
+      oncontextmenu: e => openFeatureContextMenu(e, f),
+    },
+    el(
+      'div',
+      { class: 'feat-top' },
+      activeRuns.length
+        ? el('span', { class: `run-dot${hasWait ? ' warn' : ''}`, 'aria-hidden': 'true' })
+        : null,
+      el('b', {}, f.title || f.id),
+    ),
+    el(
+      'div',
+      { class: 'feat-meta' },
+      el('span', { class: 'fid' }, f.id),
+      timeText ? el('span', { class: 'ftime' }, timeText) : null,
+    ),
+    el(
+      'div',
+      { class: 'feat-sub' },
+      el('small', {}, subText),
+      el('span', { class: 'pill', dataset: { status: f.pending ? 'pending' : f.status } }, docStatusLabel(f.pending ? 'pending' : f.status)),
+    ),
+    p.all
+      ? el(
+          'span',
+          { class: 'fbar' },
+          el('i', { style: `width:${(p.done / p.all) * 100}%` }),
+          el('i', { class: 'run', style: `width:${(p.run / p.all) * 100}%` }),
+        )
+      : null,
+  );
+}
+
+function renderRail() {
+  const active = [];
+  const archived = [];
+  for (const f of state.features) {
+    if (!f.pending && isFeatureArchived(f.id)) archived.push(f);
+    else active.push(f);
+  }
+
+  $('feats').replaceChildren(...active.map(f => buildFeatureRailItem(f, false)));
+
+  const archivedRail = $('archived-rail');
+  if (!archivedRail) return;
+  if (!archived.length) {
+    archivedRail.hidden = true;
+    archivedRail.replaceChildren();
+    return;
+  }
+
+  archivedRail.hidden = false;
+  const toggleBtn = el(
+    'button',
+    {
+      type: 'button',
+      class: 'archived-toggle',
+      'aria-expanded': state.archivedRailOpen ? 'true' : 'false',
+      onclick: () => {
+        state.archivedRailOpen = !state.archivedRailOpen;
+        renderRail();
+      },
+    },
+    `${state.archivedRailOpen ? '▾' : '▸'} ${t('archivedGroup', { n: archived.length })}`,
+  );
+  if (!state.archivedRailOpen) {
+    archivedRail.replaceChildren(toggleBtn);
+    return;
+  }
+  archivedRail.replaceChildren(
+    toggleBtn,
+    el('div', { class: 'archived-list' }, ...archived.map(f => buildFeatureRailItem(f, true))),
   );
 }
 
@@ -673,18 +756,14 @@ function setAgentPopOpen(open) {
 function renderTopbar() {
   const topbar = $('topbar');
   if (!topbar) return;
+  topbar.hidden = false;
+  syncRailToggle();
   renderLiveRuns();
   const info = effectiveAgentInfo();
   const canSettings = typeof window.deck?.ui?.openSettings === 'function';
-  const showTopbar = !state.preview && (info.agents.length > 0 || canSettings || allActiveSessions().length > 0);
-  topbar.hidden = !showTopbar;
-  if (!showTopbar) {
-    setAgentPopOpen(false);
-    return;
-  }
 
   const wrap = $('agent-wrap');
-  const showAgent = info.agents.length > 0;
+  const showAgent = !state.preview && info.agents.length > 0;
   wrap.hidden = !showAgent;
   if (!showAgent) {
     setAgentPopOpen(false);
@@ -727,7 +806,7 @@ function renderTopbar() {
     }
   }
 
-  $('settings-btn').hidden = !canSettings;
+  $('settings-btn').hidden = state.preview || !canSettings;
 }
 
 // ---------- rendering: feature pane & Q&A
@@ -769,10 +848,12 @@ function renderFeature() {
   const statusEl = $('f-status');
   statusEl.textContent = docStatusLabel(f.status);
   statusEl.dataset.status = f.status || '';
+  $('f-archived').hidden = !isFeatureArchived(f.id);
   const ts = featureSortTimestamp(f, state.featureMeta[f.id], state.fileMtimeMap[f.id] || 0);
   $('f-time').textContent = formatShortTime(ts, f.updated);
   $('f-summary').textContent = f.summary || '';
-  $('t-count').textContent = f.tickets.length ? String(f.tickets.length) : '';
+  const activeTickets = activeFeatureTickets(f);
+  $('t-count').textContent = activeTickets.length ? String(activeTickets.length) : '';
 
   const pTag = $('p-tag');
   if (f.prototype) {
@@ -806,7 +887,7 @@ function renderFeature() {
   });
 
   const implBtn = document.querySelector('.act[data-act="implement"]');
-  const unfinishedTickets = f.tickets.filter(x => x.status !== 'done').length;
+  const unfinishedTickets = activeTickets.filter(x => x.status !== 'done').length;
   const hasTickets = f.tickets.length > 0;
   const ticketBusy = hasAnyTicketImplementInFlight(f.id);
   applyRunButtonState(implBtn, {
@@ -1185,7 +1266,8 @@ function blockedLabel(ticket, f) {
 }
 
 function renderTickets(f) {
-  const open = state.ticket && f.tickets.find(x => x.path === state.ticket);
+  const allTickets = f.tickets || [];
+  const open = state.ticket && allTickets.find(x => x.path === state.ticket);
   $('tickets').hidden = Boolean(open);
   $('ticket-open').hidden = !open;
   const featureImplBusy = hasFeatureImplementBusy(f.id);
@@ -1197,7 +1279,7 @@ function renderTickets(f) {
       '← ',
       el('span', { class: `dot ${kind}` }),
       el('span', { class: 'mono' }, open.n),
-      ` ${open.title.replace(/^\d+\s+/, '')} · ${label} · ${t('ticketTotal', { n: f.tickets.length })}`,
+      ` ${open.title.replace(/^\d+\s+/, '')} · ${label} · ${t('ticketTotal', { n: allTickets.length })}`,
     );
 
     const implOneBtn = el('button', {
@@ -1238,19 +1320,48 @@ function renderTickets(f) {
       open.status === 'done' ? t('reopenTicket') : t('markDone'),
     );
 
-    $('ticket-head-acts').replaceChildren(implOneBtn, reviewOneBtn, toggleDoneBtn);
+    const moreOneBtn = el(
+      'button',
+      {
+        type: 'button',
+        class: 'ico more-btn sm',
+        title: t('moreActions'),
+        'aria-label': t('moreActions'),
+        onclick: e => {
+          e.stopPropagation();
+          openTicketContextMenuFromButton(e.currentTarget, f, open);
+        },
+      },
+      '⋯',
+    );
+
+    const ticketHead = $('ticket-open').querySelector('.ticket-head');
+    if (ticketHead) {
+      ticketHead.oncontextmenu = e => openTicketContextMenu(e, f, open);
+    }
+
+    $('ticket-head-acts').replaceChildren(
+      isTicketArchived(open.path) ? el('span', { class: 'pill archived-pill' }, t('archivedPill')) : null,
+      implOneBtn,
+      reviewOneBtn,
+      toggleDoneBtn,
+      moreOneBtn,
+    );
     frameIn('ticket', $('ticket-frame'), worktreeUrl(open.path), open.title);
     return;
   }
 
   dropFrame('ticket');
 
-  // Toolbar actions
-  const hasReady = f.tickets.some(x => x.ready && x.status !== 'done');
-  const hasUnfinished = f.tickets.some(x => x.status !== 'done');
+  const activeTickets = allTickets.filter(x => !isTicketArchived(x.path));
+  const archivedTickets = allTickets.filter(x => isTicketArchived(x.path));
+
+  // Toolbar actions (operate on active tickets only)
+  const hasReady = activeTickets.some(x => x.ready && x.status !== 'done');
+  const hasUnfinished = activeTickets.some(x => x.status !== 'done');
 
   const nextBtn = $('tickets-next-btn');
-  nextBtn.hidden = f.tickets.length === 0;
+  nextBtn.hidden = activeTickets.length === 0;
   applyRunButtonState(nextBtn, {
     slotKey: slotImplement(f.id),
     idleLabel: t('implementNextAct'),
@@ -1259,7 +1370,7 @@ function renderTickets(f) {
   });
 
   const allBtn = $('tickets-all-btn');
-  allBtn.hidden = f.tickets.length === 0;
+  allBtn.hidden = activeTickets.length === 0;
   applyRunButtonState(allBtn, {
     slotKey: slotImplement(f.id),
     idleLabel: t('implementAllAct'),
@@ -1269,7 +1380,7 @@ function renderTickets(f) {
 
   renderTicketsQa(f);
 
-  if (!f.tickets.length) {
+  if (!allTickets.length) {
     $('filters').replaceChildren();
     const genTicketsBtn = el('button', {
       type: 'button',
@@ -1307,25 +1418,36 @@ function renderTickets(f) {
     return;
   }
 
-  const filters = ticketFilters();
+  if (state.filter === 'archived' && archivedTickets.length === 0) {
+    state.filter = 'all';
+  }
+  const filterGroups = ticketFilters().map(([key, label, match]) => [
+    key,
+    label,
+    activeTickets.filter(match),
+  ]);
+  if (archivedTickets.length > 0) {
+    filterGroups.push(['archived', t('archivedFilter'), archivedTickets]);
+  }
+
   $('filters').replaceChildren(
-    ...filters.map(([key, label, match]) =>
+    ...filterGroups.map(([key, label, matchedRows]) =>
       el(
         'button',
         { type: 'button', class: state.filter === key ? 'on' : '', onclick: () => ((state.filter = key), render()) },
         label,
-        el('span', { class: 'count' }, String(f.tickets.filter(match).length)),
+        el('span', { class: 'count' }, String(matchedRows.length)),
       ),
     ),
   );
 
-  const match = (filters.find(([key]) => key === state.filter) || filters[0])[2];
-  const rows = f.tickets.filter(match);
+  const rows = (filterGroups.find(([key]) => key === state.filter) || filterGroups[0])[2];
   $('rows').replaceChildren(
     ...(rows.length
       ? rows.map(row => {
           const [kind, label] = ticketState(row, f);
           const waitList = blockedLabel(row, f);
+          const archived = isTicketArchived(row.path);
 
           const implBtn = el('button', {
             type: 'button',
@@ -1365,17 +1487,36 @@ function renderTickets(f) {
             row.status === 'done' ? t('reopenTicket') : t('markDone'),
           );
 
+          const moreRowBtn = el(
+            'button',
+            {
+              type: 'button',
+              class: 'ico more-btn sm',
+              title: t('moreActions'),
+              'aria-label': t('moreActions'),
+              onclick: e => {
+                e.stopPropagation();
+                openTicketContextMenuFromButton(e.currentTarget, f, row);
+              },
+            },
+            '⋯',
+          );
+
           return el(
             'div',
-            { class: 'req' },
+            {
+              class: `req${archived ? ' archived' : ''}`,
+              oncontextmenu: e => openTicketContextMenu(e, f, row),
+            },
             el(
               'button',
               { type: 'button', class: 'req-main', title: row.path, onclick: () => openTicket(row.path) },
               el('span', { class: `dot ${kind}`, title: statusLabel(row.status) }),
               el('span', { class: 't' }, el('span', { class: 'mono' }, row.n), row.title.replace(/^\d+\s+/, '')),
+              archived ? el('span', { class: 'pill archived-pill' }, t('archivedPill')) : null,
               el('span', { class: `state ${kind}` }, label),
             ),
-            el('div', { class: 'req-actions' }, implBtn, revBtn, doneToggle),
+            el('div', { class: 'req-actions' }, implBtn, revBtn, doneToggle, moreRowBtn),
           );
         })
       : [el('div', { class: 'empty' }, t('noTicketsInFilter'))]),
@@ -1471,7 +1612,7 @@ function render() {
   renderRail();
   $('pane-feature').hidden = !cur || Boolean(cur.pending);
   $('pane-pending').hidden = !cur || !cur.pending;
-  $('pane-empty').hidden = state.features.length > 0;
+  $('pane-empty').hidden = Boolean(cur);
   if (cur?.pending) renderPendingPane();
   else if (cur) renderFeature();
 }
@@ -1546,9 +1687,13 @@ async function fetchFeatureMtimes(diskFeatures) {
 
 async function syncStoreFromDisk(diskFeatures) {
   if (!canUseStore() || typeof window.deck?.store?.list !== 'function') return;
-  const [metaEntries, sessEntries] = await Promise.all([
+  const [metaEntries, ticketEntries, sessEntries, railPref] = await Promise.all([
     window.deck.store.list('features').catch(() => []),
+    window.deck.store.list('tickets').catch(() => []),
     window.deck.store.list('sessions').catch(() => []),
+    typeof window.deck?.store?.get === 'function'
+      ? window.deck.store.get('ui', 'railCollapsed').catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   const metaMap = {};
@@ -1563,6 +1708,16 @@ async function syncStoreFromDisk(diskFeatures) {
     }
   }
   state.featureMeta = metaMap;
+
+  const ticketMap = {};
+  for (const entry of ticketEntries) {
+    if (entry?.key && entry?.value) ticketMap[entry.key] = entry.value;
+  }
+  state.ticketMeta = ticketMap;
+
+  if (railPref && typeof railPref === 'object' && 'collapsed' in railPref) {
+    state.railCollapsed = Boolean(railPref.collapsed);
+  }
 
   const sessMap = {};
   for (const entry of sessEntries) {
@@ -1667,7 +1822,12 @@ async function load({ reload = false } = {}) {
       state.features = sortFeaturesDesc([...diskFeatures, ...pendingFeatures], state.featureMeta, state.fileMtimeMap);
 
       if (!state.features.some(f => f.id === state.featureId)) {
-        state.featureId = state.features[0]?.id || '';
+        const activeFeatures = state.features.filter(f => f.pending || !isFeatureArchived(f.id));
+        state.featureId = activeFeatures[0]?.id || '';
+      }
+      const selected = feature();
+      if (state.ticket && !selected?.tickets?.some(x => x.path === state.ticket)) {
+        state.ticket = '';
       }
 
       note('');
@@ -1961,8 +2121,10 @@ async function runFeatureAction(f, act) {
     } else if (act === 'implement') {
       const hasTickets = f.tickets.length > 0;
       const protoNote = f.prototype ? ` Reference prototype: ${f.prototype}.` : '';
+      const archivedPaths = (f.tickets || []).filter(x => isTicketArchived(x.path)).map(x => x.path);
+      const skipArchivedNote = archivedPaths.length ? ` Skip archived tickets: ${archivedPaths.join(', ')}.` : '';
       const prompt = hasTickets
-        ? `all ${f.id}\n\nImplement all unfinished tickets of Feature ${f.id} "${f.title}" in dependency order: automatically split into one spec-workbench-builder subagent per ticket sequentially, and review each ticket result in the main Agent before moving to the next (plus a final end-to-end review). Tickets in docs/features/${f.id}/tickets/.${protoNote}`
+        ? `all ${f.id}\n\nImplement all unfinished tickets of Feature ${f.id} "${f.title}" in dependency order: automatically split into one spec-workbench-builder subagent per ticket sequentially, and review each ticket result in the main Agent before moving to the next (plus a final end-to-end review). Tickets in docs/features/${f.id}/tickets/.${skipArchivedNote}${protoNote}`
         : `feature ${f.id}\n\nImplement Feature ${f.id} "${f.title}" directly from ${f.design} (tickets and prototype are optional), then review the result in the main Agent.${protoNote}`;
       const res = await startTrackedRun({
         slotKey: slotImplement(f.id),
@@ -2003,13 +2165,15 @@ async function runImplementNextTicket(f) {
     return;
   }
   const protoNote = f.prototype ? ` Reference prototype: ${f.prototype}.` : '';
+  const archivedPaths = (f.tickets || []).filter(x => isTicketArchived(x.path)).map(x => x.path);
+  const skipArchivedNote = archivedPaths.length ? ` Skip archived tickets: ${archivedPaths.join(', ')}.` : '';
   try {
     const res = await startTrackedRun({
       slotKey: slotImplement(f.id),
       featureId: f.id,
       kind: 'implement',
       skill: 'spec-workbench-implement',
-      prompt: `next\n\nImplement the next ready ticket of Feature ${f.id} "${f.title}" (tickets in docs/features/${f.id}/tickets/).${protoNote}`,
+      prompt: `next\n\nImplement the next ready ticket of Feature ${f.id} "${f.title}" (tickets in docs/features/${f.id}/tickets/).${skipArchivedNote}${protoNote}`,
       actionId: `implement-next:${f.id}`,
     });
     if (res) toast(t('sessionOpened', { id: res.sessionId }));
@@ -2223,53 +2387,334 @@ async function submitTicketsQa(f) {
   }
 }
 
-// ---------- new Feature modal
+// ---------- context menu, delete confirmation & archive/delete actions
 
 const ID_RE = /^[a-z0-9][a-z0-9-]*$/;
+const TICKET_PATH_RE = /^docs\/features\/[a-z0-9][a-z0-9-]*\/tickets\/[^/]+\.(?:html|lumzel(?:\.html)?)$/;
+
+const ctxMenu = $('ctx-menu');
+const confirmDialog = $('confirm-dialog');
+let confirmAction = null;
+let confirmBusy = false;
+
+function closeContextMenu() {
+  if (!ctxMenu || ctxMenu.hidden) return;
+  ctxMenu.hidden = true;
+  ctxMenu.replaceChildren();
+}
+
+function openContextMenu(clientX, clientY, items) {
+  if (!ctxMenu || !items.length) return;
+  closeContextMenu();
+  ctxMenu.replaceChildren(
+    ...items.map(item =>
+      item.type === 'separator'
+        ? el('div', { class: 'ctx-sep', role: 'separator' })
+        : el(
+            'button',
+            {
+              type: 'button',
+              role: 'menuitem',
+              class: `ctx-item${item.danger ? ' danger-item' : ''}`,
+              onclick: e => {
+                e.stopPropagation();
+                closeContextMenu();
+                item.onSelect();
+              },
+            },
+            item.label,
+          ),
+    ),
+  );
+  ctxMenu.style.left = '0px';
+  ctxMenu.style.top = '0px';
+  ctxMenu.hidden = false;
+  const rect = ctxMenu.getBoundingClientRect();
+  const maxLeft = Math.max(8, window.innerWidth - rect.width - 8);
+  const maxTop = Math.max(8, window.innerHeight - rect.height - 8);
+  ctxMenu.style.left = `${Math.max(8, Math.min(clientX, maxLeft))}px`;
+  ctxMenu.style.top = `${Math.max(8, Math.min(clientY, maxTop))}px`;
+}
+
+function openContextMenuAnchored(anchor, items) {
+  if (!anchor) return;
+  const rect = anchor.getBoundingClientRect();
+  openContextMenu(rect.right - 152, rect.bottom + 4, items);
+}
+
+function closeConfirmDialog(force = false) {
+  if (!confirmDialog || (confirmBusy && !force)) return;
+  confirmDialog.hidden = true;
+  confirmAction = null;
+}
+
+function confirmDelete({ body, onConfirm }) {
+  if (!confirmDialog) return;
+  closeContextMenu();
+  $('confirm-body').textContent = body;
+  confirmAction = onConfirm;
+  confirmBusy = false;
+  $('confirm-ok').disabled = false;
+  $('confirm-cancel').disabled = false;
+  confirmDialog.hidden = false;
+  $('confirm-cancel').focus();
+}
+
+async function archiveFeatureAction(f, archived) {
+  if (!f || f.pending) return;
+  if (state.preview) return toast(t('previewOnly'));
+  await saveFeatureMeta(f.id, {
+    archived: Boolean(archived),
+    archivedAt: archived ? Date.now() : 0,
+  });
+  if (archived && state.featureId === f.id) {
+    const nextActive = state.features.find(x => x.id !== f.id && (x.pending || !isFeatureArchived(x.id)));
+    state.featureId = nextActive?.id || '';
+    state.ticket = '';
+    dropFrame('design');
+    dropFrame('ticket');
+    dropFrame('prototype');
+  } else if (!archived && !state.featureId) {
+    state.featureId = f.id;
+  }
+  toast(t(archived ? 'archivedFeature' : 'unarchivedFeature'));
+  render();
+  const cur = feature();
+  if (cur && !cur.pending) {
+    void refreshFeatureQaData(cur);
+    void refreshFeatureSessionHints(cur);
+  }
+}
+
+async function archiveTicketAction(f, ticket, archived) {
+  if (!f || !ticket) return;
+  if (state.preview) return toast(t('previewOnly'));
+  await saveTicketMeta(ticket.path, {
+    path: ticket.path,
+    featureId: f.id,
+    archived: Boolean(archived),
+    archivedAt: archived ? Date.now() : 0,
+  });
+  if (archived && state.ticket === ticket.path) {
+    state.ticket = '';
+    dropFrame('ticket');
+  }
+  toast(t(archived ? 'archivedTicket' : 'unarchivedTicket'));
+  render();
+}
+
+async function deleteFeatureAction(f) {
+  if (!f) return;
+  if (state.preview) return toast(t('previewOnly'));
+  const activeRuns = activeSessionsForFeature(f.id);
+  if (activeRuns.length && typeof window.deck?.agent?.stop === 'function') {
+    await Promise.allSettled(activeRuns.map(rec => window.deck.agent.stop(rec.sessionId)));
+  }
+
+  if (!f.pending) {
+    if (!ID_RE.test(f.id)) {
+      throw new Error(t('idInvalid'));
+    }
+    if (typeof window.deck?.exec?.run !== 'function') {
+      throw new Error('exec capability unavailable');
+    }
+    const res = await window.deck.exec.run('rm', ['-rf', `docs/features/${f.id}`]);
+    if (!res || res.exitCode !== 0) {
+      throw new Error(res?.stderr || res?.stdout || `rm exited with ${res?.exitCode ?? 'unknown'}`);
+    }
+  }
+
+  const sessKeys = Object.entries(state.sessions)
+    .filter(([, rec]) => rec?.featureId === f.id)
+    .map(([key]) => key);
+  await Promise.all(sessKeys.map(key => deleteSessionRecord(key)));
+
+  const ticketPaths = Object.entries(state.ticketMeta)
+    .filter(([path, meta]) => meta?.featureId === f.id || path.startsWith(`docs/features/${f.id}/`))
+    .map(([path]) => path);
+  await Promise.all(ticketPaths.map(path => deleteTicketMeta(path)));
+
+  await deleteFeatureMeta(f.id);
+  delete state.qaData[f.id];
+  delete state.liveSessionStatus[f.id];
+  delete state.designDrafts[f.id];
+  delete state.ticketDrafts[f.id];
+  delete state.qaCollapsed[`${f.id}:design`];
+  delete state.qaCollapsed[`${f.id}:tickets`];
+
+  if (state.featureId === f.id) {
+    state.featureId = '';
+    state.ticket = '';
+    dropFrame('design');
+    dropFrame('ticket');
+    dropFrame('prototype');
+  }
+  syncActiveWatcher();
+  toast(t('deletedFeature', { name: f.title || f.id }));
+  await load({ reload: true });
+}
+
+async function deleteTicketAction(f, ticket) {
+  if (!f || !ticket) return;
+  if (state.preview) return toast(t('previewOnly'));
+  if (!TICKET_PATH_RE.test(ticket.path) || ticket.path.includes('..')) {
+    throw new Error(`Invalid ticket path: ${ticket.path}`);
+  }
+  if (typeof window.deck?.exec?.run !== 'function') {
+    throw new Error('exec capability unavailable');
+  }
+
+  const relatedSlots = [slotTicketImplement(f.id, ticket.path), slotTicketReview(f.id, ticket.path)];
+  if (typeof window.deck?.agent?.stop === 'function') {
+    const activeIds = relatedSlots
+      .map(key => activeSessionForSlot(key)?.sessionId)
+      .filter(Boolean);
+    if (activeIds.length) {
+      await Promise.allSettled(activeIds.map(sid => window.deck.agent.stop(sid)));
+    }
+  }
+
+  const res = await window.deck.exec.run('rm', ['-f', ticket.path]);
+  if (!res || res.exitCode !== 0) {
+    throw new Error(res?.stderr || res?.stdout || `rm exited with ${res?.exitCode ?? 'unknown'}`);
+  }
+
+  if (f.design) {
+    try {
+      const designRes = await window.deck.files.read(f.design, { encoding: 'utf8' });
+      const nextDesignHtml = removeDesignTicketItem(designRes?.content || '', ticket.path, todayIsoDate());
+      await window.deck.files.write(f.design, nextDesignHtml, { encoding: 'utf8' });
+    } catch {
+      // ignore if design.html cannot be updated
+    }
+  }
+
+  await Promise.all(relatedSlots.map(key => deleteSessionRecord(key)));
+  await deleteTicketMeta(ticket.path);
+  delete state.qaData[f.id];
+
+  if (state.ticket === ticket.path) {
+    state.ticket = '';
+    dropFrame('ticket');
+  }
+  syncActiveWatcher();
+  toast(t('deletedTicket', { name: ticket.title || ticket.n || ticket.path }));
+  await load({ reload: true });
+}
+
+function requestDeleteFeature(f) {
+  if (!f) return;
+  if (state.preview) return toast(t('previewOnly'));
+  const name = f.title || f.id;
+  confirmDelete({
+    body: f.pending
+      ? t('confirmDeletePendingBody', { name })
+      : t('confirmDeleteFeatureBody', { name, id: f.id }),
+    onConfirm: () => deleteFeatureAction(f),
+  });
+}
+
+function requestDeleteTicket(f, ticket) {
+  if (!f || !ticket) return;
+  if (state.preview) return toast(t('previewOnly'));
+  confirmDelete({
+    body: t('confirmDeleteTicketBody', {
+      name: ticket.title || ticket.n || ticket.path,
+      path: ticket.path,
+    }),
+    onConfirm: () => deleteTicketAction(f, ticket),
+  });
+}
+
+function buildFeatureMenuItems(f) {
+  if (!f) return [];
+  if (f.pending) {
+    const items = [];
+    const sessId = state.sessions[slotDesign(f.id)]?.sessionId;
+    if (sessId) {
+      items.push({ label: t('viewSession'), onSelect: () => void openSession(sessId) });
+      items.push({ type: 'separator' });
+    }
+    items.push({ label: t('deleteFeature'), danger: true, onSelect: () => requestDeleteFeature(f) });
+    return items;
+  }
+  const archived = isFeatureArchived(f.id);
+  return [
+    {
+      label: t(archived ? 'unarchiveFeature' : 'archiveFeature'),
+      onSelect: () => void archiveFeatureAction(f, !archived),
+    },
+    { type: 'separator' },
+    {
+      label: t('deleteFeature'),
+      danger: true,
+      onSelect: () => requestDeleteFeature(f),
+    },
+  ];
+}
+
+function buildTicketMenuItems(f, ticket) {
+  if (!f || !ticket) return [];
+  const archived = isTicketArchived(ticket.path);
+  return [
+    {
+      label: t(archived ? 'unarchiveTicket' : 'archiveTicket'),
+      onSelect: () => void archiveTicketAction(f, ticket, !archived),
+    },
+    { type: 'separator' },
+    {
+      label: t('deleteTicket'),
+      danger: true,
+      onSelect: () => requestDeleteTicket(f, ticket),
+    },
+  ];
+}
+
+function openFeatureContextMenu(event, f) {
+  event.preventDefault();
+  event.stopPropagation();
+  openContextMenu(event.clientX, event.clientY, buildFeatureMenuItems(f));
+}
+
+function openFeatureContextMenuFromButton(anchor, f) {
+  openContextMenuAnchored(anchor, buildFeatureMenuItems(f));
+}
+
+function openTicketContextMenu(event, f, ticket) {
+  event.preventDefault();
+  event.stopPropagation();
+  openContextMenu(event.clientX, event.clientY, buildTicketMenuItems(f, ticket));
+}
+
+function openTicketContextMenuFromButton(anchor, f, ticket) {
+  openContextMenuAnchored(anchor, buildTicketMenuItems(f, ticket));
+}
+
+// ---------- new Feature modal
+
 const dialog = $('new-dialog');
-let idEditedManually = false;
 
 function openNew() {
+  closeContextMenu();
   $('new-err').textContent = '';
-  idEditedManually = false;
   dialog.hidden = false;
-  $('new-title').focus();
+  $('new-brief').focus();
 }
 
 function closeNew() {
   dialog.hidden = true;
 }
 
-$('new-title').addEventListener('input', () => {
-  if (idEditedManually) return;
-  const titleVal = $('new-title').value.trim();
-  if (!titleVal) {
-    $('new-id').value = '';
-    return;
-  }
-  const existingIds = state.features.map(f => f.id);
-  const candidate = slugifyFeatureId(titleVal, existingIds);
-  if (!candidate.startsWith('feat-')) {
-    $('new-id').value = candidate;
-  }
-});
-
-$('new-id').addEventListener('input', () => {
-  idEditedManually = Boolean($('new-id').value.trim());
-});
-
 async function submitNew() {
   if (state.preview) return toast(t('previewOnly'));
-  const rawTitle = $('new-title').value.trim();
-  let id = $('new-id').value.trim();
   const brief = $('new-brief').value.trim();
-  if (!rawTitle && !id) return ($('new-err').textContent = t('nameRequired'));
-  if (!id) {
-    id = slugifyFeatureId(rawTitle, state.features.map(f => f.id));
-  }
-  const title = rawTitle || id;
-  if (!ID_RE.test(id)) return ($('new-err').textContent = t('idInvalid'));
-  if (state.features.some(f => f.id === id)) return ($('new-err').textContent = t('idTaken', { id }));
+  if (!brief) return ($('new-err').textContent = t('briefRequired'));
+
+  const id = generateFeatureId(
+    brief,
+    state.features.map(f => f.id),
+  );
+  const title = deriveFeatureTitle(brief) || id;
 
   $('new-ok').disabled = true;
   try {
@@ -2288,12 +2733,10 @@ async function submitNew() {
       kind: 'design',
       skill: 'spec-workbench-grilling',
       prompt: [
-        `New Feature ${id} "${title}".`,
-        brief && `What it is for: ${brief}`,
-        `Follow spec-workbench-html to create docs/features/${id}/design.html from scaffolds/design.html, setting data-doc-id="${id}", <title> and <h1> to "${title}", and keeping the decision tree visible. Do NOT write any docs/results/ file.`,
-      ]
-        .filter(Boolean)
-        .join('\n'),
+        `New Feature ID: ${id}`,
+        `Requirement description:\n${brief}`,
+        `Please automatically derive a concise, accurate Feature Name from the requirement description above (do NOT copy the whole prompt verbatim) and set <title> and <h1> to that generated Feature Name. Follow spec-workbench-html to create docs/features/${id}/design.html from scaffolds/design.html with data-doc-id="${id}", keeping the decision tree visible. Do NOT write any docs/results/ file.`,
+      ].join('\n\n'),
       actionId: `create-feature:${id}`,
     });
     if (res) {
@@ -2301,7 +2744,7 @@ async function submitNew() {
       state.featureId = id;
       state.tab = 'design';
       closeNew();
-      for (const field of ['new-id', 'new-title', 'new-brief']) $(field).value = '';
+      $('new-brief').value = '';
       await load({ reload: false });
     }
   } catch (error) {
@@ -2321,7 +2764,9 @@ dialog.addEventListener('compositionend', () => {
 });
 dialog.addEventListener('keydown', event => {
   if (event.key === 'Escape') return closeNew();
-  if (event.key !== 'Enter' || event.shiftKey || event.target.tagName === 'TEXTAREA') return;
+  if (event.key !== 'Enter') return;
+  if (event.target.tagName === 'TEXTAREA' && !event.metaKey && !event.ctrlKey) return;
+  if (event.target.tagName !== 'TEXTAREA' && event.shiftKey) return;
   if (composing || event.isComposing || event.keyCode === 229 || Date.now() - composedAt < 50) return;
   event.preventDefault();
   void submitNew();
@@ -2333,6 +2778,42 @@ $('new-feat').addEventListener('click', openNew);
 $('empty-new').addEventListener('click', openNew);
 
 // ---------- wiring
+
+$('rail-toggle').addEventListener('click', () => void setRailCollapsed(!state.railCollapsed));
+$('f-more').addEventListener('click', e => {
+  e.stopPropagation();
+  const f = feature();
+  if (f) openFeatureContextMenuFromButton(e.currentTarget, f);
+});
+$('confirm-cancel').addEventListener('click', () => closeConfirmDialog());
+confirmDialog.addEventListener('click', event => event.target === confirmDialog && closeConfirmDialog());
+$('confirm-ok').addEventListener('click', async () => {
+  if (confirmBusy || !confirmAction) return;
+  const run = confirmAction;
+  confirmBusy = true;
+  $('confirm-ok').disabled = true;
+  $('confirm-cancel').disabled = true;
+  try {
+    await run();
+    closeConfirmDialog(true);
+  } catch (error) {
+    toast(t('deleteFailed', { reason: error.message }), true);
+    closeConfirmDialog(true);
+  } finally {
+    confirmBusy = false;
+    $('confirm-ok').disabled = false;
+    $('confirm-cancel').disabled = false;
+  }
+});
+
+document.addEventListener('pointerdown', e => {
+  if (ctxMenu && !ctxMenu.hidden && !ctxMenu.contains(e.target)) {
+    closeContextMenu();
+  }
+});
+document.addEventListener('scroll', closeContextMenu, true);
+window.addEventListener('blur', closeContextMenu);
+window.addEventListener('resize', closeContextMenu);
 
 for (const button of document.querySelectorAll('.act[data-act]')) {
   button.addEventListener('click', () => {
@@ -2385,14 +2866,9 @@ $('pending-open-session').addEventListener('click', () => {
   if (sess?.sessionId) void openSession(sess.sessionId);
 });
 $('pending-refresh').addEventListener('click', () => void load({ reload: true }));
-$('pending-remove').addEventListener('click', async () => {
+$('pending-remove').addEventListener('click', () => {
   const f = feature();
-  if (!f || !f.pending) return;
-  await deleteFeatureMeta(f.id);
-  await deleteSessionRecord(slotDesign(f.id));
-  syncActiveWatcher();
-  state.featureId = '';
-  await load();
+  if (f?.pending) void deleteFeatureAction(f).catch(error => toast(t('deleteFailed', { reason: error.message }), true));
 });
 
 $('ticket-back').addEventListener('click', () => ((state.ticket = ''), render()));
@@ -2424,6 +2900,8 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
+    closeContextMenu();
+    if (confirmDialog && !confirmDialog.hidden) closeConfirmDialog();
     const pop = $('agent-pop');
     if (pop && !pop.hidden) setAgentPopOpen(false);
   }
