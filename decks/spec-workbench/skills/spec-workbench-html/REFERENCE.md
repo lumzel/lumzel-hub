@@ -1,6 +1,6 @@
 # HTML doc reference
 
-A Visual Doc is one self-contained HTML page. Meaning lives only in `data-doc-*` attributes; `doc check <file>` validates them and Lumzel builds the Trace from them. The look comes only from the classes in this Deck's `runtime/doc.css`, which the Deck adds when it shows the page. Every example below is the canonical markup, the same the scaffolds hold. Copy it, keep the class names, and follow the style rules and page recipes above.
+A Visual Doc is one self-contained HTML page. Meaning lives only in `data-doc-*` attributes; `pnpm lumzel check <file>` (when configured) or the `spec-workbench-html` checklist validates them and Lumzel builds the Trace from them. The look comes only from the classes in this Deck's `runtime/doc.css`, which the Deck adds when it shows the page. Every example below is the canonical markup, the same the scaffolds hold. Copy it, keep the class names, and follow the style rules and page recipes above.
 
 ## Paths
 
@@ -8,8 +8,6 @@ A Visual Doc is one self-contained HTML page. Meaning lives only in `data-doc-*`
 |---|---|---|
 | design | `docs/features/<id>/design.html` | `../../..` |
 | ticket | `docs/features/<id>/tickets/NN-slug.html` | `../../../..` |
-| ADR | `docs/adr/NNNN-slug.html` | `../..` |
-| local answer | `docs/results/<id>.html` (gitignored) | `../..` |
 
 Links inside `.meta` are relative to the doc: `<rel>/<path>`.
 
@@ -36,8 +34,8 @@ Links inside `.meta` are relative to the doc: `<rel>/<path>`.
 </html>
 ```
 
-- `data-doc-id`: the doc id (folder name for designs, `NN-slug` for tickets, `NNNN-slug` for ADRs).
-- `data-doc-type`: `design` | `ticket` | `adr` | `result`. `data-doc-status`: `draft` | `confirmed` (set by `doc confirm <id>`, never by hand). `data-doc-date`: `YYYY-MM-DD`, bump on every edit. Keep the hero pills in step with these.
+- `data-doc-id`: the doc id (folder name for designs, `NN-slug` for tickets).
+- `data-doc-type`: `design` | `ticket`. `data-doc-status`: `draft` | `confirmed` | `done`. `data-doc-date`: `YYYY-MM-DD`, bump on every edit. Keep the hero pills in step with these.
 - No `<link>`, no `<style>`, no `<script src>`, no external resources: the Deck styles the page when it shows it.
 
 ## Blocks
@@ -73,13 +71,12 @@ Any element with `data-doc-node="<id>"` is a Node, addressed as `<doc-id>#<node-
 | Attribute | Means |
 |---|---|
 | `data-doc-status` | `planned` `in-progress` `done` `changed` `drift` `dropped` |
-| `data-doc-links` | space-separated targets: `path`, `path:24`, `path:24-60`, `table:invoices`, `test:tests/a.test.ts`, `url:https://…`, `docs/features/x/design.html#node`, `docs/adr/0003-x.html` |
+| `data-doc-links` | space-separated targets: `path`, `path:24`, `path:24-60`, `table:invoices`, `test:tests/a.test.ts`, `url:https://…`, `docs/features/x/design.html#node`, `docs/adr/0003-x.html` (and on ticket `#delivers` rows: `docs/features/<doc>/design.html#<node>`) |
 | `data-doc-note` | short note (test seam, failure cause, which test proves it) |
 | `data-doc-label` | on a child: the Node's name (what the drawer shows) |
 | `data-doc-gate` | flow step is a human checkpoint |
 | `data-doc-ticket` | checklist row: the ticket path it tracks |
 | `data-doc-blocked-by` | checklist row: `a,b` row ids that must be done first |
-| `data-doc-delivers` | ticket `delivers` row: `docs/features/<doc>/design.html#<node>` |
 | `data-doc-answer` / `data-doc-recommend` / `data-doc-depends` / `data-doc-adr` | decision row: settled answer, recommendation, parent decision ids (`a,b`), ADR path |
 
 The status shows three times, and all three must agree: `data-doc-status="done"`, class `st st-done` on the card, and `<span class="pill s-done">done</span>` inside it.
@@ -185,14 +182,14 @@ Inline SVG. Actors 320px apart (`x = 160, 480, 800…`), messages 40px apart fro
 </div>
 ```
 
-A design doc may also carry a `previews` checklist (`prototype`, `frontend` items linking their paths).
+A design doc no longer needs a `previews` checklist or any `docs/results/` file: `docs/features/<id>/prototype.html` is optional and auto-discovered by the Deck.
 
 ### ticket `delivers` and `done-when`
 
 Same `.check` markup:
 
 ```html
-<div class="card item st st-in-progress" data-doc-node="n-read" data-doc-status="in-progress" data-doc-delivers="docs/features/invoice-cache/design.html#read"><span class="box"></span><div><span data-doc-label>读缓存</span></div><span class="pill s-in-progress">in-progress</span></div>
+<div class="card item st st-in-progress" data-doc-node="n-read" data-doc-status="in-progress" data-doc-links="docs/features/invoice-cache/design.html#read"><span class="box"></span><div><span data-doc-label>读缓存</span></div><span class="pill s-in-progress">in-progress</span></div>
 <div class="card item st st-done" data-doc-node="dw-hit" data-doc-status="done" data-doc-note="test:tests/cache.test.ts 命中"><span class="box"></span><div><span data-doc-label>命中时不查库</span><div class="meta"><div class="note">test:tests/cache.test.ts 命中</div></div></div><span class="pill s-done">done</span></div>
 ```
 

@@ -1,39 +1,57 @@
 ---
 name: spec-workbench-implement
-description: Implement tickets test-first by a builder subagent, one at a time by default (or one named ticket, or all), writing live progress into each ticket.
+description: Implement a feature directly from its design doc or automatically split multiple tickets into sequential spec-workbench-builder subagents (one ticket per subagent) while the main Agent reviews each result and the final diff.
 disable-model-invocation: true
 ---
 
-You orchestrate; subagents read and write. Keep your own context to their short replies.
+You (the **main Agent**) orchestrate and **review**; **`spec-workbench-builder` subagents** implement one ticket (or feature slice) at a time. Never edit product code yourself when subagents are available, and never generate `docs/results/` files.
 
 ## Mode
 
-Read the mode from the arguments. Default is **next**.
+Read the mode from the arguments. Default is **next** when tickets exist, or **feature** when no tickets exist.
 
 | Argument | Mode | Scope |
 |---|---|---|
-| none, `next` | next | the first ready ticket (not `done`, every `data-doc-blocked-by` done), then stop |
+| none, `next` | next | the first ready ticket (not `done`, every `data-doc-blocked-by` done), then stop; if no tickets exist, implement from `design.html` |
 | a ticket path, `NN` or `NN-slug` | one | that ticket only |
-| `all` (optionally `all <doc-id>`) | all | every not-done ticket of the feature, in `data-doc-blocked-by` order, one after another |
-| no tickets exist | request | the Nodes named in the request; skip progress writes that need a ticket |
+| `all` (optionally `all <doc-id>`) | all | every not-done ticket of the feature, automatically split into one `spec-workbench-builder` subagent per ticket in `data-doc-blocked-by` order, reviewed one by one by the main Agent |
+| `feature <doc-id>` or no tickets exist | feature | implement directly from `docs/features/<doc-id>/design.html` (tickets and prototype are optional) |
 
-Several features with tickets and none named: ask which one.
+Several features exist and none named: ask which one.
 
 ## Progress is mandatory
 
-The ticket file is the live progress board. Nobody batches status writes to the end.
+The doc (`tickets/<NN>.html` or `design.html` in `feature` mode) is the live progress board. Nobody batches status writes to the end.
 
-- A ticket's status is its `done-when` checklist (Lumzel derives it). Its item in the design doc's `tickets` checklist mirrors it.
-- On start: the design `tickets` item → `in-progress`; the first `done-when` item being worked → `in-progress`.
-- Each time a `done-when` item's test passes: that item → `done`, its `data-doc-note` says which test proves it. Same for each `delivers` item and its design Node when the Node is built.
-- On failure or stop: the item stays `in-progress`, its `data-doc-note` names location, cause and fix.
-- A status write is an edit of the element's attributes in the ticket HTML (`data-doc-status="in-progress"`, `"done"`, `data-doc-note`); Lumzel reloads the doc on save, so the ticket view shows it at once. Run `doc check` after the batch of edits for an item.
+- **With tickets**: a ticket's status is its `done-when` checklist (Lumzel derives it). Its item in the design doc's `tickets` checklist mirrors it.
+  - On start: the design `tickets` item → `in-progress`; the first `done-when` item being worked → `in-progress`.
+  - Each time a `done-when` item's test passes: that item → `done`, its `data-doc-note` says which test proves it. Same for each `delivers` item and its design Node when the Node is built.
+  - On failure or stop: the item stays `in-progress`, its `data-doc-note` names location, cause and fix.
+- **Without tickets (`feature` mode)**: update each code-bound Node directly in `docs/features/<doc-id>/design.html` (`data-doc-status="in-progress"` on start, `"done"` with `data-doc-note` naming the proving test once passing).
+- Validate with `pnpm lumzel check` (when `scripts/lumzel.mjs` is present) or the `spec-workbench-html` checklist after edits.
 
 ## Steps
 
-1. Spawn the `spec-workbench-scout` subagent: "For tickets `<paths in scope>`: list each one's open `choices` items (no `data-doc-answer`) as `ticket — id — question — recommend — why`, and its blockers from the design doc's `tickets` checklist with their status. For `next`/`all`, also give the ready order." Mode `request`: skip to step 3.
-2. **GATE.** A blocker not `done` and not earlier in this run: say so and stop. Open choices: show them all at once with their `data-doc-recommend` and wait for the human's answers. Mode `all` asks once, for every ticket in scope.
-3. For each ticket in order, spawn the `spec-workbench-builder` subagent: "Implement `<ticket path>`. Answers to its choices: <id: answer, …>. Write progress into the ticket as you go, per the **Progress is mandatory** rules below." Paste those rules into the brief. One ticket per builder; never two in parallel (they share the docs).
-4. After each builder reply, read the ticket's `done-when` statuses. Not all `done` while the builder says success counts as failure. On failure, spawn it again once with its own failure reply. If it fails again, re-spawn it on the strongest model (Claude: `model: opus`; Codex: `model_reasoning_effort: high`) with both replies. After that, stop the run (mode `all` included) and name the doubtful assumption.
-5. Mode `all`: after each ticket, say one line (`3 of 7 done: 03-first-session`) and go on to the next. Modes `next`/`one`: go to step 6.
-6. **GATE.** Report what now works, the ticket paths and statuses, and the next ready ticket (ask the `spec-workbench-scout` if unsure). Suggest `/spec-workbench-review`. Do not commit unless asked.
+1. **Scout (`spec-workbench-scout`)**:
+   - When tickets are in scope: "For tickets `<paths in scope>`: list each one's open `choices` items (no `data-doc-answer`) as `ticket — id — question — recommend — why`, and its blockers from the design doc's `tickets` checklist with their status. Also note whether `docs/features/<doc-id>/prototype.html` exists. For `next`/`all`, return the exact topological ready order."
+   - In `feature` mode (no tickets): "For `docs/features/<doc-id>/design.html`: list any open `decisions` (no `data-doc-answer`), all planned/in-progress Nodes, and whether `docs/features/<doc-id>/prototype.html` exists."
+2. **GATE.** A blocker not `done` and not earlier in this run: say so and stop. Open choices/decisions: show them all at once with their `data-doc-recommend` and wait for the human's answers (unless the prompt already supplied them). Mode `all` asks once, for every ticket in scope.
+3. **Sequential subagent implementation (one ticket per subagent)**:
+   - In multi-ticket (`all`) mode, process the unfinished tickets strictly in dependency (`data-doc-blocked-by`) order — spawn **one dedicated `spec-workbench-builder` subagent per ticket**, one after another (never two builders in parallel, since they share code and docs).
+   - Pass in each builder brief:
+     - The target ticket path (or `docs/features/<doc-id>/design.html` in `feature` mode),
+     - `docs/features/<doc-id>/prototype.html` if generated (so implemented UI matches the prototype),
+     - Any Deck run parameters (`tddStrictness`, `designRules`) supplied in the prompt,
+     - The human's answers to `choices` / `decisions`,
+     - The **Progress is mandatory** rules.
+4. **Main Agent review of each subagent result (mandatory after every ticket)**:
+   - Do **not** blindly trust the builder's summary. The **main Agent** directly reviews each builder subagent's result before accepting the ticket and moving to the next one:
+     - Inspect the ticket HTML (`done-when`, `delivers`, `data-doc-note`) — or, in `feature` mode, the Nodes (`data-doc-status`, `data-doc-note`) in `docs/features/<doc-id>/design.html` — and validate with `pnpm lumzel check` if configured. Verify every `done-when` / Node in scope is `done` with test proof.
+     - Inspect `git diff` / changed files and verify the builder's test & lint commands actually cover the ticket's or feature's acceptance criteria, edge/error cases, and `lumzel:<doc-id>#<node-id>` tags.
+     - If `docs/features/<doc-id>/prototype.html` exists and the slice touches UI, check that components/states match the prototype.
+   - **If review finds blockers, missing tests, or doc/spec drift**: treat it as a failure and re-spawn `spec-workbench-builder` for that same ticket with your exact review findings (retry 1: standard model; if it fails a second time: retry 2 on the strongest model with both failure/review logs). If still failing after retry 2, stop the entire run (mode `all` included) and report the blocker and doubtful assumption.
+5. **Advance (`all` mode)**:
+   - Only after the ticket passes the main Agent's review, output one progress line (e.g. `3 of 7 implemented & reviewed: 03-first-session`) and spawn the next ticket's `spec-workbench-builder` subagent.
+6. **Final Main Agent review & GATE**:
+   - In multi-ticket (`all`) mode, once all tickets pass step 4, perform a brief end-to-end review across the combined diff, full test suite, `design.html`, and `prototype.html` (if present).
+   - Output directly in chat (never write `docs/results/` files): implemented tickets/Nodes, test verification results, main Agent review findings (if any minor notes remain), and next ready ticket if any. Do not commit unless asked.

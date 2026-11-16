@@ -38,17 +38,13 @@ Why this one and not another common HTML style:
 
 ## Page recipes
 
-Pick by the question the reader asks. Scaffold with the CLI (it gets the path and the `<rel>` right), then write these blocks, in this order, between the `summary` and `</main>`, using the markup in the reference below.
+Pick by the artifact you are authoring. Copy the matching scaffold from `scaffolds/` (`design.html` or `ticket.html`) so `<html data-doc-*>`, hero pills, and `<rel>` paths start right, then write these blocks, in this order, between the `summary` and `</main>`, using the markup in [REFERENCE.md](REFERENCE.md).
 
-| Recipe | Reader asks | Blocks, in order | Scaffold |
+| Recipe | Purpose | Blocks, in order | Scaffold |
 |---|---|---|---|
-| answer | how does X work? why? | callout `answer` → architecture or flow → table `evidence` → checklist `next` | `scaffold result <id>` |
-| compare | A or B? | table `options` → decisions → callout risk | `scaffold result <id>` |
-| review | is this change OK? | kpi `scope` → checklist per Node or axis → table `findings` | `scaffold result review-<x>` |
-| design | what will we build? | kpi → flow (gates) → architecture → api-table → er → decisions → callout risk | `scaffold design <id>` |
-| adr | what did we decide, for good? | callout `context` → decisions `decision` → table `consequences` | `scaffold adr <NNNN-slug>` |
+| design | what will we build? | kpi → flow (gates) → architecture → api-table → er → decisions → callout risk | `scaffolds/design.html` |
 
-Tickets use the scaffold from `scaffold ticket` as is; its blocks already follow this style. Each recipe has a rendered sample in this skill's `templates/<recipe>.html`.
+Tickets use `scaffolds/ticket.html` as is; its blocks already follow this style. A rendered design reference is in `templates/design.html`.
 
 ## Tone of words
 

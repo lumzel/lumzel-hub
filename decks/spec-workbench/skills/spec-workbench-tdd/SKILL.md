@@ -9,7 +9,7 @@ When the project has a `GLOSSARY.md`, read it so test names use the domain langu
 
 ## Seams first
 
-A **seam** is the public interface where you observe behavior without reaching inside. Before any test, list the seams you will test, one line each on what it catches and misses, and confirm them with the user. Prefer existing seams and the highest one possible. No test at an unconfirmed seam.
+A **seam** is the public interface where you observe behavior without reaching inside. Before any test, list the seams you will test, one line each on what it catches and misses. Seams already named in `#tests` or Node `data-doc-note` of a confirmed `design.html` / ticket are pre-confirmed; if a required seam is still missing or unconfirmed, confirm it with the user first. Prefer existing seams and the highest one possible. No test at an unconfirmed seam.
 
 ## The loop
 

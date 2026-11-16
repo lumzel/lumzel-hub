@@ -7,7 +7,7 @@ Interview the user until you reach a shared understanding. Map it as a **design 
 
 ## Keep the tree visible
 
-Keep the tree in a `decisions` block of the Visual Doc for this work (`docs/features/<id>/design.html`; run `scaffold design <id>` if none exists). Call the Skill tool with "spec-workbench-html" for the contract. Each decision is one `data-doc-node` element: question, options, `data-doc-recommend`, `data-doc-depends` (ids of parent decisions). When the user answers, fill `data-doc-answer` and the why. Lay it out so children sit under their `data-doc-depends` parent, so the human sees the tree, what is settled and what is open.
+Keep the tree in a `decisions` block of the Visual Doc for this work (`docs/features/<id>/design.html`; if none exists yet, copy `skills/spec-workbench-html/scaffolds/design.html` and fill `<id>` and metadata). Call the Skill tool with "spec-workbench-html" for the contract. Each decision is one `data-doc-node` element: question, options, `data-doc-recommend`, `data-doc-depends` (ids of parent decisions). When the user answers, fill `data-doc-answer` and the why. Lay it out so children sit under their `data-doc-depends` parent, so the human sees the tree, what is settled and what is open.
 
 ## Rounds
 
@@ -25,4 +25,4 @@ Word each question so "yes" accepts your recommendation. After each round: updat
 
 Facts are your job: when a question needs a fact from the code or environment, look it up (or send a subagent) instead of asking. Ask only the questions downstream of a pending lookup later. Decisions are the user's: put each to them and wait.
 
-Done when the frontier is empty. Run `doc check`, give the doc path, and do not act until the user confirms the shared understanding.
+Done when the frontier is empty. Validate with `pnpm lumzel check` (when `scripts/lumzel.mjs` is present) or the `spec-workbench-html` checklist, give the doc path, and do not act until the user confirms the shared understanding.

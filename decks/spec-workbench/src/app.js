@@ -1,29 +1,58 @@
-// 方案工作台 (spec-workbench): Features (design, tickets, prototype) and the doc hub of the open Worktree,
-// for any project. The list comes from deck.docs.index(); every page opens in a frame at worktree/<path>
-// (read-only route). The Deck draws the frame (rail, tabs, ticket list); each doc renders itself with the
-// Deck's own runtime (runtime/worktree.js, which Lumzel appends to every Worktree page the Deck frames).
+// 方案工作台 (spec-workbench): Manage Features (design, optional tickets, optional prototype)
+// in reverse-chronological order with user-visible Lumzel sessions, live status buttons,
+// in-Deck interactive Q&A (reusing open sessions or creating new ones with context),
+// per-ticket & batch implementation, manual completion toggles, and feature/ticket review.
 import { t, applyI18n, setLocale } from './i18n.js';
-import { SAMPLE_INDEX } from './sample.js';
+import { SAMPLE_DOCS, SAMPLE_INDEX } from './sample.js';
+import {
+  applyDesignStatus,
+  applyTicketDone,
+  buildDesignReplyPrompt,
+  buildTicketsReplyPrompt,
+  featureSortTimestamp,
+  formatShortTime,
+  parseDesignDocQuestions,
+  parseTicketChoices,
+  slugifyFeatureId,
+  sortFeaturesDesc,
+  syncDesignTicketItem,
+  todayIsoDate,
+} from './docOps.js';
 
 const $ = id => document.getElementById(id);
 const app = $('app');
 applyI18n();
 
+const ACTIVE_STATES = new Set(['running', 'needs_input']);
+const TERMINAL_STATES = new Set(['done', 'idle', 'error', 'stopped', 'closed']);
+const inFlightSlots = new Set();
+
 const state = {
   index: { features: [], docs: [] },
+  features: [], // merged & sorted features (pending + disk)
+  featureMeta: {}, // id -> { id, title, brief, pending, createdAt, updatedAt, previousStatus }
+  fileMtimeMap: {}, // id -> max modifiedAt ms
+  sessions: {}, // slotKey -> { slotKey, featureId, kind, ticketPath, sessionId, status, updatedAt }
+  liveSessionStatus: {}, // featureId -> { designReusable, designSessionId, designStatus, ticketsReusable, ticketsSessionId, ticketsStatus }
+  qaData: {}, // featureId -> { design: { open, settled, hasTicketsBlock }, ticketChoices: [...], nodeLabels: {...}, loadedKey }
+  designDrafts: {}, // featureId -> { answers: { [id]: val }, note: '' }
+  ticketDrafts: {}, // featureId -> { answers: { [key]: val }, note: '' }
+  qaCollapsed: {}, // `${featureId}:design` | `${featureId}:tickets` -> boolean
   theme: 'light',
-  preview: false, // shown from a market, not installed: the sample project, and no Session can start
-  view: 'feature', // 'feature' | 'hub'
+  preview: false,
   featureId: '',
   tab: 'design',
   filter: 'all',
-  ticket: '', // open ticket path, tickets tab
-  hubDoc: '',
-  screen: '', // current prototype screen, reported by lumzel-prototype.js
+  ticket: '',
+  screen: '',
+  protoLinking: false,
+  pendingDesignNode: '',
   agentCatalog: null,
   agentOverride: { provider: '', model: '', effort: '' },
   params: { tddStrictness: 'balanced', autoTickets: false, designRules: '' },
 };
+
+// ---------- agent model selection
 
 function sanitizeAgentSelection(sel, catalog) {
   const clean = {
@@ -118,8 +147,11 @@ function agentRunOptions() {
   return opts;
 }
 
+// ---------- helpers
+
 const statusLabel = key => ({ done: t('done'), 'in-progress': t('inProgress'), planned: t('planned') })[key] || key || '';
-const docStatusLabel = key => ({ confirmed: t('confirmed'), draft: t('draft') })[key] || key || '';
+const docStatusLabel = key =>
+  ({ confirmed: t('confirmed'), draft: t('draft'), done: t('done'), pending: t('pendingStatus') })[key] || key || '';
 const ticketFilters = () => [
   ['all', t('all'), () => true],
   ['ready', t('ready'), x => x.ready],
@@ -127,15 +159,11 @@ const ticketFilters = () => [
   ['done', t('done'), x => x.status === 'done'],
 ];
 
-// The doc runtime posts `doc:*` messages; a project that carries an older runtime posts `lumzel:*`.
-// Read both, and post both, so either runtime works.
 const kindOf = type => (typeof type === 'string' ? /^(?:doc|lumzel):(.+)$/.exec(type)?.[1] : undefined);
 function post(target, kind, payload = {}) {
   target?.postMessage({ type: `doc:${kind}`, ...payload }, '*');
   target?.postMessage({ type: `lumzel:${kind}`, ...payload }, '*');
 }
-
-// ---------- helpers
 
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -150,18 +178,18 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-// In a market preview there is no Worktree: the pages come from the sample project this Deck ships.
 const worktreeUrl = (path, { hash = '', query = '' } = {}) =>
   `${state.preview ? 'sample' : 'worktree'}/${path.split('/').map(encodeURIComponent).join('/')}?${query ? `${query}&` : ''}theme=${state.theme}${
     hash ? `#${hash}` : ''
   }`;
 
-const feature = () => state.index.features.find(f => f.id === state.featureId);
+const feature = () => state.features.find(f => f.id === state.featureId) || null;
 
 function progress(f) {
-  const all = f.tickets.length;
-  const done = f.tickets.filter(t => t.status === 'done').length;
-  const run = f.tickets.filter(t => t.status === 'in-progress').length;
+  const tickets = f.tickets || [];
+  const all = tickets.length;
+  const done = tickets.filter(x => x.status === 'done').length;
+  const run = tickets.filter(x => x.status === 'in-progress').length;
   return { all, done, run };
 }
 
@@ -182,7 +210,6 @@ function note(text, isError = false) {
   box.hidden = !text;
 }
 
-// One frame per slot; a slot keeps its frame while the src stays the same, so switching tabs never reloads.
 const frames = new Map();
 function frameIn(slot, container, src, title) {
   let frame = frames.get(slot);
@@ -190,37 +217,438 @@ function frameIn(slot, container, src, title) {
     frame = el('iframe', { class: 'frame', title });
     frames.set(slot, frame);
   }
-  if (frame.parentNode !== container) container.append(frame);
+  if (frame.parentNode !== container) container.replaceChildren(frame);
   if (frame.dataset.src !== src) {
+    frame.dataset.ready = '';
     frame.dataset.src = src;
     frame.src = src;
   }
   return frame;
 }
+function dropFrame(slot) {
+  const frame = frames.get(slot);
+  if (frame) {
+    frame.remove();
+    frames.delete(slot);
+  }
+}
 function reloadFrames() {
-  for (const frame of frames.values()) if (frame.dataset.src) frame.src = frame.dataset.src;
+  for (const frame of frames.values()) {
+    if (frame.isConnected && frame.dataset.src) {
+      frame.dataset.ready = '';
+      frame.src = frame.dataset.src;
+    }
+  }
 }
 
-// ---------- rail
+// ---------- store & session helpers
 
-function renderRail() {
-  const { features, docs } = state.index;
-  $('hub').classList.toggle('on', state.view === 'hub');
-  $('hub-count').textContent = docs.length ? t('hubCount', { n: docs.length }) : 'docs/';
-  $('feats').replaceChildren(
-    ...features.map(f => {
-      const p = progress(f);
+const slotDesign = id => `design:${id}`;
+const slotTickets = id => `tickets:${id}`;
+const slotPrototype = id => `prototype:${id}`;
+const slotImplement = id => `implement:${id}`;
+const slotReview = id => `review:${id}`;
+const slotTicketImplement = (id, path) => `ticketImplement:${id}:${path}`;
+const slotTicketReview = (id, path) => `ticketReview:${id}:${path}`;
+
+function canUseStore() {
+  return !state.preview && typeof window.deck?.store?.put === 'function';
+}
+
+async function saveFeatureMeta(id, patch) {
+  const prev = state.featureMeta[id] || { id, createdAt: Date.now() };
+  const next = { ...prev, ...patch, id };
+  state.featureMeta[id] = next;
+  if (canUseStore()) {
+    await window.deck.store.put('features', id, next).catch(() => {});
+  }
+  return next;
+}
+
+async function deleteFeatureMeta(id) {
+  delete state.featureMeta[id];
+  if (!state.preview && typeof window.deck?.store?.delete === 'function') {
+    await window.deck.store.delete('features', id).catch(() => {});
+  }
+}
+
+async function saveSessionRecord(record) {
+  state.sessions[record.slotKey] = record;
+  if (canUseStore()) {
+    await window.deck.store.put('sessions', record.slotKey, record).catch(() => {});
+  }
+  return record;
+}
+
+async function deleteSessionRecord(slotKey) {
+  delete state.sessions[slotKey];
+  if (!state.preview && typeof window.deck?.store?.delete === 'function') {
+    await window.deck.store.delete('sessions', slotKey).catch(() => {});
+  }
+}
+
+function activeSessionForSlot(slotKey) {
+  const rec = state.sessions[slotKey];
+  if (!rec || !rec.sessionId) return null;
+  return ACTIVE_STATES.has(rec.status) ? rec : null;
+}
+
+function activeTicketImplementSession(featureId) {
+  return (
+    Object.values(state.sessions).find(
+      s =>
+        s &&
+        s.featureId === featureId &&
+        s.kind === 'ticketImplement' &&
+        s.sessionId &&
+        ACTIVE_STATES.has(s.status),
+    ) || null
+  );
+}
+
+function hasAnyTicketImplementInFlight(featureId) {
+  const prefix = `ticketImplement:${featureId}:`;
+  for (const key of inFlightSlots) {
+    if (key.startsWith(prefix)) return true;
+  }
+  return Boolean(activeTicketImplementSession(featureId));
+}
+
+function hasFeatureImplementBusy(featureId) {
+  return Boolean(activeSessionForSlot(slotImplement(featureId)) || inFlightSlots.has(slotImplement(featureId)));
+}
+
+function activeSessionsForFeature(featureId) {
+  return Object.values(state.sessions).filter(
+    s => s && s.featureId === featureId && s.sessionId && ACTIVE_STATES.has(s.status),
+  );
+}
+
+function allActiveSessions() {
+  return Object.values(state.sessions).filter(s => s && s.sessionId && ACTIVE_STATES.has(s.status));
+}
+
+function recentSessionsForFeature(featureId) {
+  return Object.values(state.sessions)
+    .filter(s => s && s.featureId === featureId && s.sessionId && s.status !== 'closed')
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+    .slice(0, 5);
+}
+
+function sessionKindLabel(kind) {
+  return (
+    {
+      design: t('sessionChipDesign'),
+      tickets: t('sessionChipTickets'),
+      prototype: t('sessionChipPrototype'),
+      implement: t('sessionChipImplement'),
+      review: t('sessionChipReview'),
+      ticketImplement: t('sessionChipImplement'),
+      ticketReview: t('sessionChipReview'),
+    }[kind] || kind
+  );
+}
+
+async function openSession(sessionId) {
+  if (!sessionId) return;
+  if (state.preview) return toast(t('previewOnly'));
+  try {
+    if (typeof window.deck?.agent?.open === 'function') {
+      await window.deck.agent.open(sessionId, { closeDeck: false });
+    }
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+function applyRunButtonState(btn, { slotKey, idleLabel, idleTitle, disabled = false, runningClass = 'running' }) {
+  const active = activeSessionForSlot(slotKey);
+  btn.classList.remove('running', 'needs-input');
+  if (active) {
+    const isWait = active.status === 'needs_input';
+    btn.classList.add(isWait ? 'needs-input' : runningClass);
+    btn.disabled = false;
+    btn.title = t(isWait ? 'waitingOpenSession' : 'clickOpenSession');
+    btn.replaceChildren(
+      el('span', { class: `run-dot${isWait ? ' warn' : ''}`, 'aria-hidden': 'true' }),
+      el('span', {}, isWait ? t('waitingInputBtn') : t('runningBtn')),
+    );
+    return active;
+  }
+  btn.disabled = disabled || inFlightSlots.has(slotKey);
+  btn.title = idleTitle || '';
+  btn.textContent = idleLabel;
+  return null;
+}
+
+// ---------- doc reading & interactive Q&A parsing
+
+function extractDesignNodeLabels(html) {
+  const labels = {};
+  if (typeof DOMParser !== 'function' || !html) return labels;
+  try {
+    const doc = new DOMParser().parseFromString(String(html), 'text/html');
+    for (const el of doc.querySelectorAll('[data-doc-node], [data-lumzel-node]')) {
+      const id = el.getAttribute('data-doc-node') || el.getAttribute('data-lumzel-node');
+      if (!id) continue;
+      const lbl = el.querySelector('[data-doc-label], [data-lumzel-label]') || el;
+      const text = String(lbl.textContent || '').replace(/\s+/g, ' ').trim();
+      if (text) labels[id] = text;
+    }
+  } catch {
+    // ignore parse failure
+  }
+  return labels;
+}
+
+async function readDocText(path) {
+  if (!path) return '';
+  if (state.preview) {
+    if (path in SAMPLE_DOCS) return SAMPLE_DOCS[path];
+    throw new Error(`Sample doc not bundled: ${path}`);
+  }
+  const res = await window.deck.files.read(path, { encoding: 'utf8' });
+  return res?.content || '';
+}
+
+async function refreshFeatureQaData(f) {
+  if (!f || f.pending || !f.design) return;
+  const ticketSig = (f.tickets || []).map(x => `${x.path}:${x.status}`).join('|');
+  const mtime = state.fileMtimeMap[f.id] || 0;
+  const loadedKey = `${f.updated}:${mtime}:${f.status}:${ticketSig}`;
+  if (state.qaData[f.id]?.loadedKey === loadedKey) return;
+
+  try {
+    const designHtml = await readDocText(f.design);
+    const design = parseDesignDocQuestions(designHtml);
+    const nodeLabels = extractDesignNodeLabels(designHtml);
+    const ticketChoices = [];
+    for (const tk of f.tickets || []) {
+      try {
+        const thtml = await readDocText(tk.path);
+        const parsed = parseTicketChoices(thtml);
+        for (const item of parsed.open) {
+          ticketChoices.push({ ...item, ticketPath: tk.path, ticketTitle: tk.title, ticketN: tk.n });
+        }
+      } catch {
+        // ignore single unreadable ticket
+      }
+    }
+    state.qaData[f.id] = { design, ticketChoices, nodeLabels, loadedKey };
+    if (f.id === state.featureId) {
+      if (state.tab === 'design') renderDesignQa(f);
+      if (state.tab === 'tickets') renderTicketsQa(f);
+    }
+  } catch {
+    // non-fatal if doc cannot be read yet
+  }
+}
+
+async function probeReusableSession(slotKey) {
+  if (state.preview || typeof window.deck?.agent?.logs !== 'function') {
+    return { reusable: false, sessionId: '', status: 'closed' };
+  }
+  const rec = state.sessions[slotKey];
+  if (!rec?.sessionId) return { reusable: false, sessionId: '', status: 'closed' };
+  try {
+    const logs = await window.deck.agent.logs(rec.sessionId);
+    const nextStatus = logs.exists ? logs.status : 'closed';
+    if (nextStatus !== rec.status) {
+      await saveSessionRecord({ ...rec, status: nextStatus, updatedAt: Date.now() });
+    }
+    return {
+      reusable: Boolean(logs.exists && nextStatus !== 'closed' && !ACTIVE_STATES.has(nextStatus)),
+      sessionId: rec.sessionId,
+      status: nextStatus,
+    };
+  } catch {
+    return { reusable: false, sessionId: rec.sessionId, status: 'closed' };
+  }
+}
+
+async function refreshFeatureSessionHints(f) {
+  if (!f || f.pending || state.preview) return;
+  const [designProbe, ticketsProbe] = await Promise.all([
+    probeReusableSession(slotDesign(f.id)),
+    probeReusableSession(slotTickets(f.id)),
+  ]);
+  state.liveSessionStatus[f.id] = {
+    designReusable: designProbe.reusable,
+    designSessionId: designProbe.sessionId,
+    designStatus: designProbe.status,
+    ticketsReusable: ticketsProbe.reusable,
+    ticketsSessionId: ticketsProbe.sessionId,
+    ticketsStatus: ticketsProbe.status,
+  };
+  if (f.id === state.featureId) {
+    if (state.tab === 'design') renderDesignQa(f);
+    if (state.tab === 'tickets') renderTicketsQa(f);
+    renderSessionStrip(f);
+  }
+}
+
+// ---------- live session tracking
+
+let agentSubscribed = false;
+let reloadTimer = 0;
+let pollTimer = 0;
+
+function scheduleReload(reload = true) {
+  clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(() => {
+    void load({ reload });
+  }, 180);
+}
+
+function updateSessionStatusFromEvent(sessionId, nextStatus) {
+  if (!sessionId || !nextStatus) return;
+  let matched = false;
+  let finishedNow = false;
+  for (const [slotKey, rec] of Object.entries(state.sessions)) {
+    if (rec?.sessionId !== sessionId) continue;
+    matched = true;
+    const wasActive = ACTIVE_STATES.has(rec.status);
+    if (rec.status !== nextStatus) {
+      const updated = { ...rec, status: nextStatus, updatedAt: Date.now() };
+      state.sessions[slotKey] = updated;
+      if (canUseStore()) void window.deck.store.put('sessions', slotKey, updated).catch(() => {});
+    }
+    if (wasActive && (!ACTIVE_STATES.has(nextStatus) || TERMINAL_STATES.has(nextStatus))) {
+      finishedNow = true;
+    }
+  }
+  if (matched) {
+    syncActiveWatcher();
+    renderLiveRuns();
+    renderRail();
+    const cur = feature();
+    if (cur?.pending) renderPendingPane();
+    else if (cur) renderFeature();
+  }
+  if (finishedNow) {
+    scheduleReload(true);
+  }
+}
+
+function ensureAgentSubscriptions() {
+  if (agentSubscribed || state.preview || !window.deck?.agent) return;
+  agentSubscribed = true;
+  if (typeof window.deck.agent.onState === 'function') {
+    window.deck.agent.onState(evt => {
+      if (evt?.sessionId && evt?.state) {
+        updateSessionStatusFromEvent(evt.sessionId, evt.state);
+      }
+    });
+  }
+  if (typeof window.deck.agent.onEvent === 'function') {
+    window.deck.agent.onEvent('*', evt => {
+      if (evt?.sessionId && evt?.status) {
+        updateSessionStatusFromEvent(evt.sessionId, evt.status);
+      }
+    });
+  }
+}
+
+function syncActiveWatcher() {
+  const hasActive = allActiveSessions().length > 0;
+  if (hasActive && !pollTimer) {
+    pollTimer = setInterval(async () => {
+      if (document.visibilityState !== 'visible') return;
+      const activeList = allActiveSessions();
+      if (!activeList.length) {
+        clearInterval(pollTimer);
+        pollTimer = 0;
+        return;
+      }
+      if (typeof window.deck?.agent?.logs === 'function') {
+        await Promise.all(
+          activeList.map(async rec => {
+            try {
+              const logs = await window.deck.agent.logs(rec.sessionId);
+              const status = logs.exists ? logs.status : 'closed';
+              if (status !== rec.status) {
+                updateSessionStatusFromEvent(rec.sessionId, status);
+              }
+            } catch {
+              // ignore transient error
+            }
+          }),
+        );
+      }
+      void load({ reload: false });
+    }, 3000);
+  } else if (!hasActive && pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = 0;
+  }
+}
+
+// ---------- rendering: rail & topbar
+
+function renderLiveRuns() {
+  const box = $('live-runs');
+  if (!box) return;
+  const active = allActiveSessions();
+  box.replaceChildren(
+    ...active.map(rec => {
+      const isWait = rec.status === 'needs_input';
       return el(
         'button',
         {
           type: 'button',
-          class: `feat${state.view === 'feature' && f.id === state.featureId ? ' on' : ''}`,
-          title: f.summary || f.title,
+          class: `live-chip${isWait ? ' warn' : ''}`,
+          title: t(isWait ? 'waitingOpenSession' : 'clickOpenSession'),
+          onclick: () => void openSession(rec.sessionId),
+        },
+        el('span', { class: `run-dot${isWait ? ' warn' : ''}`, 'aria-hidden': 'true' }),
+        `${rec.featureId} · ${sessionKindLabel(rec.kind)} · ${isWait ? t('waitingInputBtn') : t('runningBtn')}`,
+      );
+    }),
+  );
+}
+
+function renderRail() {
+  $('feats').replaceChildren(
+    ...state.features.map(f => {
+      const p = progress(f);
+      const activeRuns = activeSessionsForFeature(f.id);
+      const hasWait = activeRuns.some(r => r.status === 'needs_input');
+      const ts = featureSortTimestamp(f, state.featureMeta[f.id], state.fileMtimeMap[f.id] || 0);
+      const timeText = formatShortTime(ts, f.updated);
+      const subText = f.pending
+        ? t('pendingStatus')
+        : p.all
+          ? t('ticketProgress', { done: p.done, all: p.all })
+          : t('noTicketsYet');
+
+      return el(
+        'button',
+        {
+          type: 'button',
+          class: `feat${f.id === state.featureId ? ' on' : ''}`,
+          title: f.summary || f.title || f.id,
           onclick: () => openFeature(f.id),
         },
-        el('b', {}, f.title || f.id),
-        f.title && f.title !== f.id ? el('span', { class: 'fid' }, f.id) : null,
-        el('small', {}, p.all ? t('ticketProgress', { done: p.done, all: p.all }) : t('noTicketsYet')),
+        el(
+          'div',
+          { class: 'feat-top' },
+          activeRuns.length
+            ? el('span', { class: `run-dot${hasWait ? ' warn' : ''}`, 'aria-hidden': 'true' })
+            : null,
+          el('b', {}, f.title || f.id),
+        ),
+        el(
+          'div',
+          { class: 'feat-meta' },
+          el('span', { class: 'fid' }, f.id),
+          timeText ? el('span', { class: 'ftime' }, timeText) : null,
+        ),
+        el(
+          'div',
+          { class: 'feat-sub' },
+          el('small', {}, subText),
+          el('span', { class: 'pill', dataset: { status: f.pending ? 'pending' : f.status } }, docStatusLabel(f.pending ? 'pending' : f.status)),
+        ),
         p.all
           ? el(
               'span',
@@ -234,182 +662,6 @@ function renderRail() {
   );
 }
 
-// ---------- feature pane
-
-function renderFeature() {
-  const f = feature();
-  if (!f) return;
-  $('f-title').textContent = f.title || f.id;
-  $('f-id').textContent = f.title && f.title !== f.id ? f.id : '';
-  const status = $('f-status');
-  status.textContent = docStatusLabel(f.status);
-  status.dataset.status = f.status || '';
-  $('f-summary').textContent = f.summary || '';
-  $('t-count').textContent = f.tickets.length ? String(f.tickets.length) : '';
-
-  const confirmed = f.status === 'confirmed';
-  const ready = f.tickets.some(x => x.ready && x.status !== 'done');
-  for (const button of document.querySelectorAll('.act')) {
-    const act = button.dataset.act;
-    const enabled = act === 'implement' ? ready : act === 'review' ? true : confirmed;
-    button.disabled = !enabled;
-    button.title = enabled ? t(`${act}Hint`) : t(act === 'implement' ? 'implementBlocked' : 'needsConfirmed');
-  }
-
-  if (state.tab === 'prototype' && !f.prototype) state.tab = 'design';
-  for (const tab of document.querySelectorAll('.tab')) {
-    const name = tab.dataset.tab;
-    tab.classList.toggle('on', name === state.tab);
-    tab.setAttribute('aria-selected', String(name === state.tab));
-    tab.disabled = name === 'prototype' && !f.prototype;
-    if (name === 'prototype') tab.title = f.prototype ? t('screens', { n: f.screens.length }) : t('noPrototype');
-  }
-  for (const body of document.querySelectorAll('[data-tab-body]'))
-    body.classList.toggle('on', body.dataset.tabBody === state.tab);
-
-  if (state.tab === 'design') frameIn('design', $('tab-design'), worktreeUrl(f.design), t('design'));
-  if (state.tab === 'prototype' && f.prototype) renderPrototype(f);
-  if (state.tab === 'tickets') renderTickets(f);
-}
-
-// The prototype runs embedded (?embed=1&bare=1): it shows one screen; the Deck draws the screen list.
-function renderPrototype(f) {
-  $('screens').replaceChildren(
-    ...f.screens.map(screen =>
-      el(
-        'button',
-        {
-          type: 'button',
-          role: 'tab',
-          class: screen.id === state.screen ? 'on' : '',
-          'aria-selected': String(screen.id === state.screen),
-          onclick: () =>
-            post(frames.get('prototype')?.contentWindow, 'show', { id: screen.id }),
-        },
-        screen.title,
-      ),
-    ),
-  );
-  frameIn('prototype', $('proto-frame'), worktreeUrl(f.prototype, { query: 'embed=1&bare=1' }), t('prototype'));
-}
-
-function ticketState(ticket, f) {
-  if (ticket.status === 'done') return ['done', t('done')];
-  if (ticket.status === 'in-progress') return ['in-progress', t('inProgress')];
-  if (ticket.ready) return ['ready', t('ready')];
-  const byPath = new Map(f.tickets.map(x => [x.path, x.n]));
-  const waiting = ticket.blockedBy.filter(path => f.tickets.find(x => x.path === path)?.status !== 'done');
-  return [
-    'planned',
-    waiting.length ? t('waitingFor', { list: waiting.map(path => byPath.get(path) || '?').join(', ') }) : t('planned'),
-  ];
-}
-
-function renderTickets(f) {
-  const open = state.ticket && f.tickets.find(x => x.path === state.ticket);
-  $('tickets').hidden = Boolean(open);
-  $('ticket-open').hidden = !open;
-  if (open) {
-    const [kind, label] = ticketState(open, f);
-    $('ticket-back').replaceChildren(
-      '← ',
-      el('span', { class: `dot ${kind}` }),
-      el('span', { class: 'mono' }, open.n),
-      ` ${open.title} · ${label} · ${t('ticketTotal', { n: f.tickets.length })}`,
-    );
-    frameIn('ticket', $('ticket-open'), worktreeUrl(open.path), open.title);
-    return;
-  }
-  if (!f.tickets.length) {
-    $('filters').replaceChildren();
-    $('rows').replaceChildren(
-      el(
-        'div',
-        { class: 'empty' },
-        f.status === 'confirmed' ? t('noTicketsConfirmed') : t('noTicketsDraft'),
-      ),
-    );
-    return;
-  }
-  const filters = ticketFilters();
-  $('filters').replaceChildren(
-    ...filters.map(([key, label, match]) =>
-      el(
-        'button',
-        { type: 'button', class: state.filter === key ? 'on' : '', onclick: () => ((state.filter = key), render()) },
-        label,
-        el('span', { class: 'count' }, String(f.tickets.filter(match).length)),
-      ),
-    ),
-  );
-  const match = (filters.find(([key]) => key === state.filter) || filters[0])[2];
-  const rows = f.tickets.filter(match);
-  $('rows').replaceChildren(
-    ...(rows.length
-      ? rows.map(row => {
-          const [kind, label] = ticketState(row, f);
-          return el(
-            'button',
-            { type: 'button', class: 'req', title: row.path, onclick: () => openTicket(row.path) },
-            el('span', { class: `dot ${kind}`, title: statusLabel(row.status) }),
-            el('span', { class: 't' }, el('span', { class: 'mono' }, row.n), row.title.replace(/^\d+\s+/, '')),
-            el('span', { class: `state ${kind}` }, label),
-          );
-        })
-      : [el('div', { class: 'empty' }, t('noTicketsInFilter'))]),
-  );
-}
-
-// ---------- doc hub
-
-function renderHub() {
-  const { docs } = state.index;
-  $('hub-sub').textContent = t('docCount', { n: docs.length });
-  const open = state.hubDoc && docs.find(d => d.path === state.hubDoc);
-  $('hub-body').hidden = Boolean(open);
-  $('hub-doc').hidden = !open;
-  if (open) {
-    $('hub-back').textContent = `← ${t('hub')} · ${open.title}`;
-    frameIn('hub', $('hub-doc'), worktreeUrl(open.path), open.title);
-    return;
-  }
-  const group = (kind, label) => {
-    const list = docs.filter(d => d.group === kind);
-    if (!list.length) return null;
-    return el(
-      'section',
-      { class: 'hub-group' },
-      el('h4', {}, `${label} · ${list.length}`),
-      el(
-        'div',
-        { class: 'cards' },
-        list.map(d =>
-          el(
-            'button',
-            { type: 'button', class: 'card', onclick: () => ((state.hubDoc = d.path), render()) },
-            el(
-              'span',
-              { class: 'ct' },
-              el('span', {}, d.title),
-              d.status
-                ? el('span', { class: 'pill', dataset: { status: d.status } }, docStatusLabel(d.status))
-                : null,
-            ),
-            d.summary ? el('p', {}, d.summary) : null,
-            el('small', {}, d.updated ? `${d.path} · ${d.updated}` : d.path),
-          ),
-        ),
-      ),
-    );
-  };
-  const groups = [group('design', t('design')), group('adr', 'ADR')].filter(Boolean);
-  $('hub-body').replaceChildren(
-    ...(groups.length ? groups : [el('div', { class: 'empty' }, t('hubEmpty'))]),
-  );
-}
-
-// ---------- render
-
 function setAgentPopOpen(open) {
   const pop = $('agent-pop');
   const btn = $('agent-btn');
@@ -421,9 +673,10 @@ function setAgentPopOpen(open) {
 function renderTopbar() {
   const topbar = $('topbar');
   if (!topbar) return;
+  renderLiveRuns();
   const info = effectiveAgentInfo();
   const canSettings = typeof window.deck?.ui?.openSettings === 'function';
-  const showTopbar = !state.preview && (info.agents.length > 0 || canSettings);
+  const showTopbar = !state.preview && (info.agents.length > 0 || canSettings || allActiveSessions().length > 0);
   topbar.hidden = !showTopbar;
   if (!showTopbar) {
     setAgentPopOpen(false);
@@ -477,36 +730,781 @@ function renderTopbar() {
   $('settings-btn').hidden = !canSettings;
 }
 
+// ---------- rendering: feature pane & Q&A
+
+function renderSessionStrip(f) {
+  const strip = $('session-strip');
+  if (!strip) return;
+  const list = recentSessionsForFeature(f.id);
+  strip.hidden = list.length === 0;
+  if (!list.length) {
+    strip.replaceChildren();
+    return;
+  }
+  strip.replaceChildren(
+    ...list.map(rec => {
+      const active = ACTIVE_STATES.has(rec.status);
+      const isWait = rec.status === 'needs_input';
+      return el(
+        'button',
+        {
+          type: 'button',
+          class: `sess-chip ${rec.status || ''}`,
+          title: t('viewSession'),
+          onclick: () => void openSession(rec.sessionId),
+        },
+        active ? el('span', { class: `run-dot${isWait ? ' warn' : ''}`, 'aria-hidden': 'true' }) : null,
+        `${sessionKindLabel(rec.kind)} · ${isWait ? t('waitingInputBtn') : active ? t('runningBtn') : t('viewSession')}`,
+      );
+    }),
+  );
+}
+
+function renderFeature() {
+  const f = feature();
+  if (!f || f.pending) return;
+
+  $('f-title').textContent = f.title || f.id;
+  $('f-id').textContent = f.id;
+  const statusEl = $('f-status');
+  statusEl.textContent = docStatusLabel(f.status);
+  statusEl.dataset.status = f.status || '';
+  const ts = featureSortTimestamp(f, state.featureMeta[f.id], state.fileMtimeMap[f.id] || 0);
+  $('f-time').textContent = formatShortTime(ts, f.updated);
+  $('f-summary').textContent = f.summary || '';
+  $('t-count').textContent = f.tickets.length ? String(f.tickets.length) : '';
+
+  const pTag = $('p-tag');
+  if (f.prototype) {
+    pTag.textContent = f.screens.length ? t('screens', { n: f.screens.length }) : t('prototypeReadyTag');
+    pTag.classList.add('ready');
+  } else {
+    pTag.textContent = t('prototypeOptionalTag');
+    pTag.classList.remove('ready');
+  }
+
+  // Header completion button
+  const doneBtn = $('act-done');
+  const isDone = f.status === 'done';
+  doneBtn.classList.toggle('done-active', isDone);
+  doneBtn.textContent = isDone ? t('reopenFeature') : t('markDone');
+  doneBtn.title = isDone ? t('reopenHint') : t('markDoneHint');
+
+  // Header action buttons (running buttons turn into "进行中" & click opens Lumzel Session)
+  const protoBtn = document.querySelector('.act[data-act="prototype"]');
+  applyRunButtonState(protoBtn, {
+    slotKey: slotPrototype(f.id),
+    idleLabel: f.prototype ? t('prototypeUpdateAct') : t('prototypeAct'),
+    idleTitle: t('prototypeHint'),
+  });
+
+  const ticketsBtn = document.querySelector('.act[data-act="tickets"]');
+  applyRunButtonState(ticketsBtn, {
+    slotKey: slotTickets(f.id),
+    idleLabel: f.tickets.length ? t('ticketsRegenAct') : t('ticketsAct'),
+    idleTitle: t('ticketsHint'),
+  });
+
+  const implBtn = document.querySelector('.act[data-act="implement"]');
+  const unfinishedTickets = f.tickets.filter(x => x.status !== 'done').length;
+  const hasTickets = f.tickets.length > 0;
+  const ticketBusy = hasAnyTicketImplementInFlight(f.id);
+  applyRunButtonState(implBtn, {
+    slotKey: slotImplement(f.id),
+    idleLabel: hasTickets ? t('implementAllAct') : t('implementDirectAct'),
+    idleTitle: ticketBusy
+      ? t('implementBatchBusy')
+      : hasTickets
+        ? t('implementAllHint')
+        : t('implementDirectHint'),
+    disabled: (hasTickets && unfinishedTickets === 0) || ticketBusy,
+  });
+
+  const reviewBtn = document.querySelector('.act[data-act="review"]');
+  applyRunButtonState(reviewBtn, {
+    slotKey: slotReview(f.id),
+    idleLabel: t('reviewAct'),
+    idleTitle: t('reviewHint'),
+  });
+
+  renderSessionStrip(f);
+
+  // Tabs (all 3 always enabled — prototype & tickets are optional!)
+  for (const tab of document.querySelectorAll('.tab')) {
+    const name = tab.dataset.tab;
+    tab.classList.toggle('on', name === state.tab);
+    tab.setAttribute('aria-selected', String(name === state.tab));
+    tab.disabled = false;
+    if (name === 'prototype') {
+      tab.title = f.prototype ? t('screens', { n: f.screens.length }) : t('noPrototype');
+    }
+  }
+  for (const body of document.querySelectorAll('[data-tab-body]')) {
+    body.classList.toggle('on', body.dataset.tabBody === state.tab);
+  }
+
+  if (state.tab === 'design') {
+    renderDesignQa(f);
+    frameIn('design', $('design-frame'), worktreeUrl(f.design), t('design'));
+  }
+  if (state.tab === 'tickets') {
+    renderTickets(f);
+  }
+  if (state.tab === 'prototype') {
+    renderPrototype(f);
+  }
+}
+
+function qaSessionHint(slotKey, probedReusable, probedSessionId, probedStatus) {
+  const rec = state.sessions[slotKey];
+  const sessionId = rec?.sessionId || probedSessionId || '';
+  const liveStatus = rec?.status || probedStatus || 'closed';
+  if (liveStatus === 'needs_input' && sessionId) {
+    return { text: t('qaWaitingInputHint', { id: sessionId }), reusable: false };
+  }
+  if (liveStatus === 'running' && sessionId) {
+    return { text: t('qaRunningHint', { id: sessionId }), reusable: false };
+  }
+  if (probedReusable && sessionId) {
+    return { text: t('qaReuseHint', { id: sessionId }), reusable: true };
+  }
+  if (sessionId) {
+    return { text: t('qaNewContextHint'), reusable: false };
+  }
+  return { text: t('qaNoOpenSessionHint'), reusable: false };
+}
+
+function renderDesignQa(f) {
+  const box = $('design-qa');
+  if (!box) return;
+  const qa = state.qaData[f.id]?.design || { open: [], settled: [] };
+  const openQuestions = qa.open || [];
+  const collapseKey = `${f.id}:design`;
+  const hasOpen = openQuestions.length > 0;
+  const isCollapsed = collapseKey in state.qaCollapsed ? state.qaCollapsed[collapseKey] : !hasOpen;
+
+  if (!state.designDrafts[f.id]) state.designDrafts[f.id] = { answers: {}, note: '' };
+  const draft = state.designDrafts[f.id];
+
+  const hintInfo = state.liveSessionStatus[f.id];
+  const hint = qaSessionHint(
+    slotDesign(f.id),
+    hintInfo?.designReusable,
+    hintInfo?.designSessionId,
+    hintInfo?.designStatus,
+  );
+  const sessionHintText = hint.text;
+
+  const sendBtn = el('button', {
+    type: 'button',
+    class: 'primary',
+    id: 'design-qa-send',
+    onclick: () => void submitDesignQa(f),
+  });
+  applyRunButtonState(sendBtn, {
+    slotKey: slotDesign(f.id),
+    idleLabel: t('qaSubmitDesign'),
+    idleTitle: t('qaSubmitDesign'),
+  });
+
+  const head = el(
+    'div',
+    { class: 'qa-head' },
+    el(
+      'div',
+      { class: 'qa-head-left' },
+      el('strong', {}, hasOpen ? t('qaDesignOpenTitle', { n: openQuestions.length }) : t('qaDesignReplyTitle')),
+      hasOpen ? el('span', { class: 'qa-badge' }, `${openQuestions.length}`) : null,
+    ),
+    el(
+      'button',
+      {
+        type: 'button',
+        class: 'act sm',
+        onclick: () => {
+          state.qaCollapsed[collapseKey] = !isCollapsed;
+          renderDesignQa(f);
+        },
+      },
+      isCollapsed ? t('qaToggleShow') : t('qaToggleHide'),
+    ),
+  );
+
+  if (isCollapsed) {
+    box.replaceChildren(head);
+    return;
+  }
+
+  const questionCards = openQuestions.map(item => {
+    const currentVal = draft.answers[item.id] ?? '';
+    const inputEl = el('input', {
+      type: 'text',
+      class: 'qa-input',
+      value: currentVal,
+      placeholder: t('qaCustomPlaceholder'),
+      oninput: e => {
+        draft.answers[item.id] = e.target.value;
+        // sync option button highlights without losing cursor focus
+        const wrap = e.target.closest('.qa-item');
+        if (wrap) {
+          for (const optBtn of wrap.querySelectorAll('.qa-opt')) {
+            optBtn.classList.toggle('on', optBtn.dataset.optValue === e.target.value);
+          }
+        }
+      },
+    });
+
+    return el(
+      'div',
+      { class: 'qa-item' },
+      el(
+        'div',
+        { class: 'qa-q' },
+        el('span', {}, item.question),
+        item.depends?.length ? el('span', { class: 'qa-ticket-tag' }, `← ${item.depends.join(', ')}`) : null,
+      ),
+      item.why ? el('p', { class: 'qa-why' }, item.why) : null,
+      item.options?.length
+        ? el(
+            'div',
+            { class: 'qa-opts' },
+            ...item.options.map(opt =>
+              el(
+                'button',
+                {
+                  type: 'button',
+                  class: `qa-opt${currentVal === opt.label ? ' on' : ''}`,
+                  dataset: { optValue: opt.label },
+                  onclick: () => {
+                    draft.answers[item.id] = opt.label;
+                    inputEl.value = opt.label;
+                    renderDesignQa(f);
+                  },
+                },
+                opt.label,
+                opt.recommended ? el('span', { class: 'qa-rec' }, t('qaRecommend')) : null,
+              ),
+            ),
+          )
+        : null,
+      inputEl,
+    );
+  });
+
+  const noteArea = el('textarea', {
+    class: 'qa-note',
+    id: 'design-qa-note',
+    rows: 2,
+    placeholder: t('qaDesignNotePlaceholder'),
+    oninput: e => {
+      draft.note = e.target.value;
+    },
+  });
+  noteArea.value = draft.note || '';
+
+  const body = el(
+    'div',
+    { class: 'qa-body' },
+    openQuestions.length ? el('div', { class: 'qa-list' }, ...questionCards) : null,
+    noteArea,
+    el(
+      'div',
+      { class: 'qa-foot' },
+      el('span', { class: `qa-session-hint${hint.reusable ? ' reuse' : ''}` }, sessionHintText),
+      el('div', { class: 'qa-foot-acts' }, sendBtn),
+    ),
+  );
+
+  box.replaceChildren(head, body);
+}
+
+function renderTicketsQa(f) {
+  const box = $('tickets-qa');
+  const toggleBtn = $('tickets-qa-toggle');
+  if (!box || !toggleBtn) return;
+
+  const choices = state.qaData[f.id]?.ticketChoices || [];
+  const collapseKey = `${f.id}:tickets`;
+  const hasOpen = choices.length > 0;
+  const isOpen = collapseKey in state.qaCollapsed ? !state.qaCollapsed[collapseKey] : hasOpen;
+
+  toggleBtn.textContent = hasOpen ? `${t('qaTicketsOpenTitle', { n: choices.length })}` : t('qaToggleShow');
+  toggleBtn.classList.toggle('primary-soft', hasOpen);
+
+  box.hidden = !isOpen;
+  if (!isOpen) {
+    box.replaceChildren();
+    return;
+  }
+
+  if (!state.ticketDrafts[f.id]) state.ticketDrafts[f.id] = { answers: {}, note: '' };
+  const draft = state.ticketDrafts[f.id];
+
+  const hintInfo = state.liveSessionStatus[f.id];
+  const hint = qaSessionHint(
+    slotTickets(f.id),
+    hintInfo?.ticketsReusable,
+    hintInfo?.ticketsSessionId,
+    hintInfo?.ticketsStatus,
+  );
+  const sessionHintText = hint.text;
+
+  const sendBtn = el('button', {
+    type: 'button',
+    class: 'primary',
+    id: 'tickets-qa-send',
+    onclick: () => void submitTicketsQa(f),
+  });
+  applyRunButtonState(sendBtn, {
+    slotKey: slotTickets(f.id),
+    idleLabel: t('qaSubmitTickets'),
+    idleTitle: t('qaSubmitTickets'),
+  });
+
+  const choiceCards = choices.map(item => {
+    const key = `${item.ticketPath}::${item.id}`;
+    const currentVal = draft.answers[key] ?? '';
+    const inputEl = el('input', {
+      type: 'text',
+      class: 'qa-input',
+      value: currentVal,
+      placeholder: t('qaCustomPlaceholder'),
+      oninput: e => {
+        draft.answers[key] = e.target.value;
+        const wrap = e.target.closest('.qa-item');
+        if (wrap) {
+          for (const optBtn of wrap.querySelectorAll('.qa-opt')) {
+            optBtn.classList.toggle('on', optBtn.dataset.optValue === e.target.value);
+          }
+        }
+      },
+    });
+    return el(
+      'div',
+      { class: 'qa-item' },
+      el(
+        'div',
+        { class: 'qa-q' },
+        el('span', { class: 'qa-ticket-tag' }, item.ticketN || item.ticketPath),
+        el('span', {}, item.question),
+      ),
+      item.why ? el('p', { class: 'qa-why' }, item.why) : null,
+      item.options?.length
+        ? el(
+            'div',
+            { class: 'qa-opts' },
+            ...item.options.map(opt =>
+              el(
+                'button',
+                {
+                  type: 'button',
+                  class: `qa-opt${currentVal === opt.label ? ' on' : ''}`,
+                  dataset: { optValue: opt.label },
+                  onclick: () => {
+                    draft.answers[key] = opt.label;
+                    inputEl.value = opt.label;
+                    renderTicketsQa(f);
+                  },
+                },
+                opt.label,
+                opt.recommended ? el('span', { class: 'qa-rec' }, t('qaRecommend')) : null,
+              ),
+            ),
+          )
+        : null,
+      inputEl,
+    );
+  });
+
+  const noteArea = el('textarea', {
+    class: 'qa-note',
+    id: 'tickets-qa-note',
+    rows: 2,
+    placeholder: t('qaTicketsNotePlaceholder'),
+    oninput: e => {
+      draft.note = e.target.value;
+    },
+  });
+  noteArea.value = draft.note || '';
+
+  box.replaceChildren(
+    el(
+      'div',
+      { class: 'qa-head' },
+      el(
+        'div',
+        { class: 'qa-head-left' },
+        el('strong', {}, hasOpen ? t('qaTicketsOpenTitle', { n: choices.length }) : t('qaTicketsReplyTitle')),
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          class: 'act sm',
+          onclick: () => {
+            state.qaCollapsed[collapseKey] = true;
+            renderTicketsQa(f);
+          },
+        },
+        t('qaToggleHide'),
+      ),
+    ),
+    el(
+      'div',
+      { class: 'qa-body' },
+      choices.length ? el('div', { class: 'qa-list' }, ...choiceCards) : null,
+      noteArea,
+      el(
+        'div',
+        { class: 'qa-foot' },
+        el('span', { class: `qa-session-hint${hint.reusable ? ' reuse' : ''}` }, sessionHintText),
+        el('div', { class: 'qa-foot-acts' }, sendBtn),
+      ),
+    ),
+  );
+}
+
+// ---------- rendering: tickets tab
+
+function ticketState(ticket, f) {
+  if (ticket.status === 'done') return ['done', t('done')];
+  if (ticket.status === 'in-progress') return ['in-progress', t('inProgress')];
+  if (ticket.ready) return ['ready', t('ready')];
+  const byPath = new Map(f.tickets.map(x => [x.path, x.n]));
+  const waiting = (ticket.blockedBy || []).filter(path => f.tickets.find(x => x.path === path)?.status !== 'done');
+  return [
+    'planned',
+    waiting.length ? t('waitingFor', { list: waiting.map(path => byPath.get(path) || '?').join(', ') }) : t('planned'),
+  ];
+}
+
+function blockedLabel(ticket, f) {
+  const byPath = new Map(f.tickets.map(x => [x.path, x.n]));
+  const waiting = (ticket.blockedBy || []).filter(path => f.tickets.find(x => x.path === path)?.status !== 'done');
+  return waiting.map(p => byPath.get(p) || p).join(', ');
+}
+
+function renderTickets(f) {
+  const open = state.ticket && f.tickets.find(x => x.path === state.ticket);
+  $('tickets').hidden = Boolean(open);
+  $('ticket-open').hidden = !open;
+  const featureImplBusy = hasFeatureImplementBusy(f.id);
+  const ticketImplBusy = hasAnyTicketImplementInFlight(f.id);
+
+  if (open) {
+    const [kind, label] = ticketState(open, f);
+    $('ticket-back').replaceChildren(
+      '← ',
+      el('span', { class: `dot ${kind}` }),
+      el('span', { class: 'mono' }, open.n),
+      ` ${open.title.replace(/^\d+\s+/, '')} · ${label} · ${t('ticketTotal', { n: f.tickets.length })}`,
+    );
+
+    const implOneBtn = el('button', {
+      type: 'button',
+      class: 'act sm primary-soft',
+      onclick: () => void runImplementTicket(f, open),
+    });
+    const waitList = blockedLabel(open, f);
+    applyRunButtonState(implOneBtn, {
+      slotKey: slotTicketImplement(f.id, open.path),
+      idleLabel: t('implementOneAct'),
+      idleTitle: featureImplBusy
+        ? t('implementBatchBusy')
+        : waitList
+          ? t('blockedCannotImplement', { list: waitList })
+          : t('implementOneHint'),
+      disabled: open.status === 'done' || Boolean(waitList) || featureImplBusy,
+    });
+
+    const reviewOneBtn = el('button', {
+      type: 'button',
+      class: 'act sm',
+      onclick: () => void runReviewTicket(f, open),
+    });
+    applyRunButtonState(reviewOneBtn, {
+      slotKey: slotTicketReview(f.id, open.path),
+      idleLabel: t('reviewTicketAct'),
+      idleTitle: t('reviewTicketHint'),
+    });
+
+    const toggleDoneBtn = el(
+      'button',
+      {
+        type: 'button',
+        class: `act sm${open.status === 'done' ? ' done-active' : ''}`,
+        onclick: () => void toggleTicketDone(f, open),
+      },
+      open.status === 'done' ? t('reopenTicket') : t('markDone'),
+    );
+
+    $('ticket-head-acts').replaceChildren(implOneBtn, reviewOneBtn, toggleDoneBtn);
+    frameIn('ticket', $('ticket-frame'), worktreeUrl(open.path), open.title);
+    return;
+  }
+
+  dropFrame('ticket');
+
+  // Toolbar actions
+  const hasReady = f.tickets.some(x => x.ready && x.status !== 'done');
+  const hasUnfinished = f.tickets.some(x => x.status !== 'done');
+
+  const nextBtn = $('tickets-next-btn');
+  nextBtn.hidden = f.tickets.length === 0;
+  applyRunButtonState(nextBtn, {
+    slotKey: slotImplement(f.id),
+    idleLabel: t('implementNextAct'),
+    idleTitle: ticketImplBusy ? t('implementBatchBusy') : t('implementNextHint'),
+    disabled: !hasReady || ticketImplBusy,
+  });
+
+  const allBtn = $('tickets-all-btn');
+  allBtn.hidden = f.tickets.length === 0;
+  applyRunButtonState(allBtn, {
+    slotKey: slotImplement(f.id),
+    idleLabel: t('implementAllAct'),
+    idleTitle: ticketImplBusy ? t('implementBatchBusy') : t('implementAllHint'),
+    disabled: !hasUnfinished || ticketImplBusy,
+  });
+
+  renderTicketsQa(f);
+
+  if (!f.tickets.length) {
+    $('filters').replaceChildren();
+    const genTicketsBtn = el('button', {
+      type: 'button',
+      class: 'act',
+      onclick: () => void runFeatureAction(f, 'tickets'),
+    });
+    applyRunButtonState(genTicketsBtn, {
+      slotKey: slotTickets(f.id),
+      idleLabel: t('ticketsAct'),
+      idleTitle: t('ticketsHint'),
+    });
+
+    const directImplBtn = el('button', {
+      type: 'button',
+      class: 'primary',
+      onclick: () => void runFeatureAction(f, 'implement'),
+    });
+    applyRunButtonState(directImplBtn, {
+      slotKey: slotImplement(f.id),
+      idleLabel: t('implementDirectAct'),
+      idleTitle: ticketImplBusy ? t('implementBatchBusy') : t('implementDirectHint'),
+      disabled: ticketImplBusy,
+    });
+
+    $('rows').replaceChildren(
+      el(
+        'div',
+        { class: 'empty-card', style: 'margin: 24px auto;' },
+        el('div', { class: 'dia' }, '◈'),
+        el('h2', {}, t('noTicketsTitle')),
+        el('p', {}, t('noTicketsHint')),
+        el('div', { class: 'empty-acts' }, directImplBtn, genTicketsBtn),
+      ),
+    );
+    return;
+  }
+
+  const filters = ticketFilters();
+  $('filters').replaceChildren(
+    ...filters.map(([key, label, match]) =>
+      el(
+        'button',
+        { type: 'button', class: state.filter === key ? 'on' : '', onclick: () => ((state.filter = key), render()) },
+        label,
+        el('span', { class: 'count' }, String(f.tickets.filter(match).length)),
+      ),
+    ),
+  );
+
+  const match = (filters.find(([key]) => key === state.filter) || filters[0])[2];
+  const rows = f.tickets.filter(match);
+  $('rows').replaceChildren(
+    ...(rows.length
+      ? rows.map(row => {
+          const [kind, label] = ticketState(row, f);
+          const waitList = blockedLabel(row, f);
+
+          const implBtn = el('button', {
+            type: 'button',
+            class: 'act sm primary-soft',
+            onclick: () => void runImplementTicket(f, row),
+          });
+          applyRunButtonState(implBtn, {
+            slotKey: slotTicketImplement(f.id, row.path),
+            idleLabel: t('implementOneAct'),
+            idleTitle: featureImplBusy
+              ? t('implementBatchBusy')
+              : waitList
+                ? t('blockedCannotImplement', { list: waitList })
+                : t('implementOneHint'),
+            disabled: row.status === 'done' || Boolean(waitList) || featureImplBusy,
+          });
+
+          const revBtn = el('button', {
+            type: 'button',
+            class: 'act sm',
+            onclick: () => void runReviewTicket(f, row),
+          });
+          applyRunButtonState(revBtn, {
+            slotKey: slotTicketReview(f.id, row.path),
+            idleLabel: t('reviewTicketAct'),
+            idleTitle: t('reviewTicketHint'),
+          });
+
+          const doneToggle = el(
+            'button',
+            {
+              type: 'button',
+              class: `act sm${row.status === 'done' ? ' done-active' : ''}`,
+              title: row.status === 'done' ? t('reopenTicket') : t('markDone'),
+              onclick: () => void toggleTicketDone(f, row),
+            },
+            row.status === 'done' ? t('reopenTicket') : t('markDone'),
+          );
+
+          return el(
+            'div',
+            { class: 'req' },
+            el(
+              'button',
+              { type: 'button', class: 'req-main', title: row.path, onclick: () => openTicket(row.path) },
+              el('span', { class: `dot ${kind}`, title: statusLabel(row.status) }),
+              el('span', { class: 't' }, el('span', { class: 'mono' }, row.n), row.title.replace(/^\d+\s+/, '')),
+              el('span', { class: `state ${kind}` }, label),
+            ),
+            el('div', { class: 'req-actions' }, implBtn, revBtn, doneToggle),
+          );
+        })
+      : [el('div', { class: 'empty' }, t('noTicketsInFilter'))]),
+  );
+}
+
+// ---------- rendering: prototype tab
+
+function syncProtoLinkButton() {
+  const linkBtn = $('proto-link-btn');
+  if (!linkBtn) return;
+  linkBtn.setAttribute('aria-pressed', String(state.protoLinking));
+  linkBtn.classList.toggle('primary-soft', state.protoLinking);
+}
+
+function renderPrototype(f) {
+  const hasProto = Boolean(f.prototype);
+  $('proto-empty').hidden = hasProto;
+  $('proto-ready').hidden = !hasProto;
+
+  if (!hasProto) {
+    state.protoLinking = false;
+    dropFrame('prototype');
+    const genBtn = $('proto-gen-btn');
+    applyRunButtonState(genBtn, {
+      slotKey: slotPrototype(f.id),
+      idleLabel: t('protoGenNow'),
+      idleTitle: t('prototypeHint'),
+    });
+    return;
+  }
+
+  $('screens').replaceChildren(
+    ...f.screens.map(screen =>
+      el(
+        'button',
+        {
+          type: 'button',
+          role: 'tab',
+          class: screen.id === state.screen ? 'on' : '',
+          'aria-selected': String(screen.id === state.screen),
+          onclick: () => post(frames.get('prototype')?.contentWindow, 'show', { id: screen.id }),
+        },
+        screen.title,
+      ),
+    ),
+  );
+
+  syncProtoLinkButton();
+  applyRunButtonState($('proto-regen-btn'), {
+    slotKey: slotPrototype(f.id),
+    idleLabel: t('prototypeUpdateAct'),
+    idleTitle: t('prototypeHint'),
+  });
+  applyRunButtonState($('proto-review-btn'), {
+    slotKey: slotReview(f.id),
+    idleLabel: t('reviewProtoAct'),
+    idleTitle: t('reviewHint'),
+  });
+
+  frameIn('prototype', $('proto-frame'), worktreeUrl(f.prototype, { query: 'embed=1&bare=1' }), t('prototype'));
+}
+
+// ---------- rendering: pending feature pane
+
+function renderPendingPane() {
+  const f = feature();
+  if (!f || !f.pending) return;
+  const designSess = state.sessions[slotDesign(f.id)];
+  const active = designSess && ACTIVE_STATES.has(designSess.status);
+  $('pending-id').textContent = f.id;
+  $('pending-brief').textContent = f.summary || '';
+  $('pending-spinner').classList.toggle('stopped', !active);
+  $('pending-hint').textContent = active
+    ? t('pendingHint', { id: f.id })
+    : t('pendingSessionStopped');
+  const openBtn = $('pending-open-session');
+  openBtn.hidden = !designSess?.sessionId;
+  openBtn.textContent =
+    designSess?.status === 'needs_input'
+      ? `${t('waitingInputBtn')} · ${t('viewSession')}`
+      : active
+        ? `${t('runningBtn')} · ${t('viewSession')}`
+        : t('viewSession');
+  $('pending-remove').hidden = active;
+}
+
+// ---------- main render & navigation
+
 function render() {
-  const hasFeatures = state.index.features.length > 0;
+  const cur = feature();
   renderTopbar();
   renderRail();
-  $('pane-hub').hidden = state.view !== 'hub';
-  $('pane-feature').hidden = state.view !== 'feature' || !feature();
-  $('pane-empty').hidden = state.view !== 'feature' || hasFeatures;
-  if (state.view === 'hub') renderHub();
-  else if (feature()) renderFeature();
+  $('pane-feature').hidden = !cur || Boolean(cur.pending);
+  $('pane-pending').hidden = !cur || !cur.pending;
+  $('pane-empty').hidden = state.features.length > 0;
+  if (cur?.pending) renderPendingPane();
+  else if (cur) renderFeature();
 }
 
 function openFeature(id) {
-  if (state.view === 'feature' && state.featureId === id) return;
-  state.view = 'feature';
+  const changed = state.featureId !== id;
   state.featureId = id;
   state.ticket = '';
   state.filter = 'all';
   state.screen = '';
+  if (changed) {
+    state.protoLinking = false;
+    state.pendingDesignNode = '';
+    dropFrame('design');
+    dropFrame('ticket');
+    dropFrame('prototype');
+  }
   $('intro').hidden = true;
   render();
+  const f = feature();
+  if (f && !f.pending) {
+    void refreshFeatureQaData(f);
+    void refreshFeatureSessionHints(f);
+  }
 }
 
 function openTicket(path) {
-  state.view = 'feature';
   state.tab = 'tickets';
   state.ticket = path;
   render();
 }
 
-// ---------- data
+// ---------- data loading
 
 let loading = null;
 let lastLoad = 0;
@@ -518,6 +1516,79 @@ function applyParamsValues(values) {
   if (values.tddStrictness !== undefined) state.params.tddStrictness = String(values.tddStrictness || 'balanced');
   if (values.autoTickets !== undefined) state.params.autoTickets = Boolean(values.autoTickets);
   if (values.designRules !== undefined) state.params.designRules = String(values.designRules || '');
+}
+
+async function fetchFeatureMtimes(diskFeatures) {
+  if (state.preview || typeof window.deck?.files?.list !== 'function') return {};
+  const map = {};
+  await Promise.all(
+    diskFeatures.map(async f => {
+      let maxTs = 0;
+      try {
+        const entries = await window.deck.files.list(`docs/features/${f.id}`);
+        for (const e of entries) {
+          if (e.modifiedAt && e.modifiedAt > maxTs) maxTs = e.modifiedAt;
+        }
+        if (f.tickets?.length) {
+          const tEntries = await window.deck.files.list(`docs/features/${f.id}/tickets`).catch(() => []);
+          for (const e of tEntries) {
+            if (e.modifiedAt && e.modifiedAt > maxTs) maxTs = e.modifiedAt;
+          }
+        }
+      } catch {
+        // ignore if feature dir cannot be listed
+      }
+      if (maxTs > 0) map[f.id] = maxTs;
+    }),
+  );
+  return map;
+}
+
+async function syncStoreFromDisk(diskFeatures) {
+  if (!canUseStore() || typeof window.deck?.store?.list !== 'function') return;
+  const [metaEntries, sessEntries] = await Promise.all([
+    window.deck.store.list('features').catch(() => []),
+    window.deck.store.list('sessions').catch(() => []),
+  ]);
+
+  const metaMap = {};
+  for (const entry of metaEntries) {
+    if (entry?.key && entry?.value) metaMap[entry.key] = entry.value;
+  }
+  const diskIds = new Set(diskFeatures.map(f => f.id));
+  for (const [id, meta] of Object.entries(metaMap)) {
+    if (meta.pending && diskIds.has(id)) {
+      metaMap[id] = { ...meta, pending: false, updatedAt: Date.now() };
+      void window.deck.store.put('features', id, metaMap[id]).catch(() => {});
+    }
+  }
+  state.featureMeta = metaMap;
+
+  const sessMap = {};
+  for (const entry of sessEntries) {
+    if (entry?.key && entry?.value) sessMap[entry.key] = entry.value;
+  }
+  // Verify active sessions against live host session state
+  if (typeof window.deck?.agent?.logs === 'function') {
+    await Promise.all(
+      Object.values(sessMap)
+        .filter(s => s?.sessionId && ACTIVE_STATES.has(s.status))
+        .map(async rec => {
+          try {
+            const logs = await window.deck.agent.logs(rec.sessionId);
+            const liveStatus = logs.exists ? logs.status : 'closed';
+            if (liveStatus !== rec.status) {
+              const updated = { ...rec, status: liveStatus, updatedAt: Date.now() };
+              sessMap[rec.slotKey] = updated;
+              void window.deck.store.put('sessions', rec.slotKey, updated).catch(() => {});
+            }
+          } catch {
+            // keep existing record
+          }
+        }),
+    );
+  }
+  state.sessions = sessMap;
 }
 
 async function load({ reload = false } = {}) {
@@ -541,6 +1612,7 @@ async function load({ reload = false } = {}) {
         for (const frame of frames.values()) post(frame.contentWindow, 'theme', { theme: ctx.theme });
       }
       if (!state.preview) {
+        ensureAgentSubscriptions();
         if (catalogRes) {
           state.agentCatalog = catalogRes;
           state.agentOverride = sanitizeAgentSelection(state.agentOverride, catalogRes);
@@ -569,12 +1641,45 @@ async function load({ reload = false } = {}) {
             if (evt?.values) applyParamsValues(evt.values);
           });
         }
+        await syncStoreFromDisk(index.features || []);
+        state.fileMtimeMap = await fetchFeatureMtimes(index.features || []);
       }
+
+      const diskFeatures = index.features || [];
+      const diskIds = new Set(diskFeatures.map(f => f.id));
+      const pendingFeatures = Object.values(state.featureMeta)
+        .filter(m => m.pending && !diskIds.has(m.id))
+        .map(m => ({
+          id: m.id,
+          title: m.title || m.id,
+          summary: m.brief || '',
+          status: 'pending',
+          updated: todayIsoDate(new Date(m.createdAt || Date.now())),
+          design: `docs/features/${m.id}/design.html`,
+          prototype: null,
+          screens: [],
+          tickets: [],
+          nodeTickets: {},
+          pending: true,
+        }));
+
       state.index = index;
-      if (!index.features.some(f => f.id === state.featureId)) state.featureId = index.features[0]?.id || '';
+      state.features = sortFeaturesDesc([...diskFeatures, ...pendingFeatures], state.featureMeta, state.fileMtimeMap);
+
+      if (!state.features.some(f => f.id === state.featureId)) {
+        state.featureId = state.features[0]?.id || '';
+      }
+
       note('');
       app.dataset.state = 'ready';
+      syncActiveWatcher();
       render();
+
+      const cur = feature();
+      if (cur && !cur.pending) {
+        void refreshFeatureQaData(cur);
+        void refreshFeatureSessionHints(cur);
+      }
       if (reload) reloadFrames();
     } catch (error) {
       app.dataset.state = 'error';
@@ -588,27 +1693,62 @@ async function load({ reload = false } = {}) {
   return loading;
 }
 
-// Coming back to the drawer re-reads the index (Agents write docs meanwhile). No polling while hidden.
 const freshen = () => {
   if (Date.now() - lastLoad > 2000) void load();
 };
 window.addEventListener('focus', freshen);
 document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && freshen());
 
-// ---------- frames talk back (the doc runtime and the prototype runtime)
+// ---------- iframe message bridge
+
+function buildPrototypeLabels(f) {
+  const labels = {};
+  const nodeLabels = state.qaData[f.id]?.nodeLabels || {};
+  const ticketNumByPath = Object.fromEntries((f.tickets || []).map(x => [x.path, x.n]));
+  const nodeIds = new Set([...Object.keys(nodeLabels), ...Object.keys(f.nodeTickets || {})]);
+  for (const id of nodeIds) {
+    const base = nodeLabels[id] || id;
+    const nums = (f.nodeTickets?.[id] || []).map(p => ticketNumByPath[p]).filter(Boolean);
+    labels[id] = nums.length ? `${base} · 工单 ${nums.join(',')}` : base;
+  }
+  return labels;
+}
+
+function jumpToDesignNode(node) {
+  state.tab = 'design';
+  state.pendingDesignNode = node || '';
+  render();
+  const designFrame = frames.get('design');
+  if (node && designFrame?.dataset.ready === '1' && designFrame.contentWindow) {
+    post(designFrame.contentWindow, 'show', { id: node });
+    state.pendingDesignNode = '';
+  }
+}
 
 window.addEventListener('message', event => {
   const data = event.data;
   const kind = kindOf(data?.type);
   if (!kind) return;
-  const slot = [...frames.entries()].find(([, frame]) => frame.contentWindow === event.source)?.[0];
-  if (!slot) return;
+  const entry = [...frames.entries()].find(([, frame]) => frame.contentWindow === event.source);
+  if (!entry) return;
+  const [slot, frame] = entry;
   const f = feature();
-  // A design doc asks for its Trace: each Node a ticket delivers gets a ticket chip.
-  if (kind === 'ready' && slot === 'design' && f) {
-    const nodes = Object.fromEntries(Object.entries(f.nodeTickets).map(([id, list]) => [id, { t: list }]));
-    const tickets = Object.fromEntries(f.tickets.map(x => [x.path, { n: x.n, title: x.title }]));
-    post(event.source, 'trace', { trace: { nodes, tickets } });
+  if (kind === 'ready') {
+    frame.dataset.ready = '1';
+    if (slot === 'design' && f && !f.pending) {
+      const nodes = Object.fromEntries(Object.entries(f.nodeTickets || {}).map(([id, list]) => [id, { t: list }]));
+      const tickets = Object.fromEntries((f.tickets || []).map(x => [x.path, { n: x.n, title: x.title }]));
+      post(event.source, 'trace', { trace: { nodes, tickets } });
+      if (state.pendingDesignNode) {
+        post(event.source, 'show', { id: state.pendingDesignNode });
+        state.pendingDesignNode = '';
+      }
+    } else if (slot === 'prototype' && f && !f.pending) {
+      post(event.source, 'trace', { labels: buildPrototypeLabels(f) });
+      if (state.protoLinking) {
+        post(event.source, 'linking', { on: true });
+      }
+    }
   }
   if (kind === 'open-trace' && data.kind === 'ticket' && typeof data.path === 'string') openTicket(data.path);
   if (kind === 'screen' && slot === 'prototype' && typeof data.id === 'string') {
@@ -617,32 +1757,45 @@ window.addEventListener('message', event => {
     $('intro').hidden = !data.intro;
     if (f) renderPrototype(f);
   }
-  // Alt+click in the prototype: show that design Node in the design tab.
+  if (kind === 'linking' && slot === 'prototype') {
+    state.protoLinking = Boolean(data.on);
+    syncProtoLinkButton();
+  }
+  if (kind === 'pick' && slot === 'prototype' && typeof data.ref === 'string' && f) {
+    const node = data.ref.includes('#') ? data.ref.split('#')[1] : data.ref;
+    if (node) jumpToDesignNode(node);
+  }
   if (kind === 'open' && slot === 'prototype' && typeof data.url === 'string' && f) {
     const node = decodeURIComponent(data.url.split('#')[1] || '');
-    state.tab = 'design';
-    render();
-    if (node) post(frames.get('design')?.contentWindow, 'show', { id: node });
+    jumpToDesignNode(node);
   }
 });
 
-// ---------- agent actions
+// ---------- agent execution & session reuse
 
-function buildPromptWithParams(skill, basePrompt) {
+function buildPromptWithParams(skill, basePrompt, kind = '') {
   const extras = [];
   if (
-    (skill === 'spec-workbench-implement' || skill === 'spec-workbench-tdd') &&
+    (skill === 'spec-workbench-implement' ||
+      skill === 'spec-workbench-tdd' ||
+      kind === 'implement' ||
+      kind === 'ticketImplement') &&
     state.params.tddStrictness === 'strict'
   ) {
     extras.push('TDD enforcement: strict — always write a failing test before implementation.');
   } else if (
-    (skill === 'spec-workbench-implement' || skill === 'spec-workbench-tdd') &&
+    (skill === 'spec-workbench-implement' ||
+      skill === 'spec-workbench-tdd' ||
+      kind === 'implement' ||
+      kind === 'ticketImplement') &&
     state.params.tddStrictness === 'relaxed'
   ) {
     extras.push('TDD enforcement: relaxed — verification tests may be added after implementation.');
   }
-  if (skill === 'spec-workbench-grilling' && state.params.autoTickets) {
-    extras.push('Once the design is confirmed, proceed directly to cutting tickets with spec-workbench-to-tickets.');
+  if ((skill === 'spec-workbench-grilling' || kind === 'design') && state.params.autoTickets) {
+    extras.push(
+      'Once all open decisions are answered, synthesize and confirm design.html with spec-workbench-to-design, and then proceed to cut tickets with spec-workbench-to-tickets.',
+    );
   }
   if (state.params.designRules.trim()) {
     extras.push(`Project rules: ${state.params.designRules.trim()}`);
@@ -650,86 +1803,515 @@ function buildPromptWithParams(skill, basePrompt) {
   return extras.length ? `${basePrompt}\n\n${extras.join('\n')}` : basePrompt;
 }
 
-async function run(skill, prompt, actionId) {
-  if (state.preview) return toast(t('previewOnly'));
+async function startTrackedRun({
+  slotKey,
+  featureId,
+  kind,
+  ticketPath = '',
+  skill = '',
+  prompt,
+  actionId,
+  sessionId = '',
+}) {
+  if (state.preview) {
+    toast(t('previewOnly'));
+    return null;
+  }
+  if (inFlightSlots.has(slotKey)) return null;
+  inFlightSlots.add(slotKey);
+  render();
+  ensureAgentSubscriptions();
+  const req = {
+    prompt: buildPromptWithParams(skill, prompt, kind),
+    skill: skill || '',
+    actionId,
+    wait: false,
+    dedupe: 'none',
+    focus: false,
+    ...agentRunOptions(),
+  };
+  if (sessionId) req.sessionId = sessionId;
+
   try {
-    const result = await deck.agent.run({
-      skill,
-      prompt: buildPromptWithParams(skill, prompt),
-      actionId,
-      ...agentRunOptions(),
+    const result = await deck.agent.run(req);
+    await saveSessionRecord({
+      slotKey,
+      featureId,
+      kind,
+      ticketPath,
+      sessionId: result.sessionId,
+      status: result.status || 'running',
+      updatedAt: Date.now(),
     });
-    toast(t(result.reused ? 'sessionFocused' : 'sessionOpened', { id: result.sessionId }));
+    await saveFeatureMeta(featureId, { updatedAt: Date.now() });
+    syncActiveWatcher();
+    return result;
+  } finally {
+    inFlightSlots.delete(slotKey);
+    render();
+  }
+}
+
+async function sendToReusableSession({
+  slotKey,
+  featureId,
+  kind,
+  skill,
+  actionId,
+  buildPrompt,
+}) {
+  if (state.preview) {
+    toast(t('previewOnly'));
+    return null;
+  }
+  const existingId = state.sessions[slotKey]?.sessionId || '';
+  if (existingId && typeof window.deck?.agent?.logs === 'function') {
+    const logs = await window.deck.agent.logs(existingId).catch(() => ({ exists: false, status: 'closed' }));
+    if (logs.exists && logs.status !== 'closed') {
+      if (ACTIVE_STATES.has(logs.status)) {
+        const prev = state.sessions[slotKey];
+        if (prev && prev.status !== logs.status) {
+          await saveSessionRecord({ ...prev, status: logs.status, updatedAt: Date.now() });
+          render();
+        }
+        toast(t(logs.status === 'needs_input' ? 'waitingOpenSession' : 'sessionBusyToast', { id: existingId }));
+        await openSession(existingId);
+        return { busy: true, sessionId: existingId };
+      }
+      try {
+        const res = await startTrackedRun({
+          slotKey,
+          featureId,
+          kind,
+          skill: '',
+          prompt: buildPrompt(false),
+          actionId,
+          sessionId: existingId,
+        });
+        if (!res) return null;
+        toast(t('sessionReplied', { id: res.sessionId }));
+        return { reusedSession: true, result: res };
+      } catch {
+        // Session closed between check and send; fall through to create new session with full context
+      }
+    }
+  }
+
+  const res = await startTrackedRun({
+    slotKey,
+    featureId,
+    kind,
+    skill,
+    prompt: buildPrompt(true),
+    actionId,
+  });
+  if (!res) return null;
+  toast(existingId ? t('sessionNewWithContext', { id: res.sessionId }) : t('sessionOpened', { id: res.sessionId }));
+  return { reusedSession: false, result: res };
+}
+
+// ---------- feature & ticket actions
+
+async function runFeatureAction(f, act) {
+  if (!f || f.pending) return;
+  if (state.preview) return toast(t('previewOnly'));
+
+  const targetSlot =
+    act === 'prototype'
+      ? slotPrototype(f.id)
+      : act === 'tickets'
+        ? slotTickets(f.id)
+        : act === 'implement'
+          ? slotImplement(f.id)
+          : slotReview(f.id);
+
+  const active = activeSessionForSlot(targetSlot);
+  if (active) {
+    await openSession(active.sessionId);
+    return;
+  }
+  if (act === 'implement' && hasAnyTicketImplementInFlight(f.id)) {
+    const tkActive = activeTicketImplementSession(f.id);
+    toast(t('implementBatchBusy'), true);
+    if (tkActive) await openSession(tkActive.sessionId);
+    return;
+  }
+
+  try {
+    if (act === 'prototype') {
+      const res = await startTrackedRun({
+        slotKey: slotPrototype(f.id),
+        featureId: f.id,
+        kind: 'prototype',
+        skill: 'spec-workbench-to-prototype',
+        prompt: `Prototype ${f.design} (Feature ${f.id} "${f.title}").`,
+        actionId: `prototype:${f.id}`,
+      });
+      if (res) toast(t('sessionOpened', { id: res.sessionId }));
+    } else if (act === 'tickets') {
+      const res = await startTrackedRun({
+        slotKey: slotTickets(f.id),
+        featureId: f.id,
+        kind: 'tickets',
+        skill: 'spec-workbench-to-tickets',
+        prompt: `Cut tickets for ${f.design} (Feature ${f.id} "${f.title}").${f.prototype ? ` Prototype reference: ${f.prototype}.` : ''}`,
+        actionId: `tickets:${f.id}`,
+      });
+      if (res) toast(t('sessionOpened', { id: res.sessionId }));
+    } else if (act === 'implement') {
+      const hasTickets = f.tickets.length > 0;
+      const protoNote = f.prototype ? ` Reference prototype: ${f.prototype}.` : '';
+      const prompt = hasTickets
+        ? `all ${f.id}\n\nImplement all unfinished tickets of Feature ${f.id} "${f.title}" in dependency order: automatically split into one spec-workbench-builder subagent per ticket sequentially, and review each ticket result in the main Agent before moving to the next (plus a final end-to-end review). Tickets in docs/features/${f.id}/tickets/.${protoNote}`
+        : `feature ${f.id}\n\nImplement Feature ${f.id} "${f.title}" directly from ${f.design} (tickets and prototype are optional), then review the result in the main Agent.${protoNote}`;
+      const res = await startTrackedRun({
+        slotKey: slotImplement(f.id),
+        featureId: f.id,
+        kind: 'implement',
+        skill: 'spec-workbench-implement',
+        prompt,
+        actionId: `implement:${f.id}`,
+      });
+      if (res) toast(t('sessionOpened', { id: res.sessionId }));
+    } else if (act === 'review') {
+      const protoNote = f.prototype
+        ? ` Also review ${f.prototype} against the design and implemented UI.`
+        : '';
+      const res = await startTrackedRun({
+        slotKey: slotReview(f.id),
+        featureId: f.id,
+        kind: 'review',
+        skill: 'spec-workbench-review',
+        prompt: `Feature Review: Review Feature ${f.id} "${f.title}" (${f.design}${f.tickets.length ? `, tickets in docs/features/${f.id}/tickets/` : ''}${f.prototype ? `, prototype: ${f.prototype}` : ''}).${protoNote} Do NOT generate any docs/results/ file; return the structured review report directly.`,
+        actionId: `review:${f.id}`,
+      });
+      if (res) toast(t('sessionOpened', { id: res.sessionId }));
+    }
   } catch (error) {
     toast(error.message, true);
   }
 }
 
-// Each header button opens a Session on one skill of this Deck. The prompt names paths, never file contents.
-const ACTIONS = {
-  tickets: f => ['spec-workbench-to-tickets', `Cut tickets for ${f.design} (Feature ${f.id} "${f.title}").`, 'cut-tickets'],
-  prototype: f => ['spec-workbench-to-prototype', `Prototype ${f.design} (Feature ${f.id} "${f.title}").`, 'create-prototype'],
-  implement: f => [
-    'spec-workbench-implement',
-    `Implement the next ready ticket of Feature ${f.id} "${f.title}" (tickets in docs/features/${f.id}/tickets/).`,
-    'implement-next',
-  ],
-  review: f => [
-    'spec-workbench-review',
-    `Review the current changes against Feature ${f.id} "${f.title}" (${f.design}).`,
-    'review-changes',
-  ],
-};
-
-for (const button of document.querySelectorAll('.act')) {
-  button.addEventListener('click', async () => {
-    const f = feature();
-    const action = ACTIONS[button.dataset.act];
-    if (!f || !action) return;
-    button.disabled = true;
-    await run(...action(f));
-    button.disabled = false;
-  });
+async function runImplementNextTicket(f) {
+  if (state.preview) return toast(t('previewOnly'));
+  const active = activeSessionForSlot(slotImplement(f.id));
+  if (active) return openSession(active.sessionId);
+  if (hasAnyTicketImplementInFlight(f.id)) {
+    const tkActive = activeTicketImplementSession(f.id);
+    toast(t('implementBatchBusy'), true);
+    if (tkActive) await openSession(tkActive.sessionId);
+    return;
+  }
+  const protoNote = f.prototype ? ` Reference prototype: ${f.prototype}.` : '';
+  try {
+    const res = await startTrackedRun({
+      slotKey: slotImplement(f.id),
+      featureId: f.id,
+      kind: 'implement',
+      skill: 'spec-workbench-implement',
+      prompt: `next\n\nImplement the next ready ticket of Feature ${f.id} "${f.title}" (tickets in docs/features/${f.id}/tickets/).${protoNote}`,
+      actionId: `implement-next:${f.id}`,
+    });
+    if (res) toast(t('sessionOpened', { id: res.sessionId }));
+  } catch (error) {
+    toast(error.message, true);
+  }
 }
 
-// ---------- new Feature
+async function runImplementTicket(f, ticket) {
+  if (state.preview) return toast(t('previewOnly'));
+  const sKey = slotTicketImplement(f.id, ticket.path);
+  const active = activeSessionForSlot(sKey);
+  if (active) return openSession(active.sessionId);
+  if (hasFeatureImplementBusy(f.id)) {
+    const batchActive = activeSessionForSlot(slotImplement(f.id));
+    toast(t('implementBatchBusy'), true);
+    if (batchActive) await openSession(batchActive.sessionId);
+    return;
+  }
+  const waitList = blockedLabel(ticket, f);
+  if (waitList) return toast(t('blockedCannotImplement', { list: waitList }), true);
+  const protoNote = f.prototype ? ` Reference prototype: ${f.prototype}.` : '';
+  try {
+    const res = await startTrackedRun({
+      slotKey: sKey,
+      featureId: f.id,
+      kind: 'ticketImplement',
+      ticketPath: ticket.path,
+      skill: 'spec-workbench-implement',
+      prompt: `${ticket.path}\n\nImplement ticket ${ticket.path} ("${ticket.title}") of Feature ${f.id} "${f.title}".${protoNote}`,
+      actionId: `implement-ticket:${ticket.path}`,
+    });
+    if (res) toast(t('sessionOpened', { id: res.sessionId }));
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function runReviewTicket(f, ticket) {
+  if (state.preview) return toast(t('previewOnly'));
+  const sKey = slotTicketReview(f.id, ticket.path);
+  const active = activeSessionForSlot(sKey);
+  if (active) return openSession(active.sessionId);
+  const protoNote = f.prototype
+    ? ` Also review ${f.prototype} if it covers screens/nodes delivered by this ticket.`
+    : '';
+  try {
+    const res = await startTrackedRun({
+      slotKey: sKey,
+      featureId: f.id,
+      kind: 'ticketReview',
+      ticketPath: ticket.path,
+      skill: 'spec-workbench-review',
+      prompt: `Ticket Review: Review ticket ${ticket.path} ("${ticket.title}") of Feature ${f.id} "${f.title}" against ${f.design}.${protoNote} Do NOT generate any docs/results/ file; return the structured review report directly.`,
+      actionId: `review-ticket:${ticket.path}`,
+    });
+    if (res) toast(t('sessionOpened', { id: res.sessionId }));
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function toggleFeatureDone(f) {
+  if (!f || f.pending) return;
+  if (state.preview) return toast(t('previewOnly'));
+  try {
+    const res = await window.deck.files.read(f.design, { encoding: 'utf8' });
+    const html = res?.content || '';
+    const today = todayIsoDate();
+    if (f.status === 'done') {
+      const prev = state.featureMeta[f.id]?.previousStatus;
+      let fallbackStatus = prev === 'draft' || prev === 'confirmed' ? prev : '';
+      if (!fallbackStatus) {
+        const parsed = parseDesignDocQuestions(html);
+        fallbackStatus = parsed.open.length === 0 ? 'confirmed' : 'draft';
+      }
+      const nextHtml = applyDesignStatus(html, fallbackStatus, today);
+      await window.deck.files.write(f.design, nextHtml, { encoding: 'utf8' });
+      await saveFeatureMeta(f.id, { updatedAt: Date.now() });
+      toast(t('reopenedFeature'));
+    } else {
+      await saveFeatureMeta(f.id, {
+        previousStatus: f.status === 'draft' || f.status === 'confirmed' ? f.status : 'confirmed',
+        updatedAt: Date.now(),
+      });
+      const nextHtml = applyDesignStatus(html, 'done', today);
+      await window.deck.files.write(f.design, nextHtml, { encoding: 'utf8' });
+      toast(t('markedFeatureDone'));
+    }
+    await load({ reload: true });
+  } catch (error) {
+    toast(t('writeDocFailed', { reason: error.message }), true);
+  }
+}
+
+async function toggleTicketDone(f, ticket) {
+  if (!f || !ticket) return;
+  if (state.preview) return toast(t('previewOnly'));
+  const markDone = ticket.status !== 'done';
+  const today = todayIsoDate();
+  try {
+    const [ticketRes, designRes] = await Promise.all([
+      window.deck.files.read(ticket.path, { encoding: 'utf8' }),
+      window.deck.files.read(f.design, { encoding: 'utf8' }),
+    ]);
+    const nextTicketHtml = applyTicketDone(ticketRes?.content || '', markDone, today);
+    const nextDesignHtml = syncDesignTicketItem(
+      designRes?.content || '',
+      ticket.path,
+      markDone ? 'done' : 'planned',
+      today,
+    );
+    await Promise.all([
+      window.deck.files.write(ticket.path, nextTicketHtml, { encoding: 'utf8' }),
+      window.deck.files.write(f.design, nextDesignHtml, { encoding: 'utf8' }),
+    ]);
+    await saveFeatureMeta(f.id, { updatedAt: Date.now() });
+    toast(t(markDone ? 'markedTicketDone' : 'reopenedTicket'));
+    await load({ reload: true });
+  } catch (error) {
+    toast(t('writeDocFailed', { reason: error.message }), true);
+  }
+}
+
+// ---------- Q&A submission handlers
+
+async function submitDesignQa(f) {
+  const sKey = slotDesign(f.id);
+  const active = activeSessionForSlot(sKey);
+  if (active) return openSession(active.sessionId);
+  if (state.preview) return toast(t('previewOnly'));
+
+  const qa = state.qaData[f.id]?.design || { open: [], settled: [] };
+  const draft = state.designDrafts[f.id] || { answers: {}, note: '' };
+  const answers = (qa.open || [])
+    .map(q => ({ id: q.id, question: q.question, value: String(draft.answers[q.id] || '').trim() }))
+    .filter(a => a.value);
+  const noteText = String(draft.note || '').trim();
+  if (!answers.length && !noteText) {
+    return toast(t('qaNeedInput'), true);
+  }
+
+  try {
+    const outcome = await sendToReusableSession({
+      slotKey: sKey,
+      featureId: f.id,
+      kind: 'design',
+      skill: 'spec-workbench-grilling',
+      actionId: `design-reply:${f.id}`,
+      buildPrompt: isNewSession =>
+        buildDesignReplyPrompt({
+          feature: f,
+          answers,
+          settled: qa.settled || [],
+          note: noteText,
+          isNewSession,
+        }),
+    });
+    if (outcome && !outcome.busy) {
+      state.designDrafts[f.id] = { answers: {}, note: '' };
+      renderDesignQa(f);
+    }
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitTicketsQa(f) {
+  const sKey = slotTickets(f.id);
+  const active = activeSessionForSlot(sKey);
+  if (active) return openSession(active.sessionId);
+  if (state.preview) return toast(t('previewOnly'));
+
+  const choices = state.qaData[f.id]?.ticketChoices || [];
+  const draft = state.ticketDrafts[f.id] || { answers: {}, note: '' };
+  const answers = choices
+    .map(c => ({
+      ticketPath: c.ticketPath,
+      id: c.id,
+      question: c.question,
+      value: String(draft.answers[`${c.ticketPath}::${c.id}`] || '').trim(),
+    }))
+    .filter(a => a.value);
+  const noteText = String(draft.note || '').trim();
+  if (!answers.length && !noteText) {
+    return toast(t('qaNeedInput'), true);
+  }
+
+  try {
+    const outcome = await sendToReusableSession({
+      slotKey: sKey,
+      featureId: f.id,
+      kind: 'tickets',
+      skill: 'spec-workbench-to-tickets',
+      actionId: `tickets-reply:${f.id}`,
+      buildPrompt: isNewSession =>
+        buildTicketsReplyPrompt({
+          feature: f,
+          answers,
+          tickets: f.tickets || [],
+          note: noteText,
+          isNewSession,
+        }),
+    });
+    if (outcome && !outcome.busy) {
+      state.ticketDrafts[f.id] = { answers: {}, note: '' };
+      renderTicketsQa(f);
+    }
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+// ---------- new Feature modal
 
 const ID_RE = /^[a-z0-9][a-z0-9-]*$/;
 const dialog = $('new-dialog');
+let idEditedManually = false;
 
 function openNew() {
   $('new-err').textContent = '';
+  idEditedManually = false;
   dialog.hidden = false;
-  $('new-id').focus();
+  $('new-title').focus();
 }
+
 function closeNew() {
   dialog.hidden = true;
 }
 
+$('new-title').addEventListener('input', () => {
+  if (idEditedManually) return;
+  const titleVal = $('new-title').value.trim();
+  if (!titleVal) {
+    $('new-id').value = '';
+    return;
+  }
+  const existingIds = state.features.map(f => f.id);
+  const candidate = slugifyFeatureId(titleVal, existingIds);
+  if (!candidate.startsWith('feat-')) {
+    $('new-id').value = candidate;
+  }
+});
+
+$('new-id').addEventListener('input', () => {
+  idEditedManually = Boolean($('new-id').value.trim());
+});
+
 async function submitNew() {
-  const id = $('new-id').value.trim();
-  const title = $('new-title').value.trim() || id;
+  if (state.preview) return toast(t('previewOnly'));
+  const rawTitle = $('new-title').value.trim();
+  let id = $('new-id').value.trim();
   const brief = $('new-brief').value.trim();
+  if (!rawTitle && !id) return ($('new-err').textContent = t('nameRequired'));
+  if (!id) {
+    id = slugifyFeatureId(rawTitle, state.features.map(f => f.id));
+  }
+  const title = rawTitle || id;
   if (!ID_RE.test(id)) return ($('new-err').textContent = t('idInvalid'));
-  if (state.index.features.some(f => f.id === id)) return ($('new-err').textContent = t('idTaken', { id }));
+  if (state.features.some(f => f.id === id)) return ($('new-err').textContent = t('idTaken', { id }));
+
   $('new-ok').disabled = true;
-  await run(
-    'spec-workbench-grilling',
-    [
-      `New Feature ${id} "${title}".`,
-      brief && `What it is for: ${brief}`,
-      `Scaffold docs/features/${id}/design.html (spec-workbench-html: \`scaffold design ${id}\`) and set the doc's <title> and <h1> to "${title}".`,
-    ]
-      .filter(Boolean)
-      .join('\n'),
-    'create-feature',
-  );
-  $('new-ok').disabled = false;
-  closeNew();
-  for (const field of ['new-id', 'new-title', 'new-brief']) $(field).value = '';
+  try {
+    const now = Date.now();
+    await saveFeatureMeta(id, {
+      id,
+      title,
+      brief,
+      pending: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const res = await startTrackedRun({
+      slotKey: slotDesign(id),
+      featureId: id,
+      kind: 'design',
+      skill: 'spec-workbench-grilling',
+      prompt: [
+        `New Feature ${id} "${title}".`,
+        brief && `What it is for: ${brief}`,
+        `Follow spec-workbench-html to create docs/features/${id}/design.html from scaffolds/design.html, setting data-doc-id="${id}", <title> and <h1> to "${title}", and keeping the decision tree visible. Do NOT write any docs/results/ file.`,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+      actionId: `create-feature:${id}`,
+    });
+    if (res) {
+      toast(t('sessionOpened', { id: res.sessionId }));
+      state.featureId = id;
+      state.tab = 'design';
+      closeNew();
+      for (const field of ['new-id', 'new-title', 'new-brief']) $(field).value = '';
+      await load({ reload: false });
+    }
+  } catch (error) {
+    await deleteFeatureMeta(id);
+    $('new-err').textContent = error.message;
+  } finally {
+    $('new-ok').disabled = false;
+  }
 }
 
-// IME: an Enter that confirms a candidate never submits (composition end fires right before that keydown).
 let composing = false;
 let composedAt = 0;
 dialog.addEventListener('compositionstart', () => (composing = true));
@@ -752,21 +2334,82 @@ $('empty-new').addEventListener('click', openNew);
 
 // ---------- wiring
 
-$('hub').addEventListener('click', () => {
-  state.view = 'hub';
-  state.hubDoc = '';
-  render();
+for (const button of document.querySelectorAll('.act[data-act]')) {
+  button.addEventListener('click', () => {
+    const f = feature();
+    if (f) void runFeatureAction(f, button.dataset.act);
+  });
+}
+$('act-done').addEventListener('click', () => {
+  const f = feature();
+  if (f) void toggleFeatureDone(f);
 });
-$('hub-back').addEventListener('click', () => ((state.hubDoc = ''), render()));
+$('tickets-next-btn').addEventListener('click', () => {
+  const f = feature();
+  if (f) void runImplementNextTicket(f);
+});
+$('tickets-all-btn').addEventListener('click', () => {
+  const f = feature();
+  if (f) void runFeatureAction(f, 'implement');
+});
+$('tickets-qa-toggle').addEventListener('click', () => {
+  const f = feature();
+  if (!f) return;
+  const collapseKey = `${f.id}:tickets`;
+  const choices = state.qaData[f.id]?.ticketChoices || [];
+  const currentlyOpen = collapseKey in state.qaCollapsed ? !state.qaCollapsed[collapseKey] : choices.length > 0;
+  state.qaCollapsed[collapseKey] = currentlyOpen;
+  renderTicketsQa(f);
+});
+$('proto-gen-btn').addEventListener('click', () => {
+  const f = feature();
+  if (f) void runFeatureAction(f, 'prototype');
+});
+$('proto-link-btn').addEventListener('click', () => {
+  state.protoLinking = !state.protoLinking;
+  syncProtoLinkButton();
+  post(frames.get('prototype')?.contentWindow, 'linking', { on: state.protoLinking });
+});
+$('proto-regen-btn').addEventListener('click', () => {
+  const f = feature();
+  if (f) void runFeatureAction(f, 'prototype');
+});
+$('proto-review-btn').addEventListener('click', () => {
+  const f = feature();
+  if (f) void runFeatureAction(f, 'review');
+});
+
+$('pending-open-session').addEventListener('click', () => {
+  const f = feature();
+  const sess = f && state.sessions[slotDesign(f.id)];
+  if (sess?.sessionId) void openSession(sess.sessionId);
+});
+$('pending-refresh').addEventListener('click', () => void load({ reload: true }));
+$('pending-remove').addEventListener('click', async () => {
+  const f = feature();
+  if (!f || !f.pending) return;
+  await deleteFeatureMeta(f.id);
+  await deleteSessionRecord(slotDesign(f.id));
+  syncActiveWatcher();
+  state.featureId = '';
+  await load();
+});
+
 $('ticket-back').addEventListener('click', () => ((state.ticket = ''), render()));
 $('refresh').addEventListener('click', () => void load({ reload: true }));
-for (const tab of document.querySelectorAll('.tab'))
+for (const tab of document.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => {
     if (tab.disabled) return;
     if (tab.dataset.tab === 'tickets' && state.tab === 'tickets') state.ticket = '';
     state.tab = tab.dataset.tab;
     render();
+    const f = feature();
+    if (f && !f.pending) {
+      void refreshFeatureQaData(f);
+      void refreshFeatureSessionHints(f);
+    }
   });
+}
 
 $('agent-btn').addEventListener('click', e => {
   e.stopPropagation();

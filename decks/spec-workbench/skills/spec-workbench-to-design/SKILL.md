@@ -18,7 +18,7 @@ You orchestrate; subagents read and write. Keep your own context to their short 
    >
    > Give every code-bound Node `data-doc-status="planned"` and `data-doc-links` to the files, `table:` and `test:` it will touch. Write it as a self-contained HTML doc (call the Skill tool with "spec-workbench-html" for the contract). Name the test seams in the Node's `data-doc-note`; prefer few, high seams.
 
-   Paste any decisions settled in this Session but missing from the doc into the brief. If it returns open decisions, stop and show them.
-2. Spawn the `spec-workbench-reviewer` subagent: "Review `docs/features/<id>/design.html`."
-3. If it reports any `blocker`, spawn the `spec-workbench-writer` again with the result path and "fix every blocker, then majors where cheap". Then re-run step 2. At most 2 fix rounds; carry what is left to the gate.
-4. **GATE.** Show the doc path, the review result path, and the remaining findings by severity. Ask the human to confirm. On yes, run `doc confirm <id>`. Do not open the doc to do it.
+   Paste any decisions settled in this Session or via the Deck UI into the brief. If it returns open decisions, stop and show them.
+2. Spawn the `spec-workbench-reviewer` subagent: "Review `docs/features/<id>/design.html` and return findings directly (do not write any result file)."
+3. If it reports any `blocker`, spawn the `spec-workbench-writer` again with the findings and "fix every blocker, then majors where cheap". Then re-run step 2. At most 2 fix rounds; carry what is left to the gate.
+4. **GATE.** Show `docs/features/<id>/design.html` and the remaining findings by severity. Ask the human to confirm. On yes, have `spec-workbench-writer` (or do the minimal targeted edit directly) set `<html data-doc-status="confirmed">` and sync the hero `<span class="pill s-confirmed">confirmed</span>` + `data-doc-date`, then run `pnpm lumzel check docs/features/<id>/design.html` if configured.

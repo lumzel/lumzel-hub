@@ -3,15 +3,15 @@
   "title": "Spec Workbench",
   "icon": "dia",
   "category": "Workflow",
-  "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project.",
+  "description": "Manage feature designs, optional clickable prototypes, and vertical-slice tickets with live visible sessions, interactive Q&A, one-click implementation, and feature/ticket review.",
   "i18n": {
     "en": {
       "title": "Spec Workbench",
-      "description": "From rough idea to technical design, tickets, clickable prototype, and ticket-by-ticket implementation & review — ship features with visual docs in any project."
+      "description": "Manage feature designs, optional clickable prototypes, and vertical-slice tickets with live visible sessions, interactive Q&A, one-click implementation, and feature/ticket review."
     },
     "zh-CN": {
       "title": "方案工作台",
-      "description": "从想法到技术方案、工单、可点击原型，再到按工单实现与评审的研发工作台：在任意项目里用可视化文档推进功能交付。"
+      "description": "专注需求设计、工单与可选原型管理：需求倒序追踪、可视化提问与跨会话上下文回复、自动创建可见会话实时联动、按需/按工单实现与评审。"
     }
   },
   "entry": "index.html",
@@ -36,8 +36,17 @@
   },
   "permissions": [
     "agent",
+    "db",
     "files"
   ],
+  "capabilities": {
+    "files": [
+      "docs/**"
+    ]
+  },
+  "store": {
+    "scope": "project"
+  },
   "params": [
     {
       "key": "tddStrictness",
@@ -73,12 +82,12 @@
       "key": "autoTickets",
       "type": "boolean",
       "label": "Prompt Auto Ticket Cutting",
-      "description": "Instruct design grilling sessions to proceed directly to ticket cutting once design is confirmed.",
+      "description": "Instruct design grilling sessions to synthesize and confirm design.html via spec-workbench-to-design and then proceed to cut tickets with spec-workbench-to-tickets.",
       "default": false,
       "i18n": {
         "zh-CN": {
           "label": "设计确认后自动推进切工单",
-          "description": "在需求拷问与设计会话中，指示 Agent 在设计确认后顺手生成工单。"
+          "description": "在需求拷问与设计会话中，指示 Agent 在答疑完成后先通过 spec-workbench-to-design 生成并确认设计，再自动推进切工单。"
         }
       }
     },
@@ -98,5 +107,5 @@
       }
     }
   ],
-  "version": "1.1.0"
+  "version": "2.0.0"
 }
