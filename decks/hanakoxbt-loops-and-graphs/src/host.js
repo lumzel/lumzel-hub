@@ -2,7 +2,7 @@ import { setLocale, t } from './i18n.js';
 import { DEFAULT_PREFS } from './store.js';
 import { createTelemetryController, normalizeEpochSec } from './telemetry.js';
 import { createLessonsController } from './lessons.js';
-import { checkTopologyDrift, extractYamlNodeIds } from './topology/layout.js';
+import { checkTopologyDrift, extractYamlNodeIds, isWideViewport } from './topology/layout.js';
 import { getTopology } from './topology/index.js';
 
 const BASE_TITLE = 'Loops & Graphs · @hanakoxbt';
@@ -280,7 +280,11 @@ export function createHost(store, demo) {
     if (prevState !== 'waiting_gate' && nextRun.state === 'waiting_gate') {
       document.title = `◆ ${BASE_TITLE}`;
       patch.selection = { kind: 'node', id: 'human_gate' };
-      patch.ui = { ...st.ui, inspectorOpen: true, tab: 'gate' };
+      patch.ui = {
+        ...st.ui,
+        inspectorOpen: isWideViewport() ? true : st.ui.inspectorOpen,
+        tab: 'gate',
+      };
     } else if (prevState === 'waiting_gate' && nextRun.state !== 'waiting_gate') {
       document.title = BASE_TITLE;
     }
@@ -560,6 +564,7 @@ export function createHost(store, demo) {
       banner = { tone: 'fail', text: `${preset}: ${wfMap[preset].error}` };
     }
 
+    const wide = isWideViewport();
     store.set(s => ({
       ...s,
       mode: 'idle',
@@ -572,7 +577,7 @@ export function createHost(store, demo) {
       banner,
       ui: {
         ...s.ui,
-        inspectorOpen: mergedPrefs.inspectorOpen !== false,
+        inspectorOpen: wide,
         inspectorWidth: Math.max(320, Math.min(520, Number(mergedPrefs.inspectorWidth) || 380)),
         tab: mergedPrefs.tab || 'node',
         timelineOpen: Boolean(mergedPrefs.timelineOpen),
@@ -639,7 +644,7 @@ export function createHost(store, demo) {
             selection: run.state === 'waiting_gate' ? { kind: 'node', id: 'human_gate' } : s.selection,
             ui:
               run.state === 'waiting_gate'
-                ? { ...s.ui, inspectorOpen: true, tab: 'gate' }
+                ? { ...s.ui, inspectorOpen: isWideViewport(), tab: 'gate' }
                 : s.ui,
           }));
           if (run.state === 'waiting_gate') document.title = `◆ ${BASE_TITLE}`;

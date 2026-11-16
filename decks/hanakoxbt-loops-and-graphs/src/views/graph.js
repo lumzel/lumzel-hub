@@ -97,8 +97,7 @@ export function mountGraph(store, host) {
   }
 
   function getInsetRight() {
-    const st = store.get();
-    return window.innerWidth < 1024 && st.ui.inspectorOpen ? 368 : 0;
+    return 0;
   }
 
   function fitViewport(animate = false) {
@@ -170,7 +169,7 @@ export function mountGraph(store, host) {
     const rect = canvasEl.getBoundingClientRect();
     const px = cx !== undefined ? cx - rect.left : rect.width / 2;
     const py = cy !== undefined ? cy - rect.top : rect.height / 2;
-    const nextK = clamp(vp.k * factor, 0.45, 2.2);
+    const nextK = clamp(vp.k * factor, 0.4, 2.2);
     const ratio = nextK / vp.k;
     vp = {
       k: nextK,
@@ -737,10 +736,8 @@ export function mountGraph(store, host) {
       updateVerdictCard(view);
       updateHintAndBanner(st, view);
 
-      if (prevViewState !== view.state || slice.inspectorOpen !== undefined) {
-        if (view.state === 'waiting_gate') {
-          centerActiveIfOutside(view);
-        } else if (view.state === 'running') {
+      if (prevViewState !== view.state) {
+        if (view.state === 'waiting_gate' || view.state === 'running') {
           centerActiveIfOutside(view);
         }
         prevViewState = view.state;

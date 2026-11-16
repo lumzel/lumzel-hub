@@ -1,6 +1,7 @@
 import { createStore, INITIAL_STATE } from './store.js';
 import { applyI18n, t } from './i18n.js';
 import { setAttr, setText } from './lib/dom.js';
+import { isWideViewport } from './topology/layout.js';
 import { createDemoPlayer } from './demo/player.js';
 import { createHost } from './host.js';
 import { mountHeader } from './views/header.js';
@@ -110,6 +111,28 @@ async function boot() {
 
   applyI18n();
   await host.init();
+
+  // Auto-expand inspector and enlarge graph when crossing into wide/fullscreen width,
+  // and collapse inspector when returning to narrow half-screen width.
+  let prevWide = isWideViewport();
+  const syncResponsiveLayout = () => {
+    const nextWide = isWideViewport();
+    if (nextWide === prevWide) return;
+    prevWide = nextWide;
+    store.set(s => ({
+      ...s,
+      ui: { ...s.ui, inspectorOpen: nextWide },
+    }));
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        graphApi.fitViewport(true);
+      });
+    });
+  };
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(syncResponsiveLayout).observe(appEl);
+  }
+  window.addEventListener('resize', syncResponsiveLayout);
 
   // Wait for fonts & next animation frame so preview captures are rock-solid
   if (document.fonts && document.fonts.ready) {

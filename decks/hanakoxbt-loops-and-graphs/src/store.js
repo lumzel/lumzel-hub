@@ -1,6 +1,6 @@
 export const DEFAULT_PREFS = {
   preset: 'feature-ship',
-  inspectorOpen: true,
+  inspectorOpen: false,
   inspectorWidth: 380,
   tab: 'node',
   timelineOpen: false,
@@ -36,7 +36,7 @@ export const INITIAL_STATE = {
   agentCatalog: null,
   agentOverride: { provider: '', model: '', effort: '' },
   ui: {
-    inspectorOpen: true,
+    inspectorOpen: false,
     inspectorWidth: 380,
     tab: 'node',
     timelineOpen: false,

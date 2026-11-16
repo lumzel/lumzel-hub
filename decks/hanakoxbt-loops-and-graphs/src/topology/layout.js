@@ -74,6 +74,12 @@ export function ortho(a, b, mode = 'hvh') {
   return mode === 'h' ? [a, { x: b.x, y: a.y }, b] : [a, { x: a.x, y: b.y }, b];
 }
 
+export const WIDE_BREAKPOINT = 1200;
+
+export function isWideViewport(width = typeof window !== 'undefined' ? window.innerWidth : WIDE_BREAKPOINT) {
+  return width >= WIDE_BREAKPOINT;
+}
+
 export function fit(viewW, viewH, world, insetRight = 0) {
   const padX = 28;
   const padTop = 44;
@@ -82,8 +88,8 @@ export function fit(viewW, viewH, world, insetRight = 0) {
   const H = Math.max(200, viewH);
   const k = clamp(
     Math.min((W - 2 * padX) / world.width, (H - padTop - padBot) / world.height),
-    0.55,
-    1.25,
+    0.4,
+    1.45,
   );
   return {
     k,

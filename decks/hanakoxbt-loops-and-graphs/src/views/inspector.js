@@ -1,5 +1,6 @@
 import { h, setAttr } from '../lib/dom.js';
 import { derive } from '../runModel.js';
+import { isWideViewport } from '../topology/layout.js';
 import { renderNodePanel } from './nodePanel.js';
 import { createGatePanelRenderer } from './gatePanel.js';
 import { createVaultRenderer } from './vault.js';
@@ -33,7 +34,7 @@ export function mountInspector(store, host) {
   let startW = 380;
 
   gripEl.addEventListener('pointerdown', e => {
-    if (window.innerWidth < 1024) return;
+    if (!isWideViewport()) return;
     dragging = true;
     startX = e.clientX;
     startW = inspEl.getBoundingClientRect().width || 380;
@@ -74,7 +75,7 @@ export function mountInspector(store, host) {
     }),
     ({ open, width, tab, run }) => {
       setAttr(appEl, 'data-insp', open ? 'open' : 'closed');
-      if (width && window.innerWidth >= 1024) {
+      if (width && isWideViewport()) {
         document.documentElement.style.setProperty('--insp-w', `${width}px`);
       }
       for (const btn of tabsEl.querySelectorAll('button[data-tab]')) {

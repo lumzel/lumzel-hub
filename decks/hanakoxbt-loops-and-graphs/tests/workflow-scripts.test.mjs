@@ -707,4 +707,23 @@ test('lessons ingestRunResults does not double-count hits and demo stop resets m
   assert.equal(state.lessons.list.length, 0);
 });
 
+test('layout fit and isWideViewport handle narrow half-screen and wide fullscreen viewports', async () => {
+  const { fit, isWideViewport, WIDE_BREAKPOINT } = await import('../src/topology/layout.js');
+  assert.equal(WIDE_BREAKPOINT, 1200);
+  assert.equal(isWideViewport(720), false);
+  assert.equal(isWideViewport(1080), false);
+  assert.equal(isWideViewport(1199), false);
+  assert.equal(isWideViewport(1200), true);
+  assert.equal(isWideViewport(1512), true);
 
+  const world = { width: 960, height: 590 };
+  const narrow = fit(720, 600, world, 0);
+  const narrowWithZeroInset = fit(720, 600, world, 0);
+  assert.equal(narrow.k, narrowWithZeroInset.k);
+  assert.ok(narrow.k >= 0.4 && narrow.k < 1);
+  assert.ok(world.width * narrow.k <= 720);
+
+  const fullscreen = fit(1512 - 380, 790, world, 0);
+  assert.ok(fullscreen.k > narrow.k);
+  assert.ok(fullscreen.k <= 1.45);
+});

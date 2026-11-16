@@ -669,8 +669,10 @@ svg.graph.panning {
   :root { --insp-w: 340px; }
 }
 
-@media (max-width: 1023px) {
-  .app {
+@media (max-width: 1199px) {
+  .app,
+  .app[data-insp='open'],
+  .app[data-insp='closed'] {
     grid-template-columns: 1fr 0;
   }
   .inspector {
@@ -687,6 +689,9 @@ svg.graph.panning {
     bottom: calc(var(--timeline-open-h) + 8px);
   }
   .insp-grip { display: none; }
+}
+
+@media (max-width: 1023px) {
   .cmd .constraints-label, .strip .s-optional {
     display: none;
   }
