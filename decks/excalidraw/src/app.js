@@ -281,9 +281,28 @@ function applyTheme(next) {
   }
 }
 
+function syncActiveFileHeader() {
+  const pathEl = $('active-file-path');
+  const badgeEl = $('save-state-badge');
+  const jsonPathEl = $('json-path');
+  const hasActive = Boolean(state.activePath);
+  if (pathEl) {
+    pathEl.textContent = state.activePath || '';
+    pathEl.hidden = !hasActive;
+  }
+  if (badgeEl) {
+    badgeEl.hidden = !hasActive;
+  }
+  if (jsonPathEl) {
+    jsonPathEl.textContent = state.activePath || '';
+    jsonPathEl.hidden = !hasActive;
+  }
+}
+
 function updateSaveBadge() {
   const badge = $('save-state-badge');
   if (!badge) return;
+  badge.hidden = !state.activePath;
   if (state.saving) {
     badge.dataset.state = 'saving';
     badge.textContent = t('savingState');
@@ -355,7 +374,7 @@ async function serializeSceneJson(elements, appState, files) {
 
 async function syncJsonEditorFromCanvas() {
   const { elements, appState, files } = getLiveSceneData();
-  $('json-path').textContent = state.activePath || 'untitled.excalidraw';
+  syncActiveFileHeader();
   const stats = computeSceneStats({ elements });
   $('json-stats').textContent = t('jsonStats', stats);
   let jsonText;
@@ -481,7 +500,7 @@ async function openFile(filePath, { forceReload = false, switchToCanvas = false,
     const scene = await loadSceneForPath(filePath, { forceReload });
     state.activePath = filePath;
     state.activeScene = scene;
-    $('active-file-path').textContent = filePath;
+    syncActiveFileHeader();
     $('empty-canvas').hidden = true;
     $('btn-ai-revise').disabled = false;
 
@@ -1060,7 +1079,7 @@ async function handleConfirmRename() {
     upsertFileEntry(toPath, { size: res?.size ?? prev?.size ?? 0, modifiedAt: Date.now() });
     if (state.activePath === fromPath) {
       state.activePath = toPath;
-      $('active-file-path').textContent = toPath;
+      syncActiveFileHeader();
       window.deck.store?.put?.('activePath', toPath).catch(() => {});
     }
     renderRail();
@@ -1114,7 +1133,7 @@ async function handleConfirmDelete() {
       if (state.files.length > 0) {
         await openFile(state.files[0].path);
       } else {
-        $('active-file-path').textContent = 'untitled.excalidraw';
+        syncActiveFileHeader();
         $('empty-canvas').hidden = false;
         $('btn-ai-revise').disabled = true;
       }
@@ -1991,6 +2010,7 @@ async function boot() {
   if (initialCandidate) {
     state.activePath = initialCandidate;
   }
+  syncActiveFileHeader();
   renderRail();
   syncRunPoller();
 
@@ -2007,7 +2027,7 @@ async function boot() {
         await openFile(fallback);
       } else {
         state.activePath = '';
-        $('active-file-path').textContent = 'untitled.excalidraw';
+        syncActiveFileHeader();
         $('empty-canvas').hidden = !state.hasProject;
         $('btn-ai-revise').disabled = true;
       }
