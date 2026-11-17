@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Excalidraw Studio</title>
+    <link rel="stylesheet" href="vendor/excalidraw.css" />
+    <link rel="stylesheet" href="styles/app.css" />
+  </head>
+  <body>
+    <div class="app" id="app" data-state="loading">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">✎</span>
+          <strong data-i18n="brandTitle">Excalidraw Studio</strong>
+          <span class="brand-sub" data-i18n="brandSub">Diagram Workbench</span>
+        </div>
+
+        <nav class="main-tabs" role="tablist">
+          <button type="button" class="main-tab on" role="tab" data-view="canvas" data-i18n="tabCanvas">Canvas</button>
+          <button type="button" class="main-tab" role="tab" data-view="files" data-i18n="tabFiles">Files &amp; Preview</button>
+          <button type="button" class="main-tab" role="tab" data-view="json" data-i18n="tabJson">JSON</button>
+        </nav>
+
+        <div class="top-actions">
+          <button type="button" class="run-pill" id="ai-status-pill" hidden>
+            <span class="run-spinner" aria-hidden="true"></span>
+            <span id="ai-status-text">Generating diagram...</span>
+          </button>
+
+          <div class="agent-control-wrap" id="agent-override-wrap">
+            <button type="button" class="agent-pill" id="agent-override-pill" aria-expanded="false" aria-haspopup="dialog">
+              <span class="agent-dot" id="agent-override-dot" aria-hidden="true"></span>
+              <span class="agent-pill-text" id="agent-override-label">Claude Code</span>
+              <span class="agent-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="agent-popover" id="agent-popover" role="dialog" hidden>
+              <div class="agent-pop-head">
+                <strong data-i18n="agentMenuTitle">Agent &amp; Model</strong>
+                <div class="agent-pop-actions">
+                  <span class="pill" id="ex-agent-badge">Lumzel Default</span>
+                  <button type="button" class="link-btn" id="ex-agent-reset" data-i18n="agentReset" hidden>Reset</button>
+                </div>
+              </div>
+              <div class="field-sm">
+                <span data-i18n="agentFieldAgent">Agent</span>
+                <div class="ui-select" id="ex-agent-select"></div>
+              </div>
+              <div class="field-sm">
+                <span data-i18n="agentFieldModel">Model</span>
+                <div class="ui-select" id="ex-model-select"></div>
+              </div>
+              <div class="field-sm" id="ex-effort-row">
+                <span data-i18n="agentFieldEffort">Thinking</span>
+                <div class="ui-select" id="ex-effort-select"></div>
+              </div>
+              <div class="agent-pop-foot">
+                <p class="hint-sm agent-pop-hint" id="ex-agent-hint"></p>
+                <button type="button" class="btn subtle btn-xs" id="ex-agent-save-default" data-i18n="agentSaveDefault" hidden>Save as Deck Default</button>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn" id="btn-new-diagram" data-i18n="newDiagramBtn">+ New</button>
+          <button type="button" class="btn primary" id="btn-ai-generate" data-i18n="aiGenerateBtn">✨ AI Generate</button>
+          <button type="button" class="btn icon-btn" id="btn-deck-settings" data-i18n-title="deckSettings" title="Deck Settings" aria-label="Deck Settings">⚙</button>
+          <button type="button" class="btn icon-btn" id="btn-refresh" data-i18n-title="refresh" title="Refresh" aria-label="Refresh">↻</button>
+        </div>
+      </header>
+
+      <div class="banner" id="banner" hidden></div>
+
+      <!-- VIEW 1: CANVAS STUDIO -->
+      <section class="view-pane" id="view-canvas">
+        <div class="drawer-scrim" id="drawer-scrim" hidden></div>
+        <aside class="rail" id="canvas-rail">
+          <div class="rail-head">
+            <span data-i18n="filesHead">Diagrams</span>
+            <div class="rail-head-right">
+              <span class="count-pill" id="file-count">0</span>
+              <button type="button" class="btn icon-btn drawer-close" id="btn-close-rail" data-i18n-title="closePanel" title="Close" aria-label="Close">×</button>
+            </div>
+          </div>
+          <div class="rail-search-wrap">
+            <input type="search" id="rail-search" class="rail-search" data-i18n-placeholder="searchFilesPh" placeholder="Filter diagrams..." autocomplete="off" />
+          </div>
+          <div class="file-list" id="rail-file-list"></div>
+          <div class="rail-runs" id="rail-runs" hidden>
+            <div class="rail-runs-head" data-i18n="recentRunsTitle">Recent AI Runs</div>
+            <div class="rail-runs-list" id="rail-runs-list"></div>
+          </div>
+        </aside>
+
+        <main class="canvas-center" id="canvas-center">
+          <div class="canvas-toolbar">
+            <div class="toolbar-left">
+              <button type="button" class="btn subtle sm drawer-toggle" id="btn-toggle-rail" aria-expanded="false">
+                <span data-i18n="toggleSidebar">Files</span>
+                <span class="count-pill" id="toolbar-file-count">0</span>
+              </button>
+              <span class="active-file-pill mono" id="active-file-path">untitled.excalidraw</span>
+              <span class="save-badge" id="save-state-badge" data-state="saved" data-i18n="savedState">Saved</span>
+            </div>
+
+            <div class="toolbar-right">
+              <button type="button" class="btn sm" id="btn-ai-revise" data-i18n="aiReviseBtn">✨ AI Revise</button>
+              <button type="button" class="btn sm" id="btn-save" data-i18n="saveBtn">Save</button>
+              <button type="button" class="btn sm subtle" id="btn-import" data-i18n="importBtn">Import</button>
+              <div class="dropdown-wrap" id="export-wrap">
+                <button type="button" class="btn sm" id="btn-export-menu" aria-expanded="false" aria-haspopup="menu" data-i18n="exportMenuBtn">Export ▾</button>
+                <div class="dropdown-menu" id="export-menu" role="menu" hidden>
+                  <button type="button" class="dropdown-item" role="menuitem" id="btn-export-json" data-i18n="exportExcalidraw">Download .excalidraw</button>
+                  <button type="button" class="dropdown-item" role="menuitem" id="btn-export-png" data-i18n="exportPng">Export PNG</button>
+                  <button type="button" class="dropdown-item" role="menuitem" id="btn-export-svg" data-i18n="exportSvg">Export SVG</button>
+                  <div class="dropdown-sep"></div>
+                  <button type="button" class="dropdown-item" role="menuitem" id="btn-open-card" data-i18n="openInCard">Open File Card</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stage" id="canvas-stage">
+            <div class="excalidraw-mount" id="excalidraw-mount"></div>
+
+            <div class="empty-canvas" id="empty-canvas" hidden>
+              <div class="empty-card">
+                <div class="empty-mark">✎</div>
+                <h2 data-i18n="emptyFiles">No .excalidraw files found in this workspace yet.</h2>
+                <p data-i18n="emptyFilesHint">Create one manually or generate a diagram with AI.</p>
+                <div class="empty-actions">
+                  <button type="button" class="btn" id="empty-create-btn" data-i18n="createFirstBtn">+ Create First Diagram</button>
+                  <button type="button" class="btn primary" id="empty-ai-btn" data-i18n="aiFirstBtn">✨ Generate with AI</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </section>
+
+      <!-- VIEW 2: FILES & PREVIEW GALLERY -->
+      <section class="view-pane view-files" id="view-files" hidden>
+        <div class="gallery-wrap">
+          <header class="gallery-head">
+            <div>
+              <h2 data-i18n="galleryTitle">Workspace Excalidraw Files</h2>
+              <p class="muted-line" data-i18n="gallerySub">Browse vector previews of every .excalidraw diagram in this project.</p>
+            </div>
+            <div class="gallery-actions">
+              <input type="search" id="gallery-search" class="gallery-search" data-i18n-placeholder="searchFilesPh" placeholder="Filter diagrams..." autocomplete="off" />
+              <button type="button" class="btn" id="gallery-import-btn" data-i18n="importBtn">Import</button>
+              <button type="button" class="btn" id="gallery-new-btn" data-i18n="newDiagramBtn">+ New</button>
+              <button type="button" class="btn primary" id="gallery-ai-btn" data-i18n="aiGenerateBtn">✨ AI Generate</button>
+            </div>
+          </header>
+          <div class="gallery-grid" id="gallery-grid"></div>
+          <div class="gallery-empty" id="gallery-empty" hidden>
+            <p data-i18n="emptyFiles">No .excalidraw files found in this workspace yet.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: JSON SOURCE -->
+      <section class="view-pane view-json" id="view-json" hidden>
+        <div class="json-wrap">
+          <div class="json-head">
+            <div class="json-meta">
+              <span class="mono json-path" id="json-path">untitled.excalidraw</span>
+              <span class="json-stats" id="json-stats"></span>
+            </div>
+            <div class="json-actions">
+              <button type="button" class="btn" id="btn-copy-json" data-i18n="copyJson">Copy JSON</button>
+              <button type="button" class="btn primary" id="btn-apply-json" data-i18n="applyJson">Apply JSON to Canvas</button>
+            </div>
+          </div>
+          <textarea id="json-editor" class="code-editor mono" spellcheck="false"></textarea>
+        </div>
+      </section>
+
+      <!-- MODAL: NEW DIAGRAM -->
+      <div class="scrim" id="modal-new" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-new-h">
+          <h3 id="modal-new-h" data-i18n="newModalTitle">New Diagram</h3>
+          <label>
+            <span data-i18n="fileNameLabel">File path (relative to project)</span>
+            <input id="new-path" class="mono" data-i18n-placeholder="fileNamePh" placeholder="diagrams/system-architecture.excalidraw" autocomplete="off" spellcheck="false" />
+          </label>
+          <div class="modal-field">
+            <span data-i18n="templateLabel">Starter template</span>
+            <div class="ui-select" id="new-template"></div>
+          </div>
+          <p class="err" id="new-err"></p>
+          <div class="modal-row">
+            <button type="button" class="btn" id="new-cancel" data-i18n="cancelBtn">Cancel</button>
+            <button type="button" class="btn primary" id="new-create" data-i18n="createBtn">Create Diagram</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: AI GENERATE / REVISE -->
+      <div class="scrim" id="modal-ai" hidden>
+        <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="modal-ai-h">
+          <h3 id="modal-ai-h" data-i18n="aiModalCreateTitle">Generate Diagram with AI</h3>
+          <div class="modal-grid">
+            <div class="modal-field">
+              <span data-i18n="aiModeLabel">Action</span>
+              <div class="ui-select" id="ai-mode"></div>
+            </div>
+            <div class="modal-field">
+              <span data-i18n="aiTypeLabel">Diagram type</span>
+              <div class="ui-select" id="ai-type"></div>
+            </div>
+          </div>
+          <label id="ai-path-wrap">
+            <span data-i18n="aiTargetPathLabel">Target file path</span>
+            <input id="ai-path" class="mono" placeholder="diagrams/auth-flow.excalidraw" autocomplete="off" spellcheck="false" />
+          </label>
+          <label>
+            <span data-i18n="aiPromptLabel">Describe the diagram or changes</span>
+            <textarea id="ai-prompt" rows="4" data-i18n-placeholder="aiPromptCreatePh" placeholder="Describe the architecture, flow, or changes..."></textarea>
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="ai-include-codebase" checked />
+            <span data-i18n="aiIncludeCodebase">Allow Agent to inspect workspace files for accurate symbols &amp; paths</span>
+          </label>
+          <div class="modal-agent-grid">
+            <div class="modal-field">
+              <span data-i18n="agentFieldAgent">Agent</span>
+              <div class="ui-select" id="ai-agent"></div>
+            </div>
+            <div class="modal-field">
+              <span data-i18n="agentFieldModel">Model</span>
+              <div class="ui-select" id="ai-model"></div>
+            </div>
+            <div class="modal-field" id="ai-effort-field">
+              <span data-i18n="agentFieldEffort">Thinking</span>
+              <div class="ui-select" id="ai-effort"></div>
+            </div>
+          </div>
+          <p class="err" id="ai-err"></p>
+          <div class="modal-row">
+            <button type="button" class="btn" id="ai-cancel" data-i18n="cancelBtn">Cancel</button>
+            <button type="button" class="btn" id="ai-compose" data-i18n="aiComposeBtn">Edit in Session</button>
+            <button type="button" class="btn primary" id="ai-run" data-i18n="aiRunBtn">Run AI Generation</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: READ-ONLY DIAGRAM PREVIEW -->
+      <div class="scrim" id="modal-preview" hidden>
+        <div class="modal modal-preview" role="dialog" aria-modal="true" aria-labelledby="modal-preview-h">
+          <div class="preview-modal-head">
+            <div>
+              <h3 id="modal-preview-h" data-i18n="previewModalTitle">Diagram Preview</h3>
+              <div class="mono muted-line" id="preview-modal-path"></div>
+            </div>
+            <button type="button" class="btn icon-btn" id="preview-close-x" aria-label="Close">×</button>
+          </div>
+          <div class="preview-modal-stage" id="preview-modal-stage"></div>
+          <div class="preview-modal-foot">
+            <span class="hint-sm" id="preview-modal-stats"></span>
+            <div class="modal-row">
+              <button type="button" class="btn" id="preview-open-card" data-i18n="openInCard">Open File Card</button>
+              <button type="button" class="btn primary" id="preview-edit-btn" data-i18n="editOnCanvas">Edit in Canvas</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: RENAME -->
+      <div class="scrim" id="modal-rename" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-rename-h">
+          <h3 id="modal-rename-h" data-i18n="renameFile">Rename</h3>
+          <label>
+            <span id="rename-label">New path</span>
+            <input id="rename-input" class="mono" autocomplete="off" spellcheck="false" />
+          </label>
+          <p class="err" id="rename-err"></p>
+          <div class="modal-row">
+            <button type="button" class="btn" id="rename-cancel" data-i18n="cancelBtn">Cancel</button>
+            <button type="button" class="btn primary" id="rename-confirm" data-i18n="renameFile">Rename</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: CONFIRM DELETE -->
+      <div class="scrim" id="modal-confirm" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-h">
+          <h3 id="modal-confirm-h" data-i18n="deleteFile">Delete</h3>
+          <p class="confirm-msg" id="confirm-msg"></p>
+          <div class="modal-row">
+            <button type="button" class="btn" id="confirm-cancel" data-i18n="cancelBtn">Cancel</button>
+            <button type="button" class="btn danger" id="confirm-ok" data-i18n="deleteFile">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast" role="status" hidden></div>
+    </div>
+
+    <script src="/sdk.js"></script>
+    <script src="boot.js"></script>
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>

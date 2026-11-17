@@ -1,0 +1,111 @@
+{
+  "id": "excalidraw",
+  "title": "Excalidraw Studio",
+  "description": "Local-first Excalidraw diagram studio: draw manually on a full offline canvas, generate or revise .excalidraw diagrams with AI, and browse, preview, rename, and export workspace diagram files.",
+  "category": "Design",
+  "author": "Lumzel",
+  "homepage": "https://github.com/excalidraw/excalidraw",
+  "icon": "spark",
+  "entry": "index.html",
+  "version": "1.0.0",
+  "permissions": ["agent", "db", "files", "upload", "open"],
+  "capabilities": {
+    "files": [
+      "**/*.excalidraw",
+      "**/*.excalidraw.json",
+      "diagrams/**",
+      "docs/**"
+    ]
+  },
+  "store": {
+    "scope": "project"
+  },
+  "uses": {
+    "skills": ["excalidraw-diagram-generator"]
+  },
+  "params": [
+    {
+      "key": "defaultDir",
+      "type": "string",
+      "label": "Default Diagrams Folder",
+      "description": "Relative workspace directory where newly created or AI-generated .excalidraw files are saved.",
+      "placeholder": "diagrams",
+      "default": "diagrams",
+      "i18n": {
+        "zh-CN": {
+          "label": "默认图表目录",
+          "description": "新建或由 AI 生成的 .excalidraw 文件默认保存的相对目录。",
+          "placeholder": "diagrams"
+        }
+      }
+    },
+    {
+      "key": "defaultDiagramType",
+      "type": "select",
+      "label": "Default AI Diagram Type",
+      "description": "Preferred diagram style pre-selected in the AI generator dialog.",
+      "default": "auto",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Auto-detect from prompt",
+          "i18n": { "zh-CN": { "label": "按描述自动识别" } }
+        },
+        {
+          "value": "architecture",
+          "label": "System Architecture",
+          "i18n": { "zh-CN": { "label": "系统架构图" } }
+        },
+        {
+          "value": "flowchart",
+          "label": "Flowchart",
+          "i18n": { "zh-CN": { "label": "流程图" } }
+        },
+        {
+          "value": "sequence",
+          "label": "Sequence Diagram",
+          "i18n": { "zh-CN": { "label": "时序图" } }
+        },
+        {
+          "value": "er",
+          "label": "ER Diagram",
+          "i18n": { "zh-CN": { "label": "实体关系图 (ER)" } }
+        },
+        {
+          "value": "mindmap",
+          "label": "Mind Map",
+          "i18n": { "zh-CN": { "label": "思维导图" } }
+        }
+      ],
+      "i18n": {
+        "zh-CN": {
+          "label": "默认 AI 生图类型",
+          "description": "在 AI 生成弹窗中默认选中的图表类型。"
+        }
+      }
+    },
+    {
+      "key": "autoSave",
+      "type": "boolean",
+      "label": "Auto-save Canvas Edits",
+      "description": "Automatically write manual canvas changes back to the active .excalidraw file after a short pause.",
+      "default": true,
+      "i18n": {
+        "zh-CN": {
+          "label": "自动保存画布修改",
+          "description": "手动编辑画布后自动防抖写回当前打开的 .excalidraw 文件。"
+        }
+      }
+    }
+  ],
+  "i18n": {
+    "en": {
+      "title": "Excalidraw Studio",
+      "description": "Local-first Excalidraw diagram studio: draw manually on a full offline canvas, generate or revise .excalidraw diagrams with AI, and browse, preview, rename, and export workspace diagram files."
+    },
+    "zh-CN": {
+      "title": "Excalidraw 画布工作台",
+      "description": "本地优先的 Excalidraw 图表工作台：完整离线手绘画布、支持手动绘制与 AI 生成/修订图表，统一管理、预览、重命名与导出工作区 .excalidraw 文件。"
+    }
+  }
+}

@@ -475,6 +475,38 @@
         750
       ],
       "version": "1.4.5"
+    },
+    {
+      "id": "excalidraw",
+      "title": "Excalidraw Studio",
+      "icon": "spark",
+      "description": "Local-first Excalidraw diagram studio: draw manually on a full offline canvas, generate or revise .excalidraw diagrams with AI, and browse, preview, rename, and export workspace diagram files.",
+      "i18n": {
+        "en": {
+          "title": "Excalidraw Studio",
+          "description": "Local-first Excalidraw diagram studio: draw manually on a full offline canvas, generate or revise .excalidraw diagrams with AI, and browse, preview, rename, and export workspace diagram files."
+        },
+        "zh-CN": {
+          "title": "Excalidraw 画布工作台",
+          "description": "本地优先的 Excalidraw 图表工作台：完整离线手绘画布、支持手动绘制与 AI 生成/修订图表，统一管理、预览、重命名与导出工作区 .excalidraw 文件。"
+        }
+      },
+      "category": "Design",
+      "author": "Lumzel",
+      "homepage": "https://github.com/excalidraw/excalidraw",
+      "counts": {
+        "skills": 1
+      },
+      "source": "./decks/excalidraw",
+      "cover": {
+        "light": "preview/cover-light.webp",
+        "dark": "preview/cover-dark.webp"
+      },
+      "coverViewport": [
+        1200,
+        750
+      ],
+      "version": "1.0.0"
     }
   ]
 }

@@ -1,0 +1,262 @@
+// Localization strings for Excalidraw Studio Deck (en / zh-CN).
+
+const STRINGS = {
+  en: {
+    brandTitle: 'Excalidraw Studio',
+    brandSub: 'Diagram Workbench',
+    tabCanvas: 'Canvas',
+    tabFiles: 'Files & Preview',
+    tabJson: 'JSON',
+    newDiagramBtn: '+ New',
+    aiGenerateBtn: '✨ AI Generate',
+    aiReviseBtn: '✨ AI Revise',
+    saveBtn: 'Save',
+    savedState: 'Saved',
+    unsavedState: 'Unsaved',
+    savingState: 'Saving...',
+    importBtn: 'Import',
+    exportMenuBtn: 'Export ▾',
+    exportExcalidraw: 'Download .excalidraw',
+    exportPng: 'Export PNG',
+    exportSvg: 'Export SVG',
+    openInCard: 'Open File Card',
+    refresh: 'Refresh',
+    deckSettings: 'Deck Settings',
+    previewBanner: 'Market Preview — interactive offline Excalidraw canvas with sample workspace diagrams.',
+    noProjectBanner: 'No project worktree open — edits stay in memory. Use Export to save files locally.',
+    filesHead: 'Diagrams',
+    searchFilesPh: 'Filter diagrams...',
+    emptyFiles: 'No .excalidraw files found in this workspace yet.',
+    emptyFilesHint: 'Create one manually or generate a diagram with AI.',
+    createFirstBtn: '+ Create First Diagram',
+    aiFirstBtn: '✨ Generate with AI',
+    toggleSidebar: 'Files',
+    closePanel: 'Close',
+    renameFile: 'Rename',
+    duplicateFile: 'Duplicate',
+    deleteFile: 'Delete',
+    openOnCanvas: 'Open in Canvas',
+    elementsCount: '{n} elements',
+    readOnlyPreview: 'Preview Mode',
+    editOnCanvas: 'Edit in Canvas',
+    copyJson: 'Copy JSON',
+    copiedJson: 'JSON copied to clipboard',
+    applyJson: 'Apply JSON to Canvas',
+    invalidJson: 'Invalid Excalidraw JSON: {err}',
+    appliedJson: 'Canvas updated from JSON',
+    agentMenuTitle: 'Agent & Model',
+    agentDefaultBadge: 'Lumzel Default',
+    agentOverrideBadge: 'Deck Override',
+    agentReset: 'Reset',
+    agentFieldAgent: 'Agent',
+    agentFieldModel: 'Model',
+    agentFieldEffort: 'Thinking',
+    agentSaveDefault: 'Save as Deck Default',
+    agentHintDefault: 'Inherits Project or Global defaults unless overridden here.',
+    agentHintOverride: 'Applies to AI diagram runs from this Deck.',
+    newModalTitle: 'New Diagram',
+    fileNameLabel: 'File path (relative to project)',
+    fileNamePh: 'diagrams/system-architecture.excalidraw',
+    templateLabel: 'Starter template',
+    tplBlank: 'Blank Canvas',
+    tplArchitecture: 'System Architecture',
+    tplFlowchart: 'Process Flowchart',
+    tplSequence: 'Sequence Diagram',
+    tplMindmap: 'Mind Map',
+    tplEr: 'ER Data Model',
+    cancelBtn: 'Cancel',
+    createBtn: 'Create Diagram',
+    aiModalCreateTitle: 'Generate Diagram with AI',
+    aiModalReviseTitle: 'Revise Diagram with AI',
+    aiModeLabel: 'Action',
+    aiModeCreate: 'Create new .excalidraw file',
+    aiModeRevise: 'Revise active diagram',
+    aiTypeLabel: 'Diagram type',
+    typeAuto: 'Auto-detect',
+    typeArchitecture: 'System Architecture',
+    typeFlowchart: 'Flowchart',
+    typeSequence: 'Sequence Diagram',
+    typeEr: 'ER Diagram',
+    typeMindmap: 'Mind Map',
+    typeRelationship: 'Relationship Diagram',
+    aiTargetPathLabel: 'Target file path',
+    aiPromptLabel: 'Describe the diagram or changes',
+    aiPromptCreatePh: 'e.g. Draw the authentication & token refresh flow across desktop app, gateway, and OAuth provider, referencing src/auth if helpful.',
+    aiPromptRevisePh: 'e.g. Add a Redis cache node between API Service and PostgreSQL, and highlight error retry arrows in orange.',
+    aiIncludeCodebase: 'Allow Agent to inspect workspace files for accurate symbols & paths',
+    aiComposeBtn: 'Edit in Session',
+    aiRunBtn: 'Run AI Generation',
+    aiRunningTitle: 'Generating diagram...',
+    aiOpenSession: 'Open Session',
+    aiDoneMsg: 'AI finished updating {path}',
+    aiFailedMsg: 'AI generation failed: {err}',
+    renamePrompt: 'New path for {path}:',
+    deleteConfirm: 'Delete "{path}" from the workspace?',
+    deletedMsg: 'Deleted {path}',
+    savedMsg: 'Saved {path}',
+    exportedMsg: 'Exported {file}',
+    importedMsg: 'Imported {n} diagram(s)',
+    fileExistsErr: 'A file already exists at {path}',
+    galleryTitle: 'Workspace Excalidraw Files',
+    gallerySub: 'Browse vector previews of every .excalidraw diagram in this project.',
+    previewModalTitle: 'Diagram Preview',
+    jsonStats: '{elements} elements · {shapes} shapes · {arrows} arrows · {texts} text labels',
+    recentRunsTitle: 'Recent AI Runs',
+    noRunsYet: 'No AI runs yet.',
+    statusRunning: 'Running',
+    statusDone: 'Done',
+    statusError: 'Error',
+  },
+  'zh-CN': {
+    brandTitle: 'Excalidraw 画布工作台',
+    brandSub: '图表工坊',
+    tabCanvas: '画布编辑',
+    tabFiles: '文件与预览',
+    tabJson: 'JSON 源码',
+    newDiagramBtn: '+ 新建',
+    aiGenerateBtn: '✨ AI 生成',
+    aiReviseBtn: '✨ AI 修改',
+    saveBtn: '保存',
+    savedState: '已保存',
+    unsavedState: '未保存',
+    savingState: '保存中...',
+    importBtn: '导入',
+    exportMenuBtn: '导出 ▾',
+    exportExcalidraw: '导出 .excalidraw',
+    exportPng: '导出 PNG 图片',
+    exportSvg: '导出 SVG 矢量',
+    openInCard: '在预览卡打开',
+    refresh: '刷新',
+    deckSettings: 'Deck 设置',
+    previewBanner: '市场预览模式 — 展示完整离线 Excalidraw 画布与示例项目图表。',
+    noProjectBanner: '当前未打开项目 Worktree — 修改仅保存在内存中，请使用导出功能保存文件。',
+    filesHead: '图表文件',
+    searchFilesPh: '搜索图表文件...',
+    emptyFiles: '当前工作区暂无 .excalidraw 文件。',
+    emptyFilesHint: '你可以手动新建白板，或直接让 AI 根据需求/代码生成图表。',
+    createFirstBtn: '+ 手动新建图表',
+    aiFirstBtn: '✨ AI 生成图表',
+    toggleSidebar: '文件列表',
+    closePanel: '关闭',
+    renameFile: '重命名',
+    duplicateFile: '创建副本',
+    deleteFile: '删除',
+    openOnCanvas: '在画布中打开',
+    elementsCount: '{n} 个图元',
+    readOnlyPreview: '预览模式',
+    editOnCanvas: '去画布编辑',
+    copyJson: '复制 JSON',
+    copiedJson: 'JSON 已复制到剪贴板',
+    applyJson: '应用 JSON 到画布',
+    invalidJson: '无效的 Excalidraw JSON：{err}',
+    appliedJson: '已从 JSON 更新画布',
+    agentMenuTitle: 'Agent 与模型',
+    agentDefaultBadge: 'Lumzel 默认',
+    agentOverrideBadge: '当前覆盖',
+    agentReset: '重置',
+    agentFieldAgent: 'Agent',
+    agentFieldModel: '模型',
+    agentFieldEffort: '思考强度',
+    agentSaveDefault: '设为本 Deck 默认',
+    agentHintDefault: '默认继承项目或全局配置，可在此临时切换。',
+    agentHintOverride: '将应用于本 Deck 发起的 AI 生图任务。',
+    newModalTitle: '新建 Excalidraw 图表',
+    fileNameLabel: '文件路径（相对项目根目录）',
+    fileNamePh: 'diagrams/system-architecture.excalidraw',
+    templateLabel: '初始模板',
+    tplBlank: '空白画布',
+    tplArchitecture: '系统架构图',
+    tplFlowchart: '流程图',
+    tplSequence: '时序图',
+    tplMindmap: '思维导图',
+    tplEr: 'ER 实体关系图',
+    cancelBtn: '取消',
+    createBtn: '创建图表',
+    aiModalCreateTitle: 'AI 生成 Excalidraw 图表',
+    aiModalReviseTitle: 'AI 修改当前图表',
+    aiModeLabel: '操作方式',
+    aiModeCreate: '新建 .excalidraw 文件',
+    aiModeRevise: '修改当前打开的图表',
+    aiTypeLabel: '图表类型',
+    typeAuto: '按描述自动识别',
+    typeArchitecture: '系统架构图',
+    typeFlowchart: '流程图',
+    typeSequence: '时序图',
+    typeEr: 'ER 实体关系图',
+    typeMindmap: '思维导图',
+    typeRelationship: '组件关系图',
+    aiTargetPathLabel: '目标文件路径',
+    aiPromptLabel: '描述你想绘制或修改的内容',
+    aiPromptCreatePh: '例如：结合项目里的 src/auth 代码，画一张桌面端、网关与 OAuth 服务的认证与刷新 Token 架构流程图。',
+    aiPromptRevisePh: '例如：在 API 服务与 PostgreSQL 之间增加一个 Redis 缓存节点，并用橙色标出失败重试连线。',
+    aiIncludeCodebase: '允许 Agent 结合当前工作区代码与文档生成真实模块名称',
+    aiComposeBtn: '带到会话里编辑',
+    aiRunBtn: '开始 AI 生成',
+    aiRunningTitle: '正在生成图表...',
+    aiOpenSession: '查看会话',
+    aiDoneMsg: 'AI 已完成更新：{path}',
+    aiFailedMsg: 'AI 生成失败：{err}',
+    renamePrompt: '输入 {path} 的新路径：',
+    deleteConfirm: '确定从工作区删除 “{path}” 吗？',
+    deletedMsg: '已删除 {path}',
+    savedMsg: '已保存 {path}',
+    exportedMsg: '已导出 {file}',
+    importedMsg: '已导入 {n} 个图表文件',
+    fileExistsErr: '目标路径 {path} 已存在文件',
+    galleryTitle: '工作区 Excalidraw 文件管理',
+    gallerySub: '集中预览、检索、重命名与导出当前项目中的所有 .excalidraw 图表。',
+    previewModalTitle: '图表预览',
+    jsonStats: '{elements} 个图元 · {shapes} 个图形 · {arrows} 条连线 · {texts} 段文本',
+    recentRunsTitle: '最近 AI 生成记录',
+    noRunsYet: '暂无 AI 生成记录。',
+    statusRunning: '生成中',
+    statusDone: '已完成',
+    statusError: '失败',
+  },
+};
+
+let activeLocale = 'en';
+
+export function normalizeLocale(locale) {
+  if (!locale || typeof locale !== 'string') return 'en';
+  const lower = locale.toLowerCase();
+  if (lower.startsWith('zh')) return 'zh-CN';
+  return 'en';
+}
+
+export function setLocale(locale) {
+  activeLocale = normalizeLocale(locale);
+  document.documentElement.lang = activeLocale;
+}
+
+export function getLocale() {
+  return activeLocale;
+}
+
+export function t(key, vars = {}) {
+  const dict = STRINGS[activeLocale] || STRINGS.en;
+  let text = dict[key] ?? STRINGS.en[key] ?? key;
+  for (const [k, v] of Object.entries(vars)) {
+    text = text.replaceAll(`{${k}}`, String(v));
+  }
+  return text;
+}
+
+export function applyI18n(root = document) {
+  for (const el of root.querySelectorAll('[data-i18n]')) {
+    const key = el.getAttribute('data-i18n');
+    if (key) el.textContent = t(key);
+  }
+  for (const el of root.querySelectorAll('[data-i18n-placeholder]')) {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (key) el.setAttribute('placeholder', t(key));
+  }
+  for (const el of root.querySelectorAll('[data-i18n-title]')) {
+    const key = el.getAttribute('data-i18n-title');
+    if (key) {
+      const val = t(key);
+      el.setAttribute('title', val);
+      el.setAttribute('aria-label', val);
+    }
+  }
+}
