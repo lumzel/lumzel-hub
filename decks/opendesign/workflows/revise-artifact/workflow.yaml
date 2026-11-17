@@ -64,7 +64,8 @@ nodes:
       Requirements:
       1. Preserve existing `data-od-id` attributes on unchanged elements.
       2. Bake any CSS token tweaks into `:root` inside the output HTML so exported HTML matches the canvas.
-      3. Ensure all scripts/styles remain 100% self-contained with zero external network requests.
+      3. Keep copy, entities, and interactions aligned with the artifact's target product (and workspace codebase when applicable).
+      4. Ensure all scripts/styles remain 100% self-contained with zero external network requests.
 
   - id: lint_revision
     kind: code

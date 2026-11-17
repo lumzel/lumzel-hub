@@ -24,7 +24,7 @@ Define all of the following under `:root` (and optionally `:root[data-theme="dar
   --od-accent-fg: #...;
   --od-border: #...;
   --od-radius: 8px;
-  --od-space: 1;
+  --od-space: 16px;
   --od-font-scale: 1;
   --od-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
   --od-font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
@@ -41,4 +41,4 @@ Write clear, opinionated, concrete rules (no vague adjectives like "modern and c
 5. **Core Components**: Buttons, cards, inputs, tables, badges, empty states.
 6. **Anti-Patterns (Do Not Do)**: 4–6 explicit visual mistakes to avoid for this brand.
 
-When extracting from a codebase, inspect existing CSS variables, Tailwind config, or component styles first so the extracted tokens faithfully reflect the project.
+When extracting from a codebase, explore the current working directory and target path autonomously to inspect existing UI and styling tokens before authoring `DESIGN.md` and `tokens.css`.

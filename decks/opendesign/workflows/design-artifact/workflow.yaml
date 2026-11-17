@@ -55,9 +55,14 @@ nodes:
       Active DESIGN.md contract:
       {{outputs.load_context.designMd}}
 
+      Before proposing any direction:
+      1. Unless the Brief explicitly specifies a separate/greenfield product unrelated to this workspace, use your native tools in the current working directory to explore the project and understand what product it builds, its target platform/form factor, and its real domain workflows.
+      2. Ground `assumptions` and all 3 `directions` strictly in that real product and platform — NEVER invent an unrelated generic SaaS dashboard or issue-triage workbench when designing for an existing product.
+      3. Write `assumptions`, `name`, `rationale`, and `layoutIdea` in the same language as the Brief (e.g., Chinese if Brief is Chinese, English if Brief is English).
+
       Do NOT write HTML files yet. Return ONLY valid JSON (no prose or markdown outside JSON) with:
-      - `assumptions`: 2-3 concise discovery assumptions/clarifications as plain strings
-      - `directions`: 3 distinct visual directions tailored to the brief and DESIGN.md
+      - `assumptions`: 2-3 concise discovery assumptions as plain strings (the first assumption MUST identify the product, platform/form factor, and core workflows)
+      - `directions`: 3 distinct visual directions tailored to the product, brief, and DESIGN.md
 
       Every field inside each direction (`id`, `name`, `rationale`, `palette`, `typography`, `layoutIdea`) MUST be a single plain string (never a nested object or array):
       - `palette`: concise single-line color summary string, e.g. `"#fbfbfb / #09090b / #0070e3"`
@@ -118,8 +123,11 @@ nodes:
       User Brief:
       {{inputs.brief}}
 
+      Discovery Assumptions:
+      {{JSON.stringify(outputs.propose_directions.assumptions || [])}}
+
       Selected Direction / Steering:
-      {{outputs.direction_gate ? JSON.stringify(outputs.direction_gate.payload || {}) : JSON.stringify(outputs.propose_directions.directions[0] || {})}}
+      {{JSON.stringify((outputs.direction_gate && outputs.direction_gate.payload && (outputs.direction_gate.payload.direction || outputs.direction_gate.payload.directionId || outputs.direction_gate.payload.steering)) ? outputs.direction_gate.payload : (outputs.propose_directions.directions[0] || {}))}}
 
       Proposed Directions Reference:
       {{JSON.stringify(outputs.propose_directions.directions)}}
@@ -131,11 +139,12 @@ nodes:
       {{outputs.load_context.tokensCss}}
 
       Requirements:
-      1. Write the complete HTML file directly to `{{inputs.targetPath}}` (create parent directories if needed).
-      2. Tag all major structural & interactive elements with unique kebab-case `data-od-id="..."` attributes.
-      3. Include `<meta name="viewport" content="width=device-width, initial-scale=1">` and zero external CDN links.
-      4. Make interactions genuinely work in vanilla JS (tabs, filters, drawers, forms, or slide navigation for `slides` surface).
-      5. Avoid Lorem ipsum, Acme Corp, unprompted purple gradients, or generic boilerplate.
+      1. Product Grounding: Inspect relevant files in the current working directory if needed so every screen, label, metric, control, and flow faithfully represents the real product and its platform form factor (e.g., macOS menu-bar popover / settings window / fullscreen overlay vs web app vs mobile screen). Never fabricate unrelated SaaS modules.
+      2. Write the complete HTML file directly to `{{inputs.targetPath}}` (create parent directories if needed).
+      3. Tag all major structural & interactive elements with unique kebab-case `data-od-id="..."` attributes.
+      4. Include `<meta name="viewport" content="width=device-width, initial-scale=1">` and zero external CDN links.
+      5. Make interactions genuinely work in vanilla JS (tabs, filters, drawers, forms, state transitions, or slide navigation for `slides` surface).
+      6. Match all visible UI copy to the language of the User Brief / Title, and avoid Lorem ipsum, Acme Corp, unprompted purple gradients, or generic boilerplate.
 
   - id: lint_artifact
     kind: code
@@ -147,14 +156,21 @@ nodes:
     dependsOn: [lint_artifact]
     session: new
     prompt: |
-      Use the `opendesign-critique` skill (Mode A: 5-Axis Design Critique) to inspect `{{inputs.targetPath}}` against `{{inputs.designSystemPath}}` and the brief:
-      "{{inputs.brief}}"
+      Use the `opendesign-critique` skill (Mode A: 5-Axis Design Critique) to inspect `{{inputs.targetPath}}` against `{{inputs.designSystemPath}}`, the brief, and the actual product in this workspace.
+
+      Title: "{{inputs.title}}" (surface: {{inputs.surface}})
+      Brief: "{{inputs.brief}}"
+
+      Discovery Assumptions:
+      {{JSON.stringify(outputs.propose_directions.assumptions || [])}}
 
       Deterministic lint result:
       {{JSON.stringify(outputs.lint_artifact)}}
 
-      Read `{{inputs.targetPath}}` and score 0-100 across Philosophy, Hierarchy, Execution, Specificity, and Restraint.
-      Return ONLY valid JSON (no prose or markdown outside JSON; `findings` MUST be an array of plain strings, NOT objects):
+      Instructions:
+      1. Unless the Brief explicitly defines an external/greenfield product unrelated to this workspace, inspect the current working directory autonomously to verify that the prototype's domain entities, workflows, copy, and form factor authentically match the real product.
+      2. Read `{{inputs.targetPath}}` and score 0-100 across Philosophy, Hierarchy, Execution, Specificity, and Restraint. If the artifact depicts an unrelated generic domain/product instead of the actual product, score `Specificity <= 35` and `score < 60` (`passed: false`) with concrete findings explaining what real product screens/flows are missing.
+      3. Return ONLY valid JSON (no prose or markdown outside JSON; `findings` MUST be an array of plain strings, NOT objects):
       {"score":85,"passed":true,"summary":"1-2 sentence overall critique summary","axes":{"Philosophy":85,"Hierarchy":86,"Execution":84,"Specificity":85,"Restraint":85},"findings":["[data-od-id=\"...\"] Concrete issue and fix"]}
     outputSchema:
       type: object
@@ -185,7 +201,10 @@ nodes:
     session: run
     next: lint_artifact
     prompt: |
-      Revise `{{inputs.targetPath}}` to resolve all deterministic lint issues and design critique findings.
+      Revise `{{inputs.targetPath}}` to resolve all deterministic lint issues and design critique findings while keeping the design faithfully grounded in the target product.
+
+      Title: {{inputs.title}}
+      Brief: {{inputs.brief}}
 
       Lint issues:
       {{outputs.lint_artifact.summary}}
@@ -193,7 +212,7 @@ nodes:
       Critique score ({{outputs.critique_artifact.score}}/100) findings:
       {{JSON.stringify(outputs.critique_artifact.findings)}}
 
-      Preserve existing `data-od-id` attributes, keep all styles/scripts self-contained, and overwrite `{{inputs.targetPath}}` cleanly.
+      Preserve existing `data-od-id` attributes when keeping elements (or replace off-topic placeholder sections cleanly if critique flagged a product-fit mismatch), keep all styles/scripts self-contained, and overwrite `{{inputs.targetPath}}` cleanly.
 
   - id: finalize
     kind: code

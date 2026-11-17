@@ -1,38 +1,42 @@
 // QuickJS helper for extract-design-system workflow.
 
-export function probeSource(ctx) {
+export async function probeSource(ctx) {
   const kind = String(ctx.inputs?.sourceKind || 'brief').trim();
   const value = String(ctx.inputs?.sourceValue || '').trim();
   const outDir = String(ctx.inputs?.outDir || '').trim();
 
   if (kind === 'codebase') {
-    const pkg = ctx.fsReadOrEmpty('package.json');
-    const designMd = ctx.fsReadOrEmpty('DESIGN.md');
-    const ls = ctx.sh('ls -la');
-    ctx.log(`Probed codebase for design system extraction`);
+    ctx.log(`Prepared codebase extraction for target "${value || '.'}"`);
     return {
       kind,
-      value,
+      value: value || '.',
       outDir,
-      hasPackageJson: pkg.length > 0,
-      hasExistingDesignMd: designMd.length > 0,
-      snippet: (pkg || designMd || ls.stdout || '').slice(0, 2500),
+      fetched: false,
+      snippet: '',
     };
   }
 
   if (kind === 'url' && /^https?:\/\//i.test(value)) {
     const safeUrl = value.replace(/'/g, "'\\''");
-    const res = ctx.sh(`curl -sL --max-time 10 '${safeUrl}' | head -c 16000`);
-    const html = res.stdout || '';
+    let html = '';
+    let fetchedOk = false;
+    try {
+      const res = await ctx.sh(`curl -sL --max-time 10 '${safeUrl}' | head -c 16000`);
+      html = (res && res.stdout) || '';
+      fetchedOk = Boolean(res && res.ok && html.length > 0);
+    } catch {
+      html = '';
+      fetchedOk = false;
+    }
     const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
     const vars = Array.from(new Set((html.match(/--[a-z0-9-]+/gi) || []).slice(0, 30)));
     const colors = Array.from(new Set((html.match(/#[0-9a-f]{3,8}\b/gi) || []).slice(0, 30)));
-    ctx.log(`Probed URL ${value}: ok=${res.ok}, bytes=${html.length}`);
+    ctx.log(`Probed URL ${value}: ok=${fetchedOk}, bytes=${html.length}`);
     return {
       kind,
       value,
       outDir,
-      fetched: res.ok && html.length > 0,
+      fetched: fetchedOk,
       title: titleMatch ? titleMatch[1].trim() : '',
       cssVars: vars,
       hexColors: colors,
@@ -58,9 +62,15 @@ export function validateSystem(ctx) {
   if (!designMd.trim()) {
     errors.push(`Missing ${outDir}/DESIGN.md`);
   } else {
-    for (const section of ['Color', 'Typography', 'Spacing', 'Anti']) {
-      if (!new RegExp(section, 'i').test(designMd)) {
-        errors.push(`DESIGN.md should document "${section}"`);
+    const requiredSections = [
+      { label: 'Color', re: /color|色彩|颜色|调色板/i },
+      { label: 'Typography', re: /typography|字体|排版/i },
+      { label: 'Spacing', re: /spacing|间距|圆角/i },
+      { label: 'Anti-Patterns', re: /anti|禁忌|反模式|避免/i },
+    ];
+    for (const section of requiredSections) {
+      if (!section.re.test(designMd)) {
+        errors.push(`DESIGN.md should document "${section.label}"`);
       }
     }
   }

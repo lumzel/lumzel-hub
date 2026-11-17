@@ -45,6 +45,15 @@ Every Deck in `decks/<id>/` **must** support multiple languages (English default
 3. **Runtime Locale Adaptation**: Read `ctx.locale` from `window.deck.context()` at startup (falling back to English for non-matching locales). Adapt all rendered UI strings, dynamic labels, generated Agent prompts, embedded iframe runtimes (`runtime/*.js`), and Market Preview sample data (`preview: true`) to the active locale—never leave hardcoded Chinese strings in English mode.
 4. **Bundled Skills & Agents**: Author bundled Deck `skills/` and `agents/` in English by default, and instruct Agents to author generated workspace artifacts in the user's conversation language.
 
+## Deck Workflow Autonomy & Context Rules (`decks/<id>/workflows/`)
+
+Workflow Agent nodes already execute inside the project worktree as their default working directory. When authoring Deck workflows, helper scripts, or skills:
+
+1. **Do Not Hardcode Project File Lists**: Do not prescribe or probe a fixed list of filenames (such as `README.md`, `package.json`, `project.yml`, `Cargo.toml`, etc.) in `code` nodes or prompts to infer what a project is. Stacks and repository layouts vary widely.
+2. **Let Agents Inspect Autonomously**: Instead of dumping partial repo excerpts via `code` nodes, explicitly instruct Agent nodes (when grounding in the current project) to explore the working directory on their own using their native file, search, and read tools before planning, generating, or critiquing.
+3. **Keep `code` Nodes Deterministic**: Restrict `code` nodes to deterministic contract/artifact checks (reading explicit input/contract paths such as `DESIGN.md`, `tokens.css`, or target artifact paths, linting, or validating outputs) and external network/URL fetches where needed.
+4. **Preserve Scope Opt-Out**: Always allow user briefs that explicitly specify a standalone or greenfield target outside the current repository to override repository grounding.
+
 ## Validation Before Commit
 
 After editing `loadouts/`, `decks/`, `upstreams.json`, or `marketplace.json`:

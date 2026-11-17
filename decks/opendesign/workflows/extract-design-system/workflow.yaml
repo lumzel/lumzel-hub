@@ -47,8 +47,8 @@ nodes:
 
       Requirements:
       1. Create `{{inputs.outDir}}/DESIGN.md` with concrete sections: Atmosphere & Voice, Color Palette, Typography, Spacing & Radius, Core Components, and Anti-Patterns.
-      2. Create `{{inputs.outDir}}/tokens.css` defining `:root` custom properties `--od-bg`, `--od-surface`, `--od-surface-2`, `--od-fg`, `--od-muted`, `--od-accent`, `--od-accent-fg`, `--od-border`, `--od-radius`, `--od-space`, `--od-font-scale`, `--od-font-sans`, `--od-font-mono`.
-      3. If `sourceKind` is `codebase`, inspect the repo's CSS/Tailwind/theme files first so the extracted tokens match the actual codebase.
+      2. Create `{{inputs.outDir}}/tokens.css` defining `:root` custom properties `--od-bg`, `--od-surface`, `--od-surface-2`, `--od-fg`, `--od-muted`, `--od-accent`, `--od-accent-fg`, `--od-border`, `--od-radius`, `--od-space` (e.g. `16px`), `--od-font-scale`, `--od-font-sans`, `--od-font-mono`.
+      3. If `sourceKind` is `codebase`, explore `{{inputs.sourceValue}}` and relevant UI/styling files in the current working directory autonomously so the extracted tokens and brand rules faithfully reflect the actual codebase.
 
   - id: validate_tokens
     kind: code

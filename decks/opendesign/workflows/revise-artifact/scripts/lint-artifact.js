@@ -4,7 +4,7 @@ const SLOP_PATTERNS = [
   { id: 'lorem-ipsum', re: /\blorem\s+ipsum\b/i, message: 'Contains Lorem ipsum placeholder text' },
   { id: 'acme-filler', re: /\bacme\s+(corp|inc|co)\b/i, message: 'Contains generic Acme placeholder name' },
   { id: 'john-doe', re: /\b(john|jane)\s+doe\b/i, message: 'Contains generic John/Jane Doe placeholder' },
-  { id: 'tbd-marker', re: /\bTODO:\s|\bFIXME:\s/i, message: 'Contains unfinished TODO/FIXME marker' },
+  { id: 'tbd-marker', re: /\b(?:TODO|FIXME)\s*:|\bTBD\b/, message: 'Contains unfinished TODO/FIXME/TBD marker' },
   { id: 'external-cdn', re: /https?:\/\/(cdn\.tailwindcss\.com|unpkg\.com|cdn\.jsdelivr\.net|fonts\.googleapis\.com)/i, message: 'References external CDN/font URL (artifacts must be self-contained offline)' },
 ];
 
