@@ -13,10 +13,14 @@ function mapNodeStatus(rec, run, nodeId) {
   if (!rec) {
     return terminal ? 'skipped' : 'queued';
   }
+  if (rec.state === 'waiting_gate') {
+    return 'waiting';
+  }
   if (rec.state === 'running') {
     if (run.state === 'stopped' || run.state === 'interrupted') return 'stopped';
     return 'running';
   }
+  if (rec.state === 'interrupted') return 'stopped';
   if (rec.state === 'completed') return 'ok';
   if (rec.state === 'failed') return 'fail';
   return 'queued';
@@ -565,15 +569,15 @@ export function derive(run, preset, telemetryRev, telemetryByUnit, nowSec) {
 
   let retries = 0;
   if (effPreset === 'code-review') {
-    const lensRes = (outputs.lenses && outputs.lenses.results) || [];
-    if (lensRes.length) {
+    const lensRes = ((outputs.lenses && outputs.lenses.results) || []).filter(Boolean);
+    if (lensRes.length && !outputs.lenses?.partial) {
       retries = lensRes.reduce((acc, r) => acc + (Number(r.retries) || 0), 0);
     } else {
       retries = realLanes.reduce((acc, l) => acc + Math.max(0, (l.attempts.evidence || []).length - 1), 0);
     }
   } else {
-    const unitRes = (outputs.units && outputs.units.results) || [];
-    if (unitRes.length) {
+    const unitRes = ((outputs.units && outputs.units.results) || []).filter(Boolean);
+    if (unitRes.length && !outputs.units?.partial) {
       retries = unitRes.reduce((acc, r) => acc + (Number(r.retries) || 0), 0);
     } else {
       retries = realLanes.reduce(
@@ -625,8 +629,8 @@ export function derive(run, preset, telemetryRev, telemetryByUnit, nowSec) {
   const hasTelemetryEvents = Object.keys(telemetryByUnit || {}).length > 0;
   const hasFinalResults =
     effPreset === 'code-review'
-      ? Boolean(outputs.lenses && outputs.lenses.results)
-      : Boolean(outputs.units && outputs.units.results);
+      ? Boolean(outputs.lenses && outputs.lenses.results && !outputs.lenses.partial)
+      : Boolean(outputs.units && outputs.units.results && !outputs.units.partial);
   const telemetryUnavailable = Boolean(mapRunning && !hasTelemetryEvents && !hasFinalResults);
 
   const view = {

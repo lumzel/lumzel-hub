@@ -758,3 +758,141 @@ test('layout fit and isWideViewport handle narrow half-screen and wide fullscree
   assert.ok(fullscreen.k > narrow.k);
   assert.ok(fullscreen.k <= 1.45);
 });
+
+test('derive handles partial sparse map results and interrupted/waiting_gate node statuses', () => {
+  const partialRun = {
+    runId: 'run-partial-1',
+    workflowId: 'feature-ship',
+    state: 'interrupted',
+    nodes: [
+      { nodeId: 'preflight', state: 'completed', iteration: 1 },
+      { nodeId: 'plan', state: 'completed', iteration: 1 },
+      { nodeId: 'units', state: 'interrupted', iteration: 1 },
+      { nodeId: 'human_gate', state: 'waiting_gate', iteration: 1 },
+    ],
+    outputs: {
+      plan: {
+        units: [
+          { id: 'u1', title: 'Unit 1', checkFiles: ['a.ts'] },
+          { id: 'u2', title: 'Unit 2', checkFiles: ['b.ts'] },
+        ],
+      },
+      units: {
+        partial: true,
+        results: [
+          { item: { id: 'u1' }, ok: true, retries: 1, outputs: {} },
+          null,
+        ],
+      },
+    },
+  };
+  const view = derive(partialRun, 'feature-ship', 1, {}, 1000);
+  assert.equal(view.nodes.units.status, 'stopped');
+  assert.equal(view.nodes.human_gate.status, 'waiting');
+  assert.equal(view.lanes.length, 2);
+  assert.equal(view.lanes[0].status, 'pass');
+  assert.equal(view.lanes[1].status, 'pending');
+  assert.equal(view.telemetryUnavailable, false);
+});
+
+test('host retryRun recovers interrupted/stopped/failed runs via deck.workflow.retry and clears banner on completion', async () => {
+  const { createHost } = await import('../src/host.js');
+  const { INITIAL_STATE } = await import('../src/store.js');
+  const prevWindow = globalThis.window;
+  const prevDoc = globalThis.document;
+  let subscribeHandler = null;
+  let retriedArgs = null;
+  let state = {
+    ...INITIAL_STATE,
+    mode: 'live',
+    caps: { workflow: true, db: false, files: false, agent: true, open: true },
+    run: {
+      runId: 'run-stop-1',
+      workflowId: 'feature-ship',
+      state: 'interrupted',
+      currentNodes: [],
+      nodes: [{ nodeId: 'units', state: 'interrupted', iteration: 1 }],
+    },
+    liveRunId: 'run-stop-1',
+  };
+  const store = {
+    get: () => state,
+    set: patch => {
+      state = typeof patch === 'function' ? patch(state) : { ...state, ...patch };
+    },
+  };
+  const demo = { stop() {}, handleGateDecision() {}, seek() {}, start() {}, restart() {}, setSpeed() {} };
+  globalThis.document = {
+    hidden: false,
+    title: '',
+    documentElement: { lang: 'zh-CN', dataset: {}, classList: { toggle() {} } },
+    addEventListener() {},
+  };
+  globalThis.window = {
+    deck: {
+      workflow: {
+        retry: async (runId, nodeId) => {
+          retriedArgs = { runId, nodeId };
+          return {
+            runId,
+            workflowId: 'feature-ship',
+            state: 'running',
+            currentNodes: ['units'],
+            nodes: [{ nodeId: 'units', state: 'running', iteration: 1 }],
+          };
+        },
+        subscribe: (_runId, cb) => {
+          subscribeHandler = cb;
+          return () => {
+            subscribeHandler = null;
+          };
+        },
+        getRun: async () => state.run,
+      },
+    },
+  };
+
+  try {
+    const host = createHost(store, demo);
+    await host.retryRun();
+    assert.deepEqual(retriedArgs, { runId: 'run-stop-1', nodeId: undefined });
+    assert.equal(state.run.state, 'running');
+    assert.equal(state.banner, null);
+    assert.equal(typeof subscribeHandler, 'function');
+
+    // Stopping emits recovery banner with action and unsubscribes
+    subscribeHandler({
+      run: {
+        runId: 'run-stop-1',
+        workflowId: 'feature-ship',
+        state: 'stopped',
+        currentNodes: ['integrate'],
+        nodes: [{ nodeId: 'integrate', state: 'running', iteration: 1 }],
+      },
+    });
+    assert.equal(state.banner?.tone, 'warn');
+    assert.equal(typeof state.banner?.action?.fn, 'function');
+    assert.equal(subscribeHandler, null);
+
+    // Retrying again via banner action re-subscribes and clears banner on completion
+    await state.banner.action.fn();
+    assert.equal(state.run.state, 'running');
+    assert.equal(state.banner, null);
+    assert.equal(typeof subscribeHandler, 'function');
+
+    subscribeHandler({
+      run: {
+        runId: 'run-stop-1',
+        workflowId: 'feature-ship',
+        state: 'completed',
+        currentNodes: [],
+        nodes: [{ nodeId: 'ship', state: 'completed', iteration: 1 }],
+      },
+    });
+    assert.equal(state.banner, null);
+    assert.equal(subscribeHandler, null);
+  } finally {
+    globalThis.window = prevWindow;
+    globalThis.document = prevDoc;
+  }
+});

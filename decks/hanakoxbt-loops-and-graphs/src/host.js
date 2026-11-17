@@ -172,7 +172,50 @@ export function createHost(store, demo) {
   }
 
   function isTerminalState(st) {
-    return ['completed', 'failed', 'stopped', 'limit'].includes(st);
+    return ['completed', 'failed', 'stopped', 'limit', 'interrupted'].includes(st);
+  }
+
+  function buildRecoveryBanner(run) {
+    if (!run) return null;
+    const st = store.get();
+    const canRetry = st.caps.workflow !== false && (typeof window.deck?.workflow?.retry === 'function' || typeof window.deck?.workflow?.retryNode === 'function');
+    if (run.state === 'interrupted') {
+      const pausedAtGate = run.pausedGate && run.pausedGate.nodeId === 'human_gate';
+      if (pausedAtGate) {
+        return {
+          tone: 'warn',
+          text: t('interruptedGate'),
+          action: canRetry ? { label: t('resumeGate'), fn: () => retryRun('human_gate') } : null,
+        };
+      }
+      return {
+        tone: 'warn',
+        text: t('interrupted'),
+        action: canRetry ? { label: t('resumeRun'), fn: () => retryRun() } : null,
+      };
+    }
+    if (run.state === 'stopped') {
+      return {
+        tone: 'warn',
+        text: t('runStopped'),
+        action: canRetry ? { label: t('resumeRun'), fn: () => retryRun() } : null,
+      };
+    }
+    if (run.state === 'limit') {
+      return {
+        tone: 'warn',
+        text: t('limitReached'),
+        action: canRetry ? { label: t('resumeRun'), fn: () => retryRun() } : null,
+      };
+    }
+    if (run.state === 'failed') {
+      return {
+        tone: 'fail',
+        text: run.detail || t('runFailed'),
+        action: canRetry ? { label: t('retryRun'), fn: () => retryRun() } : null,
+      };
+    }
+    return null;
   }
 
   function buildHistorySummary(run) {
@@ -290,8 +333,11 @@ export function createHost(store, demo) {
       document.title = BASE_TITLE;
     }
 
-    if (nextRun.state === 'limit') {
-      patch.banner = { tone: 'warn', text: t('limitReached') };
+    const recoveryBanner = buildRecoveryBanner(nextRun);
+    if (recoveryBanner) {
+      patch.banner = recoveryBanner;
+    } else if (isActiveState(nextRun.state) || nextRun.state === 'completed') {
+      patch.banner = st.caps.db === false ? st.banner : null;
     }
 
     store.set(s => ({ ...s, ...patch }));
@@ -635,8 +681,11 @@ export function createHost(store, demo) {
     // Check YAML vs topology
     checkWorkflowTopology(preset);
 
-    // 5. Recover most recent active run
-    const candidate = hist.find(h => h.state === 'running' || h.state === 'waiting_gate');
+    // 5. Recover most recent active or recoverable run
+    const activeCandidate = hist.find(h => h.state === 'running' || h.state === 'waiting_gate');
+    const candidate =
+      activeCandidate ||
+      (hist[0] && ['interrupted', 'stopped', 'limit', 'failed'].includes(hist[0].state) ? hist[0] : null);
     if (candidate && caps.workflow !== false && window.deck?.workflow?.getRun) {
       const rRes = await safe(() => window.deck.workflow.getRun(candidate.runId), 'workflow');
       if (rRes.ok && rRes.v) {
@@ -659,8 +708,7 @@ export function createHost(store, demo) {
           if (run.state === 'waiting_gate') document.title = `◆ ${BASE_TITLE}`;
           subscribeRun(run.runId);
           telemetry.syncRun(run);
-        } else if (run.state === 'interrupted') {
-          const pausedAtGate = run.pausedGate && run.pausedGate.nodeId === 'human_gate';
+        } else if (['interrupted', 'stopped', 'limit', 'failed'].includes(run.state)) {
           store.set(s => ({
             ...s,
             mode: 'live',
@@ -668,20 +716,9 @@ export function createHost(store, demo) {
             goal: (run.inputs && run.inputs.requirement) || candidate.goal || '',
             run,
             liveRunId: run.runId,
-            banner: pausedAtGate
-              ? {
-                  tone: 'warn',
-                  text: t('interruptedGate'),
-                  action: { label: t('resumeGate'), fn: () => retryNode('human_gate') },
-                }
-              : {
-                  tone: 'warn',
-                  text: t('interrupted'),
-                  action: run.currentNodes?.[0]
-                    ? { label: t('retryHere'), fn: () => retryNode(run.currentNodes[0]) }
-                    : null,
-                },
+            banner: buildRecoveryBanner(run),
           }));
+          upsertRunRecord(run);
           telemetry.syncRun(run);
         } else {
           upsertRunRecord(run);
@@ -777,15 +814,23 @@ export function createHost(store, demo) {
     }
   }
 
-  async function retryNode(nodeId) {
+  async function retryRun(nodeId) {
     const st = store.get();
-    if (!st.run || !window.deck?.workflow?.retryNode) return;
+    if (!st.run) return;
+    const retryFn =
+      typeof window.deck?.workflow?.retry === 'function'
+        ? () => window.deck.workflow.retry(st.run.runId, nodeId)
+        : typeof window.deck?.workflow?.retryNode === 'function' && nodeId
+          ? () => window.deck.workflow.retryNode(st.run.runId, nodeId)
+          : null;
+    if (!retryFn) return;
     clearWorkflowSub();
-    telemetry.prepareRetry(st.run, nodeId);
+    const effectiveNode = nodeId || st.run.pausedGate?.nodeId || st.run.currentNodes?.[0];
+    telemetry.prepareRetry(st.run, effectiveNode);
     store.set({ pending: 'starting', banner: null });
-    const r = await safe(() => window.deck.workflow.retryNode(st.run.runId, nodeId), 'workflow');
+    const r = await safe(retryFn, 'workflow');
     if (!r.ok || !r.v) {
-      store.set({ pending: null });
+      store.set({ pending: null, banner: buildRecoveryBanner(st.run) });
       showToast(r.error || 'Retry failed');
       return;
     }
@@ -797,9 +842,17 @@ export function createHost(store, demo) {
       run,
       liveRunId: run.runId,
       pending: null,
+      banner: buildRecoveryBanner(run),
     }));
-    subscribeRun(run.runId);
+    await upsertRunRecord(run);
+    if (isActiveState(run.state)) {
+      subscribeRun(run.runId);
+    }
     telemetry.syncRun(run);
+  }
+
+  async function retryNode(nodeId) {
+    return retryRun(nodeId);
   }
 
   async function rerunUnit(unitItem) {
@@ -873,6 +926,7 @@ export function createHost(store, demo) {
           preset: res.v.workflowId || s.preset,
           run: res.v,
           selection: null,
+          banner: buildRecoveryBanner(res.v) || (s.caps.db === false ? s.banner : null),
         }));
         if (isActiveState(res.v.state)) {
           subscribeRun(res.v.runId);
@@ -934,6 +988,7 @@ export function createHost(store, demo) {
     openSettings,
     startRun,
     stopRun,
+    retryRun,
     retryNode,
     rerunUnit,
     resumeGate,

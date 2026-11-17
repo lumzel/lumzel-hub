@@ -620,7 +620,7 @@ export function mountGraph(store, host) {
         bannerEl.appendChild(
           h(
             'button',
-            { type: 'button', class: 'secondary', onClick: st.banner.action.fn },
+            { type: 'button', class: 'secondary', disabled: Boolean(st.pending), onClick: st.banner.action.fn },
             st.banner.action.label,
           ),
         );
@@ -656,6 +656,7 @@ export function mountGraph(store, host) {
       run: s.run,
       mode: s.mode,
       preset: s.preset,
+      pending: s.pending,
       telemetryRev: s.telemetry.rev,
       lessonsRev: s.lessons.rev,
       selection: s.selection,
@@ -755,6 +756,7 @@ export function mountGraph(store, host) {
       a.run === b.run &&
       a.mode === b.mode &&
       a.preset === b.preset &&
+      a.pending === b.pending &&
       a.telemetryRev === b.telemetryRev &&
       a.lessonsRev === b.lessonsRev &&
       a.selection === b.selection &&
