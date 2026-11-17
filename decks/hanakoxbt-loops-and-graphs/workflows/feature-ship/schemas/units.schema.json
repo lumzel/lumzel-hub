@@ -1,8 +1,9 @@
 {
   "type": "object",
+  "title": "交付单元拆分",
   "required": ["units"],
   "properties": {
-    "fullCheckCmd": { "type": "string" },
+    "fullCheckCmd": { "type": "string", "title": "全量检查命令", "x-lumzel": {"view": "code"} },
     "units": {
       "type": "array",
       "items": {
@@ -11,14 +12,16 @@
         "properties": {
           "id": { "type": "string", "minLength": 1 },
           "title": { "type": "string", "minLength": 1 },
-          "goal": { "type": "string" },
-          "mode": { "type": "string", "enum": ["tdd", "verify"] },
-          "checkFiles": { "type": "array", "items": { "type": "string" } },
-          "implFiles": { "type": "array", "items": { "type": "string" } },
-          "checkCmd": { "type": "string", "minLength": 1 },
-          "prompt": { "type": "string", "minLength": 1 }
+          "goal": { "type": "string", "title": "目标" },
+          "mode": { "type": "string", "enum": ["tdd", "verify"], "title": "模式", "x-lumzel": {"view": "badge"} },
+          "checkFiles": { "type": "array", "items": {"type": "string"}, "title": "检查文件" },
+          "implFiles": { "type": "array", "items": {"type": "string"}, "title": "实现文件" },
+          "checkCmd": { "type": "string", "minLength": 1, "title": "检查命令", "x-lumzel": {"view": "code"} },
+          "prompt": { "type": "string", "minLength": 1, "title": "提示词" }
         }
-      }
+      },
+      "title": "交付单元",
+      "x-lumzel": { "view": "cards" }
     }
   }
 }

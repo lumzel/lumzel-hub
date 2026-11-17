@@ -73,25 +73,30 @@ nodes:
       {"assumptions":["string"],"directions":[{"id":"kebab-case-id","name":"string","rationale":"string","palette":"#bg / #surface / #fg / #accent","typography":"Display + Body + Mono summary","layoutIdea":"string"}]}
     outputSchema:
       type: object
+      title: 视觉方向提案
       required: [assumptions, directions]
       properties:
         assumptions:
           type: array
+          title: 前提假设
+          x-lumzel: { view: list }
           items:
             type: string
         directions:
           type: array
+          title: 候选方向
           minItems: 2
+          x-lumzel: { view: cards }
           items:
             type: object
             required: [id, name, rationale, palette, typography, layoutIdea]
             properties:
               id: { type: string }
               name: { type: string }
-              rationale: { type: string }
-              palette: { type: string }
-              typography: { type: string }
-              layoutIdea: { type: string }
+              rationale: { type: string, title: 理由 }
+              palette: { type: string, title: 配色, x-lumzel: { view: code } }
+              typography: { type: string, title: 字体 }
+              layoutIdea: { type: string, title: 布局 }
 
   - id: route_direction
     kind: gate
@@ -177,15 +182,20 @@ nodes:
       {"score":85,"passed":true,"summary":"1-2 sentence overall critique summary","axes":{"Philosophy":85,"Hierarchy":86,"Execution":84,"Specificity":85,"Restraint":85},"findings":["[data-od-id=\"...\"] Concrete issue and fix"]}
     outputSchema:
       type: object
+      title: 设计评审
       required: [score, passed, summary, findings]
       properties:
-        score: { type: number }
-        passed: { type: boolean }
-        summary: { type: string }
+        score: { type: number, title: 总分, x-lumzel: { view: score, max: 100 } }
+        passed: { type: boolean, title: 是否通过, x-lumzel: { view: verdict } }
+        summary: { type: string, title: 结论, x-lumzel: { view: lead } }
         axes:
           type: object
+          title: 五轴得分
+          x-lumzel: { view: meters, max: 100 }
         findings:
           type: array
+          title: 问题与修改建议
+          x-lumzel: { view: list }
           items:
             type: string
 

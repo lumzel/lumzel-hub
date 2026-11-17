@@ -1,23 +1,26 @@
 {
   "type": "object",
+  "title": "代码评审结果",
   "required": ["findings"],
   "properties": {
-    "summary": { "type": "string" },
+    "summary": { "type": "string", "title": "结论", "x-lumzel": {"view": "lead"} },
     "findings": {
       "type": "array",
       "items": {
         "type": "object",
         "required": ["severity", "file", "title", "evidence"],
         "properties": {
-          "severity": { "enum": ["high", "medium", "low"] },
-          "file": { "type": "string", "minLength": 1 },
-          "line": { "type": "integer", "minimum": 1 },
+          "severity": { "enum": ["high", "medium", "low"], "title": "严重程度", "x-lumzel": {"view": "badge"} },
+          "file": { "type": "string", "minLength": 1, "title": "文件", "x-lumzel": {"view": "code"} },
+          "line": { "type": "integer", "minimum": 1, "title": "行" },
           "title": { "type": "string", "minLength": 4 },
-          "evidence": { "type": "string", "minLength": 10 },
-          "fix": { "type": "string" },
-          "category": { "type": "string" }
+          "evidence": { "type": "string", "minLength": 10, "title": "证据" },
+          "fix": { "type": "string", "title": "修复建议" },
+          "category": { "type": "string", "title": "类别", "x-lumzel": {"view": "badge"} }
         }
-      }
+      },
+      "title": "发现的问题",
+      "x-lumzel": { "view": "cards" }
     }
   }
 }
