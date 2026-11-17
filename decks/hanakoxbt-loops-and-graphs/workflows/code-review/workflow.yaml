@@ -41,7 +41,7 @@ nodes:
       - id: review
         kind: agent
         session: new
-        permissions: ask
+        permissions: auto
         timeoutSec: 900
         promptFile: ./prompts/review.md
         outputSchema: ./schemas/findings.schema.json

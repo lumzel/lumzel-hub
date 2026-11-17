@@ -628,6 +628,14 @@ export function mountGraph(store, host) {
       return;
     }
 
+    if (st.mode === 'live' && st.run && st.run.state === 'failed' && st.run.detail) {
+      bannerEl.hidden = false;
+      setAttr(bannerEl, 'data-tone', 'fail');
+      clear(bannerEl);
+      bannerEl.appendChild(h('span', { class: 'banner-msg' }, st.run.detail));
+      return;
+    }
+
     bannerEl.hidden = true;
   }
 

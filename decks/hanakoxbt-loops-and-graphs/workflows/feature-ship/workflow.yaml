@@ -65,8 +65,6 @@ nodes:
   - id: split
     kind: agent
     session: run
-    effort: high
-    permissions: ask
     timeoutSec: 900
     promptFile: ./prompts/split.md
     outputSchema: ./schemas/units.schema.json
@@ -174,7 +172,6 @@ nodes:
   - id: rework
     kind: agent
     session: run
-    permissions: auto
     timeoutSec: 1800
     promptFile: ./prompts/rework.md
 
@@ -202,7 +199,6 @@ nodes:
     kind: agent
     dependsOn: [retro]
     session: run
-    permissions: ask
     timeoutSec: 600
     promptFile: ./prompts/distill.md
 

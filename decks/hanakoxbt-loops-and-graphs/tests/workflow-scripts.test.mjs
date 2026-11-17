@@ -397,6 +397,30 @@ test('feature-ship and code-review workflow.yaml files have zero topology drift'
 
   const reviewYaml = fs.readFileSync(path.join(DECK_ROOT, 'workflows/code-review/workflow.yaml'), 'utf8');
   assert.deepEqual(checkTopologyDrift(reviewYaml, REVIEW_YAML_KNOWN_IDS), []);
+
+  for (const [name, raw] of [
+    ['feature-ship', shipYaml],
+    ['code-review', reviewYaml],
+  ]) {
+    const blocks = raw.split(/\n\s*-\s+id:\s+/).slice(1);
+    for (const block of blocks) {
+      const nodeId = block.split(/\s+/)[0];
+      if (/^\s*session:\s*run\b/m.test(block)) {
+        for (const forbidden of ['permissions', 'effort', 'model', 'agent', 'loadout']) {
+          assert.equal(
+            new RegExp(`^\\s*${forbidden}:`, 'm').test(block),
+            false,
+            `${name} node '${nodeId}' uses session: run and must not set ${forbidden}`,
+          );
+        }
+      }
+      assert.equal(
+        /^\s*permissions:\s*ask\b/m.test(block),
+        false,
+        `${name} node '${nodeId}' must not set permissions: ask in headless Deck workflow`,
+      );
+    }
+  }
 });
 
 test('createTelemetryController consumes run.logs without sessionId, ignores null seq, and handles prepareRetry', async () => {
