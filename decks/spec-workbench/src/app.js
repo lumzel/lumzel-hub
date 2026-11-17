@@ -20,6 +20,11 @@ import {
   syncDesignTicketItem,
   todayIsoDate,
 } from './docOps.js';
+import {
+  applyQaAnswerSelection,
+  captureContainerScrollTop,
+  restoreContainerScrollTop,
+} from './qaUi.js';
 
 const $ = id => document.getElementById(id);
 const app = $('app');
@@ -958,6 +963,7 @@ function qaSessionHint(slotKey, probedReusable, probedSessionId, probedStatus) {
 function renderDesignQa(f) {
   const box = $('design-qa');
   if (!box) return;
+  const prevScrollTop = captureContainerScrollTop(box, f.id, box.querySelector('.qa-body'));
   const qa = state.qaData[f.id]?.design || { open: [], settled: [] };
   const openQuestions = qa.open || [];
   const collapseKey = `${f.id}:design`;
@@ -1013,29 +1019,29 @@ function renderDesignQa(f) {
 
   if (isCollapsed) {
     box.replaceChildren(head);
+    restoreContainerScrollTop(box, f.id, 0, null);
     return;
   }
 
   const questionCards = openQuestions.map(item => {
     const currentVal = draft.answers[item.id] ?? '';
+    let itemEl = null;
     const inputEl = el('input', {
       type: 'text',
       class: 'qa-input',
       value: currentVal,
       placeholder: t('qaCustomPlaceholder'),
       oninput: e => {
-        draft.answers[item.id] = e.target.value;
-        // sync option button highlights without losing cursor focus
-        const wrap = e.target.closest('.qa-item');
-        if (wrap) {
-          for (const optBtn of wrap.querySelectorAll('.qa-opt')) {
-            optBtn.classList.toggle('on', optBtn.dataset.optValue === e.target.value);
-          }
-        }
+        applyQaAnswerSelection({
+          answers: draft.answers,
+          answerKey: item.id,
+          value: e.target.value,
+          itemEl: itemEl || e.target.closest('.qa-item'),
+        });
       },
     });
 
-    return el(
+    itemEl = el(
       'div',
       { class: 'qa-item' },
       el(
@@ -1056,10 +1062,14 @@ function renderDesignQa(f) {
                   type: 'button',
                   class: `qa-opt${currentVal === opt.label ? ' on' : ''}`,
                   dataset: { optValue: opt.label },
-                  onclick: () => {
-                    draft.answers[item.id] = opt.label;
-                    inputEl.value = opt.label;
-                    renderDesignQa(f);
+                  onclick: e => {
+                    applyQaAnswerSelection({
+                      answers: draft.answers,
+                      answerKey: item.id,
+                      value: opt.label,
+                      itemEl: itemEl || e.currentTarget.closest('.qa-item'),
+                      inputEl,
+                    });
                   },
                 },
                 opt.label,
@@ -1070,6 +1080,7 @@ function renderDesignQa(f) {
         : null,
       inputEl,
     );
+    return itemEl;
   });
 
   const noteArea = el('textarea', {
@@ -1097,12 +1108,15 @@ function renderDesignQa(f) {
   );
 
   box.replaceChildren(head, body);
+  restoreContainerScrollTop(box, f.id, prevScrollTop, body);
 }
 
 function renderTicketsQa(f) {
   const box = $('tickets-qa');
   const toggleBtn = $('tickets-qa-toggle');
   if (!box || !toggleBtn) return;
+  const ticketsEl = $('tickets');
+  const prevScrollTop = captureContainerScrollTop(ticketsEl, f.id);
 
   const choices = state.qaData[f.id]?.ticketChoices || [];
   const collapseKey = `${f.id}:tickets`;
@@ -1115,6 +1129,7 @@ function renderTicketsQa(f) {
   box.hidden = !isOpen;
   if (!isOpen) {
     box.replaceChildren();
+    restoreContainerScrollTop(ticketsEl, f.id, prevScrollTop);
     return;
   }
 
@@ -1145,22 +1160,22 @@ function renderTicketsQa(f) {
   const choiceCards = choices.map(item => {
     const key = `${item.ticketPath}::${item.id}`;
     const currentVal = draft.answers[key] ?? '';
+    let itemEl = null;
     const inputEl = el('input', {
       type: 'text',
       class: 'qa-input',
       value: currentVal,
       placeholder: t('qaCustomPlaceholder'),
       oninput: e => {
-        draft.answers[key] = e.target.value;
-        const wrap = e.target.closest('.qa-item');
-        if (wrap) {
-          for (const optBtn of wrap.querySelectorAll('.qa-opt')) {
-            optBtn.classList.toggle('on', optBtn.dataset.optValue === e.target.value);
-          }
-        }
+        applyQaAnswerSelection({
+          answers: draft.answers,
+          answerKey: key,
+          value: e.target.value,
+          itemEl: itemEl || e.target.closest('.qa-item'),
+        });
       },
     });
-    return el(
+    itemEl = el(
       'div',
       { class: 'qa-item' },
       el(
@@ -1181,10 +1196,14 @@ function renderTicketsQa(f) {
                   type: 'button',
                   class: `qa-opt${currentVal === opt.label ? ' on' : ''}`,
                   dataset: { optValue: opt.label },
-                  onclick: () => {
-                    draft.answers[key] = opt.label;
-                    inputEl.value = opt.label;
-                    renderTicketsQa(f);
+                  onclick: e => {
+                    applyQaAnswerSelection({
+                      answers: draft.answers,
+                      answerKey: key,
+                      value: opt.label,
+                      itemEl: itemEl || e.currentTarget.closest('.qa-item'),
+                      inputEl,
+                    });
                   },
                 },
                 opt.label,
@@ -1195,6 +1214,7 @@ function renderTicketsQa(f) {
         : null,
       inputEl,
     );
+    return itemEl;
   });
 
   const noteArea = el('textarea', {
@@ -1243,6 +1263,7 @@ function renderTicketsQa(f) {
       ),
     ),
   );
+  restoreContainerScrollTop(ticketsEl, f.id, prevScrollTop);
 }
 
 // ---------- rendering: tickets tab
@@ -1352,6 +1373,8 @@ function renderTickets(f) {
   }
 
   dropFrame('ticket');
+  const ticketsEl = $('tickets');
+  const prevTicketsScrollTop = captureContainerScrollTop(ticketsEl, f.id);
 
   const activeTickets = allTickets.filter(x => !isTicketArchived(x.path));
   const archivedTickets = allTickets.filter(x => isTicketArchived(x.path));
@@ -1415,6 +1438,7 @@ function renderTickets(f) {
         el('div', { class: 'empty-acts' }, directImplBtn, genTicketsBtn),
       ),
     );
+    restoreContainerScrollTop(ticketsEl, f.id, prevTicketsScrollTop);
     return;
   }
 
@@ -1521,6 +1545,7 @@ function renderTickets(f) {
         })
       : [el('div', { class: 'empty' }, t('noTicketsInFilter'))]),
   );
+  restoreContainerScrollTop(ticketsEl, f.id, prevTicketsScrollTop);
 }
 
 // ---------- rendering: prototype tab
