@@ -34,6 +34,7 @@ nodes:
     kind: agent
     dependsOn: [probe_source]
     session: run
+    summary: "从 {{inputs.sourceKind}}（{{inputs.sourceValue}}）提炼设计系统「{{inputs.name}}」"
     prompt: |
       Use the `opendesign-system-extract` skill to create a complete design system package in:
       {{inputs.outDir}}
@@ -69,6 +70,7 @@ nodes:
     kind: agent
     session: run
     next: validate_tokens
+    summary: "修复 {{inputs.outDir}} 中 DESIGN.md / tokens.css 的校验问题"
     prompt: |
       Fix the design system files in `{{inputs.outDir}}` to resolve these validation errors:
       {{outputs.validate_tokens.summary}}

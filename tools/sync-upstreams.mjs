@@ -1673,6 +1673,7 @@ const WF_NODE_KEYS = {
     'timeoutSec',
     'prompt',
     'promptFile',
+    'summary',
     'outputSchema',
   ]),
   shell: new Set([
@@ -1871,6 +1872,9 @@ function validateWorkflowNodes(nodes, explicitStart, wfDir) {
       }
       if (node.promptFile !== undefined && node.promptFile !== null) {
         resolveInsideSandbox(wfDir, node.promptFile);
+      }
+      if (node.summary !== undefined && node.summary !== null && typeof node.summary !== 'string') {
+        throw new Error(`agent node '${node.id}' summary must be a string`);
       }
       if (node.outputSchema !== undefined && node.outputSchema !== null) {
         if (typeof node.outputSchema === 'string') {

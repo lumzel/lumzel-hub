@@ -46,6 +46,7 @@ nodes:
     kind: agent
     dependsOn: [load_context]
     session: run
+    summary: "为「{{inputs.title}}」（{{inputs.surface}}）探索 3 套视觉方向"
     prompt: |
       You are running the Discovery & Direction stage of OpenDesign for "{{inputs.title}}" (surface: {{inputs.surface}}).
 
@@ -112,6 +113,7 @@ nodes:
     dependsOn: [route_direction, direction_gate]
     join: any
     session: run
+    summary: "根据选定视觉方向构建交互式 HTML 产物：{{inputs.targetPath}}"
     prompt: |
       Use the `opendesign-studio` skill rules to generate a single-file, self-contained interactive HTML artifact at:
       {{inputs.targetPath}}
@@ -155,6 +157,7 @@ nodes:
     kind: agent
     dependsOn: [lint_artifact]
     session: new
+    summary: "对 {{inputs.targetPath}} 执行 5 轴设计与反套路评审"
     prompt: |
       Use the `opendesign-critique` skill (Mode A: 5-Axis Design Critique) to inspect `{{inputs.targetPath}}` against `{{inputs.designSystemPath}}`, the brief, and the actual product in this workspace.
 
@@ -200,6 +203,7 @@ nodes:
     kind: agent
     session: run
     next: lint_artifact
+    summary: "根据第 {{state.round}} 轮评审与静态检查结果修订 {{inputs.targetPath}}"
     prompt: |
       Revise `{{inputs.targetPath}}` to resolve all deterministic lint issues and design critique findings while keeping the design faithfully grounded in the target product.
 

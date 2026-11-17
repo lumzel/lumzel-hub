@@ -109,6 +109,7 @@ const state = {
   runs: [],
   selectedRunId: '',
   selectedNodeId: '',
+  selectedNodeRunId: '',
   steeringText: '',
   lastRenderedKey: '',
   agentCatalog: null,
@@ -238,11 +239,15 @@ function statusPillClass(st) {
 
 function statusLabel(st) {
   const map = {
+    pending: t('statusPending'),
     running: t('statusRunning'),
     waiting_gate: t('statusWaiting'),
     completed: t('statusCompleted'),
     failed: t('statusFailed'),
     stopped: t('statusCanceled'),
+    canceled: t('statusCanceled'),
+    interrupted: t('statusInterrupted'),
+    skipped: t('statusSkipped'),
   };
   return map[st] || st || '';
 }
@@ -1000,6 +1005,42 @@ function renderSystemsView() {
   );
 }
 
+function resolveActiveNodeId(run, topo) {
+  const validIds = new Set(topo.map(n => n.id));
+  if (state.selectedNodeRunId === run.runId && state.selectedNodeId && validIds.has(state.selectedNodeId)) {
+    return state.selectedNodeId;
+  }
+  if (run.pausedGate?.nodeId && validIds.has(run.pausedGate.nodeId)) {
+    return run.pausedGate.nodeId;
+  }
+  const nodes = run.nodes || [];
+  if (Array.isArray(run.currentNodes)) {
+    const cur = run.currentNodes.find(id => validIds.has(id));
+    if (cur) return cur;
+  }
+  const running = nodes.find(n => n.state === 'running' && validIds.has(n.nodeId));
+  if (running) return running.nodeId;
+  const errored = nodes.find(n => (n.state === 'failed' || n.state === 'interrupted') && validIds.has(n.nodeId));
+  if (errored) return errored.nodeId;
+
+  let latestCompleted = null;
+  for (const n of nodes) {
+    if (n.state === 'completed' && validIds.has(n.nodeId)) {
+      if (!latestCompleted || (n.finishedAt || 0) >= (latestCompleted.finishedAt || 0)) {
+        latestCompleted = n;
+      }
+    }
+  }
+  if (latestCompleted) return latestCompleted.nodeId;
+
+  for (let i = topo.length - 1; i >= 0; i -= 1) {
+    if (run.outputs && Object.prototype.hasOwnProperty.call(run.outputs, topo[i].id)) {
+      return topo[i].id;
+    }
+  }
+  return topo[0]?.id || '';
+}
+
 function renderWorkflowsView() {
   const runList = $('run-list');
   if (!state.runs.length) {
@@ -1019,6 +1060,7 @@ function renderWorkflowsView() {
           onclick: () => {
             state.selectedRunId = r.runId;
             state.selectedNodeId = '';
+            state.selectedNodeRunId = r.runId;
             renderWorkflowsView();
           },
         },
@@ -1034,6 +1076,10 @@ function renderWorkflowsView() {
   );
 
   const run = state.runs.find(r => r.runId === state.selectedRunId) || state.runs[0];
+  if (state.selectedNodeRunId !== run.runId) {
+    state.selectedNodeId = '';
+    state.selectedNodeRunId = run.runId;
+  }
   state.selectedRunId = run.runId;
   $('wf-empty').hidden = true;
   $('wf-detail').hidden = false;
@@ -1042,7 +1088,9 @@ function renderWorkflowsView() {
   const stPill = $('wf-run-status');
   stPill.textContent = statusLabel(run.state);
   stPill.className = `pill ${statusPillClass(run.state)}`;
-  $('wf-run-sub').textContent = `${run.workflowId} · ${run.inputs?.systemSlug || ''}`;
+  const subParts = [run.workflowId, run.inputs?.systemSlug || ''];
+  if (typeof run.round === 'number' && run.round > 0) subParts.push(t('roundLabel', { n: run.round }));
+  $('wf-run-sub').textContent = subParts.filter(Boolean).join(' · ');
   $('btn-wf-stop').hidden = !(run.state === 'running' || run.state === 'waiting_gate');
 
   renderWorkflowGraph(run);
@@ -1053,6 +1101,7 @@ function renderWorkflowsView() {
 function renderWorkflowGraph(run) {
   const topo = WORKFLOW_TOPOLOGIES[run.workflowId] || WORKFLOW_TOPOLOGIES['design-artifact'];
   const nodeStates = new Map((run.nodes || []).map(n => [n.nodeId, n]));
+  const activeNodeId = resolveActiveNodeId(run, topo);
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('class', 'wf-svg');
@@ -1061,34 +1110,55 @@ function renderWorkflowGraph(run) {
   const nodeW = 98;
   const nodeH = 38;
   const byId = new Map(topo.map(n => [n.id, n]));
+  const stateOf = id => nodeStates.get(id)?.state || (run.pausedGate?.nodeId === id ? 'waiting_gate' : 'pending');
 
   for (const n of topo) {
+    const srcState = stateOf(n.id);
     for (const targetId of n.next) {
       const target = byId.get(targetId);
       if (!target) continue;
+      const dstState = stateOf(targetId);
+      const isActiveEdge =
+        srcState === 'completed' &&
+        (dstState === 'completed' || dstState === 'running' || dstState === 'waiting_gate');
       const line = document.createElementNS(ns, 'path');
       const x1 = n.x + nodeW;
       const y1 = n.y + nodeH / 2;
       const x2 = target.x;
       const y2 = target.y + nodeH / 2;
-      const d = x2 < x1 ? `M ${n.x + nodeW / 2} ${n.y} C ${n.x} ${n.y - 18}, ${target.x + nodeW} ${target.y - 18}, ${target.x + nodeW / 2} ${target.y}` : `M ${x1} ${y1} L ${x2} ${y2}`;
+      const d =
+        x2 < x1
+          ? `M ${n.x + nodeW / 2} ${n.y} C ${n.x} ${n.y - 18}, ${target.x + nodeW} ${target.y - 18}, ${target.x + nodeW / 2} ${target.y}`
+          : `M ${x1} ${y1} L ${x2} ${y2}`;
       line.setAttribute('d', d);
       line.setAttribute('fill', 'none');
-      line.setAttribute('stroke', 'var(--border-strong)');
-      line.setAttribute('stroke-width', '1.5');
+      line.setAttribute(
+        'stroke',
+        dstState === 'running' || dstState === 'waiting_gate'
+          ? 'var(--brand)'
+          : isActiveEdge
+            ? 'var(--ok)'
+            : 'var(--border-strong)',
+      );
+      line.setAttribute('stroke-width', isActiveEdge ? '1.8' : '1.35');
+      if (!isActiveEdge && dstState === 'pending') line.setAttribute('stroke-dasharray', '3 3');
       svg.appendChild(line);
     }
   }
 
   for (const n of topo) {
-    const rec = nodeStates.get(n.id);
-    const st = rec?.state || (run.pausedGate?.nodeId === n.id ? 'waiting_gate' : 'pending');
-    const selected = state.selectedNodeId === n.id;
+    const st = stateOf(n.id);
+    const selected = activeNodeId === n.id;
 
     const g = document.createElementNS(ns, 'g');
+    g.setAttribute('class', 'wf-node-g');
+    g.setAttribute('data-state', st);
+    if (selected) g.setAttribute('data-selected', 'true');
     g.style.cursor = 'pointer';
     g.addEventListener('click', () => {
       state.selectedNodeId = n.id;
+      state.selectedNodeRunId = run.runId;
+      renderWorkflowGraph(run);
       renderNodeDetail(run);
     });
 
@@ -1099,19 +1169,23 @@ function renderWorkflowGraph(run) {
     rect.setAttribute('height', String(nodeH));
     rect.setAttribute('rx', '7');
     rect.setAttribute('class', 'wf-node-rect');
-    rect.setAttribute('fill', st === 'waiting_gate' ? 'var(--brand-soft)' : 'var(--canvas)');
+    rect.setAttribute(
+      'fill',
+      st === 'waiting_gate' || st === 'running' ? 'var(--brand-soft)' : selected ? 'var(--surface)' : 'var(--canvas)',
+    );
     rect.setAttribute(
       'stroke',
       selected
         ? 'var(--brand)'
         : st === 'completed'
           ? 'var(--ok)'
-          : st === 'failed'
+          : st === 'failed' || st === 'interrupted'
             ? 'var(--err)'
             : st === 'waiting_gate' || st === 'running'
               ? 'var(--brand)'
               : 'var(--border-strong)',
     );
+    if (selected) rect.setAttribute('stroke-width', '2.2');
     g.appendChild(rect);
 
     const text = document.createElementNS(ns, 'text');
@@ -1128,9 +1202,18 @@ function renderWorkflowGraph(run) {
     sub.setAttribute('x', String(n.x + nodeW / 2));
     sub.setAttribute('y', String(n.y + 30));
     sub.setAttribute('text-anchor', 'middle');
-    sub.setAttribute('fill', 'var(--muted)');
+    sub.setAttribute(
+      'fill',
+      st === 'completed'
+        ? 'var(--ok)'
+        : st === 'failed' || st === 'interrupted'
+          ? 'var(--err)'
+          : st === 'running' || st === 'waiting_gate'
+            ? 'var(--brand)'
+            : 'var(--muted)',
+    );
     sub.setAttribute('font-size', '9');
-    sub.textContent = st;
+    sub.textContent = statusLabel(st);
     g.appendChild(sub);
 
     svg.appendChild(g);
@@ -1194,22 +1277,262 @@ function renderDirectionPicker(run) {
   );
 }
 
+function renderJsonLeaf(val) {
+  if (val === null) return el('span', { class: 'wf-jt-null' }, 'null');
+  if (typeof val === 'boolean') return el('span', { class: 'wf-jt-bool' }, String(val));
+  if (typeof val === 'number') return el('span', { class: 'wf-jt-num' }, String(val));
+  if (typeof val === 'string') {
+    if (val.length <= 200) return el('span', { class: 'wf-jt-str' }, JSON.stringify(val));
+    let expanded = false;
+    const span = el('span', { class: 'wf-jt-str' }, `"${val.slice(0, 180).replace(/\s+/g, ' ')}…"`);
+    const btn = el(
+      'button',
+      {
+        type: 'button',
+        class: 'wf-jt-more',
+        onclick: () => {
+          expanded = !expanded;
+          span.textContent = expanded ? val : `"${val.slice(0, 180).replace(/\s+/g, ' ')}…"`;
+          span.classList.toggle('expanded', expanded);
+          btn.textContent = expanded ? t('collapseAll') : t('expandAll');
+        },
+      },
+      t('expandAll'),
+    );
+    return el('span', {}, span, btn);
+  }
+  return el('span', { class: 'wf-jt-null' }, String(val));
+}
+
+function renderJsonNodeEl(value, { keyName = undefined, depth = 0, defaultDepth = 2, maxEntries = 200 } = {}) {
+  const keyPrefix =
+    keyName !== undefined
+      ? [el('span', { class: typeof keyName === 'number' ? 'wf-jt-idx' : 'wf-jt-key' }, typeof keyName === 'number' ? `[${keyName}]` : keyName), el('span', { class: 'wf-jt-punct' }, ': ')]
+      : [];
+
+  if (value === null || typeof value !== 'object') {
+    return el('div', { class: 'wf-jt-row' }, ...keyPrefix, renderJsonLeaf(value));
+  }
+
+  const isArr = Array.isArray(value);
+  const entries = isArr ? value.map((v, i) => [i, v]) : Object.entries(value);
+  if (!entries.length) {
+    return el('div', { class: 'wf-jt-row' }, ...keyPrefix, el('span', { class: 'wf-jt-punct' }, isArr ? '[]' : '{}'));
+  }
+
+  const details = el('details', { class: 'wf-jt-branch', open: depth < defaultDepth });
+  const badge = isArr ? `[${t('jsonItemsTag', { n: entries.length })}]` : `{${t('jsonKeysTag', { n: entries.length })}}`;
+  details.append(el('summary', { class: 'wf-jt-sum' }, ...keyPrefix, el('span', { class: 'wf-jt-badge' }, badge)));
+
+  const childrenBox = el('div', { class: 'wf-jt-children' });
+  const shown = entries.slice(0, maxEntries);
+  for (const [k, v] of shown) {
+    childrenBox.append(renderJsonNodeEl(v, { keyName: k, depth: depth + 1, defaultDepth, maxEntries }));
+  }
+  if (entries.length > maxEntries) {
+    const moreBtn = el(
+      'button',
+      {
+        type: 'button',
+        class: 'wf-jt-more',
+        onclick: () => {
+          moreBtn.remove();
+          for (const [k, v] of entries.slice(maxEntries)) {
+            childrenBox.append(renderJsonNodeEl(v, { keyName: k, depth: depth + 1, defaultDepth, maxEntries }));
+          }
+        },
+      },
+      t('showAllItems', { n: entries.length - maxEntries }),
+    );
+    childrenBox.append(moreBtn);
+  }
+  details.append(childrenBox);
+  return details;
+}
+
+function renderNodeStructuredView(run, nodeId, out) {
+  if (!out || typeof out !== 'object') return null;
+
+  if (nodeId === 'propose_directions' && Array.isArray(out.directions)) {
+    return el(
+      'div',
+      { class: 'wf-node-structured' },
+      out.assumptions?.length
+        ? el(
+            'div',
+            { class: 'wf-sub-block' },
+            el('div', { class: 'wf-sub-title' }, t('assumptionsHeading')),
+            el('ul', { class: 'wf-assump-list' }, ...out.assumptions.map(item => el('li', {}, String(item)))),
+          )
+        : null,
+      el('div', { class: 'wf-sub-title' }, t('directionsHeading')),
+      el(
+        'div',
+        { class: 'wf-dir-mini-grid' },
+        ...out.directions.map(dir =>
+          el(
+            'div',
+            { class: 'wf-dir-mini' },
+            el('strong', {}, dir.name || dir.id || ''),
+            dir.rationale ? el('p', {}, dir.rationale) : null,
+            dir.palette ? el('div', { class: 'hint-sm mono' }, dir.palette) : null,
+            dir.typography ? el('div', { class: 'hint-sm' }, dir.typography) : null,
+          ),
+        ),
+      ),
+    );
+  }
+
+  if (nodeId === 'critique_artifact' && typeof out.score === 'number') {
+    const axes = out.axes && typeof out.axes === 'object' ? Object.entries(out.axes) : [];
+    const findings = Array.isArray(out.findings) ? out.findings : [];
+    return el(
+      'div',
+      { class: 'wf-node-structured' },
+      el(
+        'div',
+        { class: 'row-between' },
+        el('strong', {}, `${t('critiqueScoreHeading')} · ${out.score}/100`),
+        el('span', { class: `pill ${out.passed ? 'ok' : 'warn'}` }, out.passed ? t('critiquePassed') : t('critiqueNeedsFix')),
+      ),
+      out.summary ? el('p', { class: 'muted-line' }, out.summary) : null,
+      axes.length
+        ? el(
+            'div',
+            { class: 'wf-axes-bars' },
+            ...axes.map(([axis, score]) => {
+              const num = Math.max(0, Math.min(100, Number(score) || 0));
+              return el(
+                'div',
+                { class: 'wf-axis-bar-row' },
+                el('span', {}, axis),
+                el('div', { class: 'wf-axis-track' }, el('div', { class: 'wf-axis-fill', style: `width:${num}%` })),
+                el('b', { class: 'mono' }, String(num)),
+              );
+            }),
+          )
+        : null,
+      findings.length
+        ? el('ul', { class: 'wf-assump-list' }, ...findings.map(item => el('li', {}, typeof item === 'string' ? item : JSON.stringify(item))))
+        : null,
+    );
+  }
+
+  if ((nodeId === 'lint_artifact' || nodeId === 'lint_revision') && typeof out.ok === 'boolean') {
+    const issues = Array.isArray(out.issues) ? out.issues : [];
+    return el(
+      'div',
+      { class: 'wf-node-structured' },
+      el(
+        'div',
+        { class: 'row-between' },
+        el('span', { class: `pill ${out.ok ? 'ok' : 'warn'}` }, out.ok ? t('lintPassedMsg') : t('lintIssuesCount', { n: issues.length })),
+        out.oidCount !== undefined ? el('span', { class: 'hint-sm mono' }, `data-od-id: ${out.oidCount}`) : null,
+      ),
+      issues.length
+        ? el('ul', { class: 'wf-assump-list' }, ...issues.map(item => el('li', {}, typeof item === 'string' ? item : item?.message || JSON.stringify(item))))
+        : null,
+    );
+  }
+
+  if (nodeId === 'load_context' || nodeId === 'prepare_revision') {
+    const chips = [
+      out.systemSlug ? `system: ${out.systemSlug}` : null,
+      typeof out.designMd === 'string' ? `DESIGN.md: ${out.designMd.length} chars` : null,
+      typeof out.tokensCss === 'string' ? `tokens.css: ${out.tokensCss.length} chars` : null,
+      out.commentCount !== undefined ? `comments: ${out.commentCount}` : null,
+      out.tweakCount !== undefined ? `tweaks: ${out.tweakCount}` : null,
+    ].filter(Boolean);
+    if (!chips.length) return null;
+    return el('div', { class: 'wf-chip-row' }, ...chips.map(c => el('span', { class: 'slug-pill mono' }, c)));
+  }
+
+  if (nodeId === 'finalize' || nodeId === 'finalize_revision') {
+    const artId = run.inputs?.artifactId;
+    const outPath = out.path || out.targetPath || run.inputs?.targetPath;
+    return el(
+      'div',
+      { class: 'wf-node-structured row-between' },
+      outPath ? el('span', { class: 'mono slug-pill' }, outPath) : el('span', { class: 'pill ok' }, t('statusCompleted')),
+      artId
+        ? el(
+            'button',
+            {
+              type: 'button',
+              class: 'btn primary sm',
+              onclick: () => {
+                state.artifactId = artId;
+                state.view = 'canvas';
+                renderAll();
+              },
+            },
+            t('openArtifactInCanvas'),
+          )
+        : null,
+    );
+  }
+
+  return null;
+}
+
 function renderNodeDetail(run) {
   const card = $('node-detail-card');
   const topo = WORKFLOW_TOPOLOGIES[run.workflowId] || WORKFLOW_TOPOLOGIES['design-artifact'];
-  const nodeId = state.selectedNodeId || run.pausedGate?.nodeId || topo[topo.length - 1].id;
-  state.selectedNodeId = nodeId;
+  const nodeId = resolveActiveNodeId(run, topo);
+  const topoNode = topo.find(n => n.id === nodeId);
   const rec = (run.nodes || []).find(n => n.nodeId === nodeId);
+  const recState = rec?.state || (run.pausedGate?.nodeId === nodeId ? 'waiting_gate' : 'pending');
   const out = run.outputs?.[nodeId] ?? (rec?.outputJson ? safeJsonParse(rec.outputJson) : null);
+  const durationSec =
+    rec?.startedAt && rec?.finishedAt && rec.finishedAt >= rec.startedAt
+      ? ((rec.finishedAt - rec.startedAt) / 1000).toFixed(1)
+      : null;
+
+  const structuredEl = renderNodeStructuredView(run, nodeId, out);
+  const jsonPretty = out != null ? (typeof out === 'string' ? out : JSON.stringify(out, null, 2)) : '';
+
+  let bodyEl = null;
+  if (out != null) {
+    const treeWrap = el('div', { class: 'wf-jtree' }, typeof out === 'object' ? renderJsonNodeEl(out, { defaultDepth: 2 }) : el('pre', { class: 'md-viewer mono' }, jsonPretty));
+    if (structuredEl) {
+      const fold = el('details', { class: 'wf-json-fold' }, el('summary', { class: 'wf-json-fold-sum' }, t('rawJsonSection')), treeWrap);
+      bodyEl = el('div', { class: 'wf-detail-body' }, structuredEl, fold);
+    } else {
+      bodyEl = el('div', { class: 'wf-detail-body' }, treeWrap);
+    }
+  } else {
+    const emptyMsg = recState === 'running' ? t('nodeRunningHint') : recState === 'pending' ? t('nodePendingHint') : t('noOutputYet');
+    bodyEl = el('p', { class: 'hint-sm wf-empty-hint' }, emptyMsg);
+  }
 
   card.replaceChildren(
     el(
       'div',
       { class: 'row-between' },
-      el('div', { class: 'sys-title-row' }, el('strong', {}, t('nodeDetails')), el('span', { class: 'mono slug-pill' }, nodeId)),
+      el(
+        'div',
+        { class: 'sys-title-row' },
+        el('strong', {}, topoNode?.label || t('nodeDetails')),
+        el('span', { class: 'mono slug-pill' }, nodeId),
+        el('span', { class: `pill ${statusPillClass(recState)}` }, statusLabel(recState)),
+        durationSec !== null ? el('span', { class: 'hint-sm mono' }, t('durationMs', { sec: durationSec })) : null,
+      ),
       el(
         'div',
         { class: 'sys-head-actions' },
+        out != null
+          ? el(
+              'button',
+              {
+                type: 'button',
+                class: 'btn sm',
+                onclick: () => {
+                  void navigator.clipboard?.writeText(jsonPretty).then(() => toast(t('copied'))).catch(() => {});
+                },
+              },
+              t('copyJson'),
+            )
+          : null,
         rec?.sessionId
           ? el(
               'button',
@@ -1235,7 +1558,7 @@ function renderNodeDetail(run) {
       ),
     ),
     rec?.error ? el('p', { class: 'err' }, rec.error) : null,
-    out ? el('pre', { class: 'md-viewer mono', style: 'max-height:220px;overflow:auto;' }, JSON.stringify(out, null, 2)) : el('p', { class: 'hint-sm' }, 'No output captured yet.'),
+    bodyEl,
   );
 }
 

@@ -43,6 +43,7 @@ nodes:
     kind: agent
     dependsOn: [prepare_revision]
     session: run
+    summary: "应用 {{outputs.prepare_revision.commentCount}} 条元素批注与 {{outputs.prepare_revision.tweakCount}} 项 Token 微调至 {{inputs.targetPath}}"
     prompt: |
       Use the `opendesign-critique` skill (Mode B: Targeted Element Revision) to revise the HTML artifact.
 
@@ -86,6 +87,7 @@ nodes:
     kind: agent
     session: run
     next: lint_revision
+    summary: "修复 {{inputs.targetPath}} 中的静态检查问题"
     prompt: |
       Fix the remaining lint issues in `{{inputs.targetPath}}`:
       {{outputs.lint_revision.summary}}
