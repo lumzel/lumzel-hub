@@ -182,7 +182,7 @@ Selection rules:
 
 ## 5. When the user pastes a reply from a page
 
-A reply starts with `# Re: <page title>` and lists `Decisions`, `Comments` and `Remarks`, in the page language.
+A reply starts with `# Re: <page title>` and lists `Decisions`, `Comments` and `Remarks`, in the page language. Inside Lumzel's built-in file preview, the user can also submit this same `# Re:` payload directly back to the opening Session via Lumzel's confirmation dialog without manual copy-paste.
 
 - Apply the decisions and comments, and refer to panels by their letter. If the answers change the plan, update the page (`am patch`) before you build.
 - A `Remarks` line is a block the reader marked (the quote is its start), with a kind: suggestion = change it, keep = leave it, question = answer it, concern = check the risk. The `>` lines under it are the reader's note.

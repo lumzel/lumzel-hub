@@ -39,7 +39,7 @@
         "hooks": 2
       },
       "source": "./loadouts/daily-driver",
-      "version": "2.1.0"
+      "version": "2.2.0"
     },
     {
       "id": "everything-claude-code",

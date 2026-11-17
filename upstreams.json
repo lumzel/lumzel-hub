@@ -8,11 +8,6 @@
       "preserveLocalSkills": true,
       "skills": [
         {
-          "name": "answer-me-with-html",
-          "repo": "qingyuna/answer-me-with-html",
-          "path": "skills/answer-me-with-html"
-        },
-        {
           "name": "show-me",
           "repo": "humanlayer/skills",
           "path": "plugins/show-me/skills/show-me"
@@ -819,10 +814,6 @@
     "garrytan/gstack": {
       "branch": "main",
       "sha": "990315df00f749ae380cc8869c51c8e864dd2f32"
-    },
-    "qingyuna/answer-me-with-html": {
-      "branch": "main",
-      "sha": "edccab07c012e2141585f8ddb18a62e01664fa2b"
     },
     "builderio/skills": {
       "branch": "main",
