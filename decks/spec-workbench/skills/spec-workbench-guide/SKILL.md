@@ -1,10 +1,10 @@
 ---
 name: spec-workbench-guide
-description: Which 方案工作台 skill fits now? A router over the design-to-delivery flow.
+description: Which Spec Workbench skill fits now? A router over the design-to-delivery flow.
 disable-model-invocation: true
 ---
 
-# 方案工作台 guide
+# Spec Workbench Guide
 
 Before recommending a skill, read its `SKILL.md`: the summaries here are orientation only.
 

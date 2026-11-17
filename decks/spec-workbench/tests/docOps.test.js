@@ -19,7 +19,13 @@ import {
   sortFeaturesDesc,
   syncDesignTicketItem,
 } from '../src/docOps.js';
-import { SAMPLE_DOCS, SAMPLE_INDEX } from '../src/sample.js';
+import {
+  SAMPLE_DOCS,
+  SAMPLE_DOCS_EN,
+  SAMPLE_INDEX,
+  SAMPLE_INDEX_EN,
+  getSampleData,
+} from '../src/sample.js';
 import { extractDoc, lintDoc } from '../../../../apps/desktop/src/deck/docModel/html.js';
 import { buildTrace, ticketStatus } from '../../../../apps/desktop/src/deck/docModel/trace.js';
 
@@ -119,6 +125,15 @@ test('applyTicketDone & syncDesignTicketItem keep ticketStatus and design checkl
 
   const revertedTicketHtml = applyTicketDone(doneTicketHtml, false, '2026-11-16', { parseHtml });
   assert.equal(ticketStatus(extractDoc(parseHtml(revertedTicketHtml))), 'planned');
+
+  const emptyDoc = parseHtml(ticketHtml);
+  const doneCheck = emptyDoc.querySelector('#done-when .check');
+  if (doneCheck) doneCheck.innerHTML = '';
+  const emptyDoneWhen = `<!doctype html>\n${emptyDoc.documentElement.outerHTML}\n`;
+  const defaultEmptyDone = applyTicketDone(emptyDoneWhen, true, '2026-11-16', { parseHtml });
+  assert.equal(parseHtml(defaultEmptyDone).querySelector('#done-when [data-doc-label]')?.textContent, 'Verified');
+  const zhEmptyDone = applyTicketDone(emptyDoneWhen, true, '2026-11-16', { parseHtml, locale: 'zh-CN' });
+  assert.equal(parseHtml(zhEmptyDone).querySelector('#done-when [data-doc-label]')?.textContent, '已完成验证');
 });
 
 test('sortFeaturesDesc orders features by newest timestamp first', () => {
@@ -152,69 +167,104 @@ test('slugifyFeatureId produces safe unique kebab-case ids', () => {
   assert.match(zhId, /^feat-\d{8}-\d{4}$/);
 });
 
-test('buildDesignReplyPrompt & buildTicketsReplyPrompt include full context when starting new session', () => {
+test('buildDesignReplyPrompt & buildTicketsReplyPrompt support English default and Chinese locale', () => {
   const feature = {
     id: 'invoice-cache',
-    title: '发票读取缓存',
+    title: 'Invoice Read Cache',
     summary: 'Redis cache',
     status: 'draft',
     design: 'docs/features/invoice-cache/design.html',
     prototype: 'docs/features/invoice-cache/prototype.html',
   };
-  const newDesignPrompt = buildDesignReplyPrompt({
+  const enDesignPrompt = buildDesignReplyPrompt({
     feature,
+    answers: [{ id: 'ttl', question: 'TTL?', value: '10 min' }],
+    settled: [{ id: 'store', question: 'Store?', answer: 'Redis' }],
+    note: 'Add eviction details',
+    isNewSession: true,
+  });
+  assert.match(enDesignPrompt, /new session with full context/);
+  assert.match(enDesignPrompt, /Previously settled decisions/);
+  assert.match(enDesignPrompt, /store \(Store\?\): Redis/);
+  assert.match(enDesignPrompt, /\[ttl\] TTL\? => 10 min/);
+  assert.match(enDesignPrompt, /Add eviction details/);
+  assert.match(enDesignPrompt, /Do not generate any `docs\/results\/` files/);
+  assert.match(enDesignPrompt, /pnpm lumzel check/);
+
+  const zhDesignPrompt = buildDesignReplyPrompt({
+    feature: { ...feature, title: '发票读取缓存' },
     answers: [{ id: 'ttl', question: 'TTL 多长？', value: '10 分钟' }],
     settled: [{ id: 'store', question: '缓存放哪？', answer: 'Redis' }],
     note: '请补充失效策略',
     isNewSession: true,
+    locale: 'zh-CN',
   });
-  assert.match(newDesignPrompt, /新开会话，附完整上下文/);
-  assert.match(newDesignPrompt, /已确定的历史决策/);
-  assert.match(newDesignPrompt, /store \(缓存放哪？\): Redis/);
-  assert.match(newDesignPrompt, /\[ttl\] TTL 多长？ => 10 分钟/);
-  assert.match(newDesignPrompt, /请补充失效策略/);
-  assert.match(newDesignPrompt, /不要生成任何 `docs\/results\/` 文件/);
-  assert.doesNotMatch(newDesignPrompt, /\bdoc (confirm|trace|check)\b/);
-  assert.match(newDesignPrompt, /pnpm lumzel check/);
+  assert.match(zhDesignPrompt, /新开会话，附完整上下文/);
+  assert.match(zhDesignPrompt, /已确定的历史决策/);
+  assert.match(zhDesignPrompt, /store \(缓存放哪？\): Redis/);
+  assert.match(zhDesignPrompt, /\[ttl\] TTL 多长？ => 10 分钟/);
+  assert.match(zhDesignPrompt, /请补充失效策略/);
+  assert.match(zhDesignPrompt, /不要生成任何 `docs\/results\/` 文件/);
+  assert.doesNotMatch(zhDesignPrompt, /\bdoc (confirm|trace|check)\b/);
+  assert.match(zhDesignPrompt, /pnpm lumzel check/);
 
-  const reuseTicketPrompt = buildTicketsReplyPrompt({
+  const enTicketPrompt = buildTicketsReplyPrompt({
     feature,
+    answers: [{ ticketPath: 'docs/features/invoice-cache/tickets/01.html', id: 'd-1', question: 'Client', value: 'ioredis' }],
+    tickets: [],
+    note: 'Add unit test',
+    isNewSession: false,
+  });
+  assert.doesNotMatch(enTicketPrompt, /new session/);
+  assert.match(enTicketPrompt, /\[d-1\] Client => ioredis/);
+  assert.match(enTicketPrompt, /Add unit test/);
+  assert.match(enTicketPrompt, /data-doc-links/);
+  assert.match(enTicketPrompt, /pnpm lumzel check/);
+
+  const zhTicketPrompt = buildTicketsReplyPrompt({
+    feature: { ...feature, title: '发票读取缓存' },
     answers: [{ ticketPath: 'docs/features/invoice-cache/tickets/01.html', id: 'd-1', question: '库', value: 'ioredis' }],
     tickets: [],
     note: '顺便加单测',
     isNewSession: false,
+    locale: 'zh',
   });
-  assert.doesNotMatch(reuseTicketPrompt, /新开会话/);
-  assert.match(reuseTicketPrompt, /\[d-1\] 库 => ioredis/);
-  assert.match(reuseTicketPrompt, /顺便加单测/);
-  assert.doesNotMatch(reuseTicketPrompt, /\bdoc (confirm|trace|check)\b/);
-  assert.match(reuseTicketPrompt, /data-doc-links/);
-  assert.match(reuseTicketPrompt, /pnpm lumzel check/);
+  assert.doesNotMatch(zhTicketPrompt, /新开会话/);
+  assert.match(zhTicketPrompt, /\[d-1\] 库 => ioredis/);
+  assert.match(zhTicketPrompt, /顺便加单测/);
+  assert.doesNotMatch(zhTicketPrompt, /\bdoc (confirm|trace|check)\b/);
+  assert.match(zhTicketPrompt, /data-doc-links/);
+  assert.match(zhTicketPrompt, /pnpm lumzel check/);
 });
 
-test('SAMPLE_DOCS matches sample files on disk, passes lintDoc, and derives matching buildTrace', () => {
+function assertSampleBundleParity(sampleIndex, sampleDocs, sampleRootRel) {
   const expectedPaths = [
-    ...SAMPLE_INDEX.features.map(f => f.design),
-    ...SAMPLE_INDEX.features.flatMap(f => f.tickets.map(t => t.path)),
+    ...sampleIndex.features.map(f => f.design),
+    ...sampleIndex.features.flatMap(f => f.tickets.map(t => t.path)),
   ];
   assert.equal(expectedPaths.length, 5);
-  assert.deepEqual(Object.keys(SAMPLE_DOCS).sort(), [...expectedPaths].sort());
+  assert.deepEqual(Object.keys(sampleDocs).sort(), [...expectedPaths].sort());
 
   const irDocs = expectedPaths.map(relPath => {
-    const onDisk = fs.readFileSync(path.join(DECK_DIR, 'sample', relPath), 'utf8');
-    assert.equal(SAMPLE_DOCS[relPath], onDisk, `SAMPLE_DOCS drift for ${relPath}`);
-    const result = extractDoc(parseHtml(SAMPLE_DOCS[relPath]), relPath);
-    assert.deepEqual(lintDoc(result), [], `lintDoc errors in ${relPath}`);
+    const fileOnDisk = path.join(DECK_DIR, sampleRootRel, relPath);
+    const onDisk = fs.readFileSync(fileOnDisk, 'utf8');
+    assert.equal(sampleDocs[relPath], onDisk, `sample drift for ${sampleRootRel}/${relPath}`);
+    const match = onDisk.match(/<script src="([^"]*runtime\/worktree\.js)"><\/script>/);
+    assert.ok(match, `missing runtime/worktree.js script tag in ${sampleRootRel}/${relPath}`);
+    const resolvedScript = path.resolve(path.dirname(fileOnDisk), match[1]);
+    assert.equal(resolvedScript, path.join(DECK_DIR, 'runtime/worktree.js'), `wrong worktree.js path in ${sampleRootRel}/${relPath}`);
+    const result = extractDoc(parseHtml(sampleDocs[relPath]), relPath);
+    assert.deepEqual(lintDoc(result), [], `lintDoc errors in ${sampleRootRel}/${relPath}`);
     return { path: relPath, result };
   });
 
-  const pdfDesign = SAMPLE_DOCS['docs/features/pdf-export/design.html'];
+  const pdfDesign = sampleDocs['docs/features/pdf-export/design.html'];
   const parsedPdf = parseDesignDocQuestions(pdfDesign, { parseHtml });
   assert.equal(parsedPdf.open.length, 2);
 
   const trace = buildTrace(irDocs);
   const invoiceFeature = trace.features['invoice-cache'];
-  const sampleInvoice = SAMPLE_INDEX.features.find(f => f.id === 'invoice-cache');
+  const sampleInvoice = sampleIndex.features.find(f => f.id === 'invoice-cache');
   assert.ok(invoiceFeature && sampleInvoice);
 
   const actualNodeTickets = Object.fromEntries(
@@ -239,6 +289,23 @@ test('SAMPLE_DOCS matches sample files on disk, passes lintDoc, and derives matc
       blockedBy: t.blockedBy,
     })),
   );
+}
+
+test('SAMPLE_DOCS & SAMPLE_DOCS_EN match sample files on disk, pass lintDoc, and derive matching buildTrace', () => {
+  assertSampleBundleParity(SAMPLE_INDEX, SAMPLE_DOCS, 'sample');
+  assertSampleBundleParity(SAMPLE_INDEX_EN, SAMPLE_DOCS_EN, 'sample/en');
+
+  const enAdrPath = path.join(DECK_DIR, 'sample/en/docs/adr/0001-cache-store.html');
+  assert.ok(fs.existsSync(enAdrPath));
+  const enAdrHtml = fs.readFileSync(enAdrPath, 'utf8');
+  assert.deepEqual(lintDoc(extractDoc(parseHtml(enAdrHtml), 'docs/adr/0001-cache-store.html')), []);
+  const enAdrScript = enAdrHtml.match(/<script src="([^"]*runtime\/worktree\.js)"><\/script>/)?.[1];
+  assert.equal(path.resolve(path.dirname(enAdrPath), enAdrScript || ''), path.join(DECK_DIR, 'runtime/worktree.js'));
+
+  assert.equal(getSampleData('en').prefix, 'sample/en');
+  assert.equal(getSampleData('en').index, SAMPLE_INDEX_EN);
+  assert.equal(getSampleData('zh-CN').prefix, 'sample');
+  assert.equal(getSampleData('zh-CN').index, SAMPLE_INDEX);
 });
 
 test('removeDesignTicketItem removes ticket row, cleans blockers and links, and passes lintDoc', () => {

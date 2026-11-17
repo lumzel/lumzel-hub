@@ -1,6 +1,6 @@
 # Visual Doc style
 
-One look for every Visual Doc, whichever Agent writes it. The style is **quiet engineering doc** (the Linear / Vercel Geist family): neutral zinc greys, hairline borders, one brand blue, mono for anything that is an address. It is the same system as Lumzel's own UI (`DESIGN.md`), so a doc in the 方案工作台 Deck reads as part of the app.
+One look for every Visual Doc, whichever Agent writes it. The style is **quiet engineering doc** (the Linear / Vercel Geist family): neutral zinc greys, hairline borders, one brand blue, mono for anything that is an address. It is the same system as Lumzel's own UI (`DESIGN.md`), so a doc in the Spec Workbench Deck reads as part of the app.
 
 Why this one and not another common HTML style:
 
@@ -49,5 +49,5 @@ Tickets use `scaffolds/ticket.html` as is; its blocks already follow this style.
 ## Tone of words
 
 - Status pills use the status word as is (`done`, `planned`); severity pills reuse status classes: `blocker` → `s-drift`, `major` → `s-draft`, `minor` → `s-planned`.
-- Decisions: `❓` open, `✓` answered. Recommendation in `.opt.rec`, chosen in `.opt.chosen`, reason in `.why` starting `为什么：`.
+- Decisions: `❓` open, `✓` answered. Recommendation in `.opt.rec`, chosen in `.opt.chosen`, reason in `.why` starting `Why:` (or matching the doc's language, e.g., `为什么：`).
 - Callout tones: `ok` conclusion, `info` context, `warn` caution, `risk` the one thing that can go wrong.

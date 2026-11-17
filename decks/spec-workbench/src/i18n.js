@@ -1,5 +1,5 @@
-// Strings of the 方案工作台 Deck. Chinese for a zh browser locale, English for every other one.
-const STRINGS = {
+// Strings of the Spec Workbench Deck. Chinese for a zh locale, English for every other one.
+export const STRINGS = {
   zh: {
     featuresHeader: "需求列表",
     sortDescHint: "时间倒序",
@@ -132,6 +132,7 @@ const STRINGS = {
     implementBatchBusy: "当前需求已有实现会话进行中，请等待其完成后再启动另一张工单",
     protoLinkingBtn: "设计联动",
     protoLinkingHint: "开启后点击原型元素可直接跳转到对应设计节点（快捷键 L）",
+    prototypeTicketRef: "工单 {list}",
     markedFeatureDone: "已将需求标记为已完成",
     reopenedFeature: "已恢复需求为未完成",
     markedTicketDone: "已将工单标记为已完成",
@@ -290,6 +291,7 @@ const STRINGS = {
     implementBatchBusy: "Another implementation Session is active for this feature; wait for it to finish first",
     protoLinkingBtn: "Link Design",
     protoLinkingHint: "When active, clicking prototype elements jumps to the matching design Node (shortcut L)",
+    prototypeTicketRef: "Ticket {list}",
     markedFeatureDone: "Marked feature as done",
     reopenedFeature: "Reopened feature",
     markedTicketDone: "Marked ticket as done",
@@ -318,7 +320,11 @@ const STRINGS = {
   },
 };
 
-let locale = (navigator.language || 'en').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+let locale = (typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+
+export function getLocale() {
+  return locale;
+}
 
 export function setLocale(next) {
   if (!next || typeof next !== 'string') return false;
@@ -338,8 +344,8 @@ export function t(key, vars = {}) {
 export function applyI18n(root = document) {
   document.documentElement.lang = locale;
   document.title = locale === 'zh' ? '方案工作台' : 'Spec Workbench';
-  for (const node of root.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
-  for (const node of root.querySelectorAll('[data-i18n-title]')) node.title = t(node.dataset.i18nTitle);
-  for (const node of root.querySelectorAll('[data-i18n-aria]')) node.setAttribute('aria-label', t(node.dataset.i18nAria));
-  for (const node of root.querySelectorAll('[data-i18n-placeholder]')) node.placeholder = t(node.dataset.i18nPlaceholder);
+  for (const node of root.querySelectorAll('[data-i18n]')) node.textContent = t(node.getAttribute('data-i18n'));
+  for (const node of root.querySelectorAll('[data-i18n-title]')) node.title = t(node.getAttribute('data-i18n-title'));
+  for (const node of root.querySelectorAll('[data-i18n-aria]')) node.setAttribute('aria-label', t(node.getAttribute('data-i18n-aria')));
+  for (const node of root.querySelectorAll('[data-i18n-placeholder]')) node.placeholder = t(node.getAttribute('data-i18n-placeholder'));
 }

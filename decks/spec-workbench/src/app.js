@@ -1,9 +1,9 @@
-// 方案工作台 (spec-workbench): Manage Features (design, optional tickets, optional prototype)
+// Spec Workbench (spec-workbench): Manage Features (design, optional tickets, optional prototype)
 // in reverse-chronological order with user-visible Lumzel sessions, live status buttons,
 // in-Deck interactive Q&A (reusing open sessions or creating new ones with context),
 // per-ticket & batch implementation, manual completion toggles, and feature/ticket review.
-import { t, applyI18n, setLocale } from './i18n.js';
-import { SAMPLE_DOCS, SAMPLE_INDEX } from './sample.js';
+import { t, applyI18n, setLocale, getLocale } from './i18n.js';
+import { getSampleData } from './sample.js';
 import {
   applyDesignStatus,
   applyTicketDone,
@@ -188,10 +188,13 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-const worktreeUrl = (path, { hash = '', query = '' } = {}) =>
-  `${state.preview ? 'sample' : 'worktree'}/${path.split('/').map(encodeURIComponent).join('/')}?${query ? `${query}&` : ''}theme=${state.theme}${
+const worktreeUrl = (path, { hash = '', query = '' } = {}) => {
+  const locale = getLocale();
+  const base = state.preview ? getSampleData(locale).prefix : 'worktree';
+  return `${base}/${path.split('/').map(encodeURIComponent).join('/')}?${query ? `${query}&` : ''}theme=${state.theme}&lang=${locale}${
     hash ? `#${hash}` : ''
   }`;
+};
 
 const feature = () => state.features.find(f => f.id === state.featureId) || null;
 const isFeatureArchived = id => Boolean(state.featureMeta[id]?.archived);
@@ -453,7 +456,8 @@ function extractDesignNodeLabels(html) {
 async function readDocText(path) {
   if (!path) return '';
   if (state.preview) {
-    if (path in SAMPLE_DOCS) return SAMPLE_DOCS[path];
+    const sampleDocs = getSampleData(getLocale()).docs;
+    if (path in sampleDocs) return sampleDocs[path];
     throw new Error(`Sample doc not bundled: ${path}`);
   }
   const res = await window.deck.files.read(path, { encoding: 'utf8' });
@@ -464,7 +468,7 @@ async function refreshFeatureQaData(f) {
   if (!f || f.pending || !f.design) return;
   const ticketSig = (f.tickets || []).map(x => `${x.path}:${x.status}`).join('|');
   const mtime = state.fileMtimeMap[f.id] || 0;
-  const loadedKey = `${f.updated}:${mtime}:${f.status}:${ticketSig}`;
+  const loadedKey = `${getLocale()}:${f.updated}:${mtime}:${f.status}:${ticketSig}`;
   if (state.qaData[f.id]?.loadedKey === loadedKey) return;
 
   try {
@@ -876,7 +880,7 @@ function renderFeature() {
   doneBtn.textContent = isDone ? t('reopenFeature') : t('markDone');
   doneBtn.title = isDone ? t('reopenHint') : t('markDoneHint');
 
-  // Header action buttons (running buttons turn into "进行中" & click opens Lumzel Session)
+  // Header action buttons (running buttons show "In Progress" & click opens Lumzel Session)
   const protoBtn = document.querySelector('.act[data-act="prototype"]');
   applyRunButtonState(protoBtn, {
     slotKey: slotPrototype(f.id),
@@ -1793,8 +1797,13 @@ async function load({ reload = false } = {}) {
       ]);
       state.preview = Boolean(ctx.preview);
       if (listed.error && !state.preview) throw listed.error;
-      const index = state.preview ? SAMPLE_INDEX : listed;
-      if (setLocale(ctx.locale)) applyI18n();
+      if (setLocale(ctx.locale)) {
+        applyI18n();
+        for (const frame of frames.values()) {
+          post(frame.contentWindow, 'locale', { locale: getLocale() });
+        }
+      }
+      const index = state.preview ? getSampleData(getLocale()).index : listed;
       applyDeckTheme(ctx.theme);
       if (!themeSubscribed && typeof deck.ui?.onThemeChange === 'function') {
         themeSubscribed = true;
@@ -1903,7 +1912,7 @@ function buildPrototypeLabels(f) {
   for (const id of nodeIds) {
     const base = nodeLabels[id] || id;
     const nums = (f.nodeTickets?.[id] || []).map(p => ticketNumByPath[p]).filter(Boolean);
-    labels[id] = nums.length ? `${base} · 工单 ${nums.join(',')}` : base;
+    labels[id] = nums.length ? `${base} · ${t('prototypeTicketRef', { list: nums.join(',') })}` : base;
   }
   return labels;
 }
@@ -2313,7 +2322,9 @@ async function toggleTicketDone(f, ticket) {
       window.deck.files.read(ticket.path, { encoding: 'utf8' }),
       window.deck.files.read(f.design, { encoding: 'utf8' }),
     ]);
-    const nextTicketHtml = applyTicketDone(ticketRes?.content || '', markDone, today);
+    const nextTicketHtml = applyTicketDone(ticketRes?.content || '', markDone, today, {
+      locale: getLocale(),
+    });
     const nextDesignHtml = syncDesignTicketItem(
       designRes?.content || '',
       ticket.path,
@@ -2364,6 +2375,7 @@ async function submitDesignQa(f) {
           settled: qa.settled || [],
           note: noteText,
           isNewSession,
+          locale: getLocale(),
         }),
     });
     if (outcome && !outcome.busy) {
@@ -2410,6 +2422,7 @@ async function submitTicketsQa(f) {
           tickets: f.tickets || [],
           note: noteText,
           isNewSession,
+          locale: getLocale(),
         }),
     });
     if (outcome && !outcome.busy) {

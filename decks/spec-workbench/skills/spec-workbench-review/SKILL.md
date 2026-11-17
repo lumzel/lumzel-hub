@@ -10,9 +10,9 @@ Do **not** generate any `docs/results/` HTML file. Return the structured review 
 
 ## Review Modes
 
-1. **Feature Review (按需求评审)**:
+1. **Feature Review**:
    - Target: `docs/features/<id>/design.html`, its `docs/features/<id>/tickets/*.html` (if any), its `docs/features/<id>/prototype.html` (**must also be reviewed whenever it exists**), and the code diff / linked files for all Nodes in the feature.
-2. **Ticket Review (按工单评审)**:
+2. **Ticket Review**:
    - Target: `docs/features/<id>/tickets/<NN-slug>.html`, its parent `docs/features/<id>/design.html`, `docs/features/<id>/prototype.html` (**must also be reviewed if it exists** and draws any Node delivered by this ticket), and the code changes / linked files for that ticket.
 
 ## Steps

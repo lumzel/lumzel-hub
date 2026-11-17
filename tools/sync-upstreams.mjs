@@ -1699,6 +1699,10 @@ function isNonEmptyString(v) {
   return typeof v === 'string' && v.trim().length > 0;
 }
 
+function containsCjk(v) {
+  return typeof v === 'string' && /[\u4e00-\u9fff]/.test(v);
+}
+
 function validDeckRelativePath(rel) {
   if (typeof rel !== 'string' || !rel || rel.startsWith('/') || rel.includes('\\') || rel.includes('\0')) {
     return false;
@@ -2247,21 +2251,28 @@ function verifyDeckManifest(entry, deckDir, deckJsonPath, errors) {
       }
     }
   }
-  if (manifest.i18n !== undefined) {
-    if (!isPlainObject(manifest.i18n)) {
-      errors.push(`[deck:${entry.id}] deck.json.i18n must be an object`);
-    } else {
-      for (const [locale, locObj] of Object.entries(manifest.i18n)) {
-        if (!locale.trim() || !isPlainObject(locObj)) {
-          errors.push(`[deck:${entry.id}] deck.json.i18n.${locale} must be an object`);
-          continue;
-        }
-        for (const [k, v] of Object.entries(locObj)) {
-          if (!DECK_I18N_KEYS.has(k)) {
-            errors.push(`[deck:${entry.id}] deck.json.i18n.${locale} has unknown key ${JSON.stringify(k)}`);
-          } else if (!isNonEmptyString(v)) {
-            errors.push(`[deck:${entry.id}] deck.json.i18n.${locale}.${k} must be a non-empty string`);
-          }
+  for (const textKey of ['title', 'description']) {
+    if (containsCjk(manifest[textKey])) {
+      errors.push(`[deck:${entry.id}] deck.json.${textKey} must default to English (move translations into i18n.<locale>)`);
+    }
+  }
+  if (!isPlainObject(manifest.i18n)) {
+    errors.push(`[deck:${entry.id}] deck.json.i18n must declare multi-language metadata (e.g. en and zh-CN)`);
+  } else {
+    const locales = Object.keys(manifest.i18n);
+    if (!locales.includes('en') || locales.length < 2) {
+      errors.push(`[deck:${entry.id}] deck.json.i18n must include "en" and at least one localized language (e.g. "zh-CN")`);
+    }
+    for (const [locale, locObj] of Object.entries(manifest.i18n)) {
+      if (!locale.trim() || !isPlainObject(locObj)) {
+        errors.push(`[deck:${entry.id}] deck.json.i18n.${locale} must be an object`);
+        continue;
+      }
+      for (const [k, v] of Object.entries(locObj)) {
+        if (!DECK_I18N_KEYS.has(k)) {
+          errors.push(`[deck:${entry.id}] deck.json.i18n.${locale} has unknown key ${JSON.stringify(k)}`);
+        } else if (!isNonEmptyString(v)) {
+          errors.push(`[deck:${entry.id}] deck.json.i18n.${locale}.${k} must be a non-empty string`);
         }
       }
     }
@@ -2332,6 +2343,10 @@ function verifyDeckManifest(entry, deckDir, deckJsonPath, errors) {
         for (const textKey of ['label', 'description', 'placeholder']) {
           if (item[textKey] !== undefined && !isNonEmptyString(item[textKey])) {
             errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].${textKey} must be a non-empty string`);
+          } else if (containsCjk(item[textKey])) {
+            errors.push(
+              `[deck:${entry.id}] params[${JSON.stringify(key)}].${textKey} must default to English (move translations into i18n.<locale>)`,
+            );
           }
         }
         if (item.required !== undefined && typeof item.required !== 'boolean') {
@@ -2347,8 +2362,18 @@ function verifyDeckManifest(entry, deckDir, deckJsonPath, errors) {
           } else {
             for (const opt of item.options) {
               if (typeof opt === 'string' && opt.trim()) {
+                if (containsCjk(opt)) {
+                  errors.push(
+                    `[deck:${entry.id}] params[${JSON.stringify(key)}].options string ${JSON.stringify(opt)} must default to English`,
+                  );
+                }
                 optValues.add(opt.trim());
               } else if (isPlainObject(opt) && isNonEmptyString(opt.value)) {
+                if (containsCjk(opt.label)) {
+                  errors.push(
+                    `[deck:${entry.id}] params[${JSON.stringify(key)}].options[${JSON.stringify(opt.value)}].label must default to English (move translations into i18n.<locale>)`,
+                  );
+                }
                 optValues.add(opt.value.trim());
               } else {
                 errors.push(`[deck:${entry.id}] params[${JSON.stringify(key)}].options contains invalid option`);
@@ -2406,6 +2431,7 @@ function verifyDeckManifest(entry, deckDir, deckJsonPath, errors) {
     }
   }
   verifyDeckThemeSupport(entry, deckDir, errors);
+  verifyDeckI18nSupport(entry, deckDir, errors);
 }
 
 const DECK_THEME_SKIP_DIRS = new Set([
@@ -2470,6 +2496,18 @@ function verifyDeckThemeSupport(entry, deckDir, errors) {
   }
 }
 
+function verifyDeckI18nSupport(entry, deckDir, errors) {
+  const files = collectDeckUiTexts(deckDir);
+  if (files.length === 0) return;
+
+  const readsLocale = files.some((f) => /\blocale\b/.test(f.text));
+  if (!readsLocale) {
+    errors.push(
+      `[deck:${entry.id}] Must adapt UI language via deck.context().locale so the Deck supports multiple languages`,
+    );
+  }
+}
+
 function verifyRepository() {
   const marketplace = JSON.parse(fs.readFileSync(MARKETPLACE_PATH, 'utf8'));
   const errors = [];
@@ -2505,6 +2543,13 @@ function verifyRepository() {
         if (loadoutDoc.id !== entry.id) {
           errors.push(`[${entry.id}] loadout.yaml id mismatch (got ${JSON.stringify(loadoutDoc.id)})`);
         }
+        for (const textKey of ['name', 'description']) {
+          if (containsCjk(loadoutDoc[textKey])) {
+            errors.push(
+              `[${entry.id}] loadout.yaml.${textKey} must default to English (move translations into i18n.<locale>)`,
+            );
+          }
+        }
         if (loadoutDoc.env_schema !== undefined) {
           if (!isPlainObject(loadoutDoc.env_schema)) {
             errors.push(`[${entry.id}] loadout.yaml env_schema must be an object`);
@@ -2520,6 +2565,26 @@ function verifyRepository() {
               for (const k of Object.keys(spec)) {
                 if (!ENV_SCHEMA_KEYS.has(k)) {
                   errors.push(`[${entry.id}] loadout.yaml env_schema.${varName} has unknown key ${JSON.stringify(k)}`);
+                }
+              }
+              for (const textKey of ['label', 'description', 'placeholder']) {
+                if (containsCjk(spec[textKey])) {
+                  errors.push(
+                    `[${entry.id}] loadout.yaml env_schema.${varName}.${textKey} must default to English (move translations into i18n.<locale>)`,
+                  );
+                }
+              }
+              if (Array.isArray(spec.options)) {
+                for (const opt of spec.options) {
+                  if (typeof opt === 'string' && containsCjk(opt)) {
+                    errors.push(
+                      `[${entry.id}] loadout.yaml env_schema.${varName}.options string ${JSON.stringify(opt)} must default to English`,
+                    );
+                  } else if (isPlainObject(opt) && containsCjk(opt.label)) {
+                    errors.push(
+                      `[${entry.id}] loadout.yaml env_schema.${varName}.options[].label must default to English`,
+                    );
+                  }
                 }
               }
               if (spec.secret === true && spec.default !== undefined && spec.default !== null) {

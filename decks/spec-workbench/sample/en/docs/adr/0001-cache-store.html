@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-doc-id="0001-cache-store" data-doc-type="adr" data-doc-status="confirmed" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Use Redis for Cache, Not In-Process Memory</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">adr</span><span class="pill s-confirmed">confirmed</span><span class="pill">2026-11-12</span><code class="docid">0001-cache-store</code></div>
+<h1>Use Redis for Cache, Not In-Process Memory</h1></div>
+<header class="summary" data-doc-summary>Store the invoice read cache in Redis.</header>
+<section class="lumzel-block" id="context" data-doc-block="context" data-doc-kind="callout">
+<h2>Context</h2>
+<div class="callout info">The invoice service runs four instances. Traffic is read-heavy, and once an amount changes, no instance may serve a stale value.</div>
+</section>
+<section class="lumzel-block" id="decision" data-doc-block="decision" data-doc-kind="decisions">
+<h2>Decision</h2>
+<div class="dec">
+  <div class="card d st" data-doc-node="store" data-doc-answer="Redis" data-doc-recommend="Redis" style="margin-left:0px">
+    <div class="q">✓ <span data-doc-label>Where to store the cache?</span></div>
+    <div class="opts"><span class="opt chosen">Redis</span><span class="opt">In-process</span></div>
+    <div class="a">→ Redis</div><div class="why">Why: A single delete invalidates across all four instances.</div>
+  </div>
+</div>
+</section>
+<section class="lumzel-block" id="consequences" data-doc-block="consequences" data-doc-kind="table">
+<h2>Consequences</h2>
+<table class="grid"><thead><tr><th>Consequence</th><th>Mitigation</th></tr></thead><tbody>
+<tr data-doc-node="c-hop"><td>One extra network hop per read (~1 ms)</td><td>Acceptable against the 20 ms p95 target</td></tr>
+<tr data-doc-node="c-down"><td>Read path must stay up if Redis goes down</td><td>Fall back to DB on connection failure; covered in Ticket 01</td></tr>
+</tbody></table>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../../runtime/worktree.js"></script>
+</body>
+</html>

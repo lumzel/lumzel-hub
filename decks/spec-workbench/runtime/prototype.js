@@ -1,10 +1,10 @@
-// Prototype runtime of the 方案工作台 Deck: makes docs/features/<id>/prototype.html walkable and linked to its design doc.
+// Prototype runtime of the Spec Workbench Deck: makes docs/features/<id>/prototype.html walkable and linked to its design doc.
 // The Deck loads it into every prototype it frames (runtime/worktree.js); a prototype on disk links nothing.
 // Conventions the prototype follows:
 //   <section data-doc-screen="<screen-id>" data-doc-title="<label>">   one per screen; one is visible at a time
 //   data-goto="<screen-id>"                     on any clickable element: switch screen
 //   data-doc-node="<doc-id>#<node-id>"         on screens and elements that map to a design Node
-// With 设计联动 on (key L), a click selects the element and the Deck lists its design Node and tickets.
+// With Link Design on (key L), a click selects the element and the Deck lists its design Node and tickets.
 // The Trace comes from the Deck by postMessage (doc:trace, answering this page's doc:ready).
 // ?embed=1&bare=1: the Deck draws the screen tabs and each screen's [data-doc-intro] paragraph itself.
 (() => {
@@ -74,12 +74,35 @@
     }`;
   document.head.append(css);
 
+  const parseLocale = raw => (String(raw || '').toLowerCase().startsWith('zh') ? 'zh' : 'en');
+  let locale = parseLocale(
+    query.get('lang') || document.documentElement.lang || (typeof navigator !== 'undefined' ? navigator.language : '') || 'en',
+  );
+  const protoLabels = () =>
+    locale === 'zh'
+      ? {
+          btn: '设计联动',
+          title: '点元素看它的设计 Node 与工单（L）；Alt+点击 直接打开设计',
+        }
+      : {
+          btn: 'Link Design',
+          title: 'Click an element to inspect its design Node and tickets (L); Alt+click to open design directly',
+        };
+
   const bar = document.createElement('div');
   bar.className = 'lumzel-proto-bar';
-  bar.innerHTML = `<button type="button" aria-pressed="false" title="点元素看它的设计 Node 与工单（L）；Alt+点击 直接打开设计">设计联动</button>`;
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.setAttribute('aria-pressed', 'false');
+  const applyProtoLocale = () => {
+    const l = protoLabels();
+    toggle.textContent = l.btn;
+    toggle.title = l.title;
+  };
+  applyProtoLocale();
+  bar.append(toggle);
   document.body.append(bar);
-  const toggle = bar.querySelector('button');
-  let labels = {}; // node id -> "label · 工单 NN", pushed by the Lumzel page (doc:trace)
+  let labels = {}; // node id -> "label · Ticket NN" / "label · 工单 NN", pushed by the Lumzel page (doc:trace)
   const tip = document.createElement('div');
   tip.className = 'lumzel-proto-tip';
   tip.hidden = true;
@@ -173,6 +196,13 @@
     if (e.data && e.data.type === 'doc:show') open(e.data.id);
     if (e.data && e.data.type === 'doc:trace') labels = e.data.labels || {};
     if (e.data && e.data.type === 'doc:linking') setLinking(!!e.data.on);
+    if (e.data && e.data.type === 'doc:locale') {
+      const next = parseLocale(e.data.locale);
+      if (next !== locale) {
+        locale = next;
+        applyProtoLocale();
+      }
+    }
   });
   open();
   // the host answers with doc:trace; a bare host draws its screen tabs from `screens` when it has no Trace

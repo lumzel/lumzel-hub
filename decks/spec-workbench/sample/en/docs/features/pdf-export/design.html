@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" data-doc-id="pdf-export" data-doc-type="design" data-doc-status="draft" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Export Invoices to PDF</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">design</span><span class="pill s-draft">draft</span><span class="pill">2026-11-12</span><code class="docid">pdf-export</code></div>
+<h1>Export Invoices to PDF</h1></div>
+<header class="summary" data-doc-summary>Finance needs to bundle a batch of invoices into a single PDF for customers. This design is still in Q&amp;A and not ready for tickets yet.</header>
+<section class="lumzel-block" id="decisions" data-doc-block="decisions" data-doc-kind="decisions">
+<h2>Open Questions</h2>
+<p class="lead" data-doc-lead>Answer these before locking the design.</p>
+<div class="dec">
+  <div class="card d open st" data-doc-node="where" data-doc-recommend="Background job" style="margin-left:0px">
+    <div class="q">❓ <span data-doc-label>Where should the PDF be generated?</span></div>
+    <div class="opts"><span class="opt">Synchronously in request</span><span class="opt rec">Background job</span></div>
+    <div class="a">Recommended: Background job</div><div class="why">Why: 200 invoices take ~40s, exceeding the 30s gateway timeout.</div>
+  </div>
+  <div class="card d open st" data-doc-node="limit" data-doc-recommend="500 invoices" data-doc-depends="where" style="margin-left:28px">
+    <div class="q">❓ <span data-doc-label>Max invoices per export?</span></div>
+    <div class="opts"><span class="opt">100 invoices</span><span class="opt rec">500 invoices</span><span class="opt">Unlimited</span></div>
+    <div class="a">Recommended: 500 invoices</div>
+  </div>
+</div>
+</section>
+<section class="lumzel-block" id="flow" data-doc-block="flow" data-doc-kind="flow">
+<h2>Main Flow</h2>
+<ol class="flow">
+  <li class="card step st" data-doc-node="pick"><div class="n">01</div><div class="t" data-doc-label>Select invoices</div></li>
+  <li class="card step st" data-doc-node="job"><div class="n">02</div><div class="t" data-doc-label>Enqueue export job</div></li>
+  <li class="card step gate st" data-doc-node="confirm" data-doc-gate><div class="n">03</div><div class="t" data-doc-label>Confirm design</div></li>
+</ol>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../../../runtime/worktree.js"></script>
+</body>
+</html>

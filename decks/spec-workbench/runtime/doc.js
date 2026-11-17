@@ -54,9 +54,17 @@
     );
   });
 
+  const parseLocale = raw => (String(raw || '').toLowerCase().startsWith('zh') ? 'zh' : 'en');
+  let locale = parseLocale(
+    query.get('lang') || root.lang || (typeof navigator !== 'undefined' ? navigator.language : '') || 'en',
+  );
+  const ticketPrefix = () => (locale === 'zh' ? '工单' : 'Ticket');
+
   // Trace chips: the host sends doc:trace; each Node that a ticket delivers gets a chip posting doc:open-trace.
   let chips = [];
+  let lastTrace = null;
   const drawTrace = trace => {
+    lastTrace = trace || null;
     for (const c of chips) c.remove();
     chips = [];
     if (!trace || !trace.nodes) return;
@@ -69,7 +77,7 @@
         const ticket = (trace.tickets || {})[path];
         const button = document.createElement('button');
         button.type = 'button';
-        button.textContent = `工单 ${ticket ? ticket.n : '??'}`;
+        button.textContent = `${ticketPrefix()} ${ticket ? ticket.n : '??'}`;
         button.title = ticket ? ticket.title : path;
         button.addEventListener('click', event => {
           event.stopPropagation();
@@ -94,6 +102,13 @@
     const data = e.data;
     if (!data || typeof data !== 'object') return;
     if (data.type === 'doc:theme') root.dataset.theme = data.theme;
+    if (data.type === 'doc:locale') {
+      const next = parseLocale(data.locale);
+      if (next !== locale) {
+        locale = next;
+        if (lastTrace) drawTrace(lastTrace);
+      }
+    }
     if (data.type === 'doc:trace') drawTrace(data.trace);
     if (data.type === 'doc:show') show(data.id);
     if (data.type === 'doc:mark') {

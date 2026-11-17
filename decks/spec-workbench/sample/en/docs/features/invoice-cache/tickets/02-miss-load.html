@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" data-doc-id="invoice-cache-02" data-doc-type="ticket" data-doc-status="confirmed" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 Cache Miss: Load Once &amp; Backfill</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">ticket</span><span class="pill s-confirmed">confirmed</span><span class="pill">2026-11-12</span><code class="docid">invoice-cache-02</code></div>
+<h1>02 Cache Miss: Load Once &amp; Backfill</h1></div>
+<header class="summary" data-doc-summary>On cache miss, query DB and backfill Redis; coalesce concurrent requests for the same id into one DB query. Depends on Ticket 01.</header>
+<section class="lumzel-block" id="slice" data-doc-block="slice" data-doc-kind="architecture">
+<h2>Slice Architecture</h2>
+<div class="card arch"><div class="layer" data-doc-layer="This Ticket"><div class="layer-label">This Ticket</div><div class="nodes"><div class="card node st st-in-progress" data-doc-node="m-load" data-doc-status="in-progress"><div class="t"><span data-doc-label>InvoiceCache.load</span> <span class="pill s-in-progress">in-progress</span></div><div class="s">Query, backfill, and return</div><div class="meta"><code class="lk">src/services/invoice-cache.ts</code></div></div><div class="card node st st-planned" data-doc-node="m-flight" data-doc-status="planned"><div class="t"><span data-doc-label>Single-Flight Lock</span> <span class="pill s-planned">planned</span></div><div class="s">Run at most one query per id in flight</div><div class="meta"><code class="lk">src/services/single-flight.ts</code></div></div></div></div></div>
+</section>
+<section class="lumzel-block" id="done-when" data-doc-block="done-when" data-doc-kind="checklist">
+<h2>Done When</h2>
+<p class="lead" data-doc-lead>Ticket is done once every item is done.</p>
+<div class="check"><div class="card item st st-done" data-doc-node="dw-1" data-doc-status="done"><span class="box"></span><div><span data-doc-label>Queries DB once on miss and writes back to cache</span></div><span class="pill s-done">done</span></div><div class="card item st st-in-progress" data-doc-node="dw-2" data-doc-status="in-progress"><span class="box"></span><div><span data-doc-label>100 concurrent requests for the same id hit DB only once</span></div><span class="pill s-in-progress">in-progress</span></div><div class="card item st st-planned" data-doc-node="dw-3" data-doc-status="planned"><span class="box"></span><div><span data-doc-label>Does not write cache on DB error</span></div><span class="pill s-planned">planned</span></div></div>
+</section>
+<section class="lumzel-block" id="delivers" data-doc-block="delivers" data-doc-kind="checklist">
+<h2>Delivers Nodes</h2>
+<div class="check"><div class="card item st st-in-progress" data-doc-node="n-miss-load" data-doc-status="in-progress" data-doc-links="docs/features/invoice-cache/design.html#miss-load"><span class="box"></span><div><span data-doc-label>Miss: Load &amp; Backfill</span></div><span class="pill s-in-progress">in-progress</span></div><div class="card item st st-in-progress" data-doc-node="n-cache-service" data-doc-status="in-progress" data-doc-links="docs/features/invoice-cache/design.html#cache-service"><span class="box"></span><div><span data-doc-label>InvoiceCache</span></div><span class="pill s-in-progress">in-progress</span></div></div>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../../../../runtime/worktree.js"></script>
+</body>
+</html>

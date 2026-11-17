@@ -19,6 +19,14 @@ Whenever you modify a Loadout under `loadouts/<id>/` (or a Deck under `decks/<id
 
 When multiple changes are batched into one update, bump by the highest applicable level and reset lower segments to `0`.
 
+## Loadout Language Policy (`loadouts/<id>/`)
+
+All Lumzel-authored Loadout content **must** default to English:
+
+1. **Manifests (`loadout.yaml`)**: Top-level `name`, `description`, and `env_schema.<KEY>` fields (`label`, `description`, `placeholder`, `options[].label`) must be authored in English. Place localized translations (such as `zh-CN`) inside `i18n.<locale>` blocks.
+2. **Lumzel-Authored Components**: Author `AGENTS.md`, `rules/`, `skills/`, and `agents/` in English by default (bilingual trigger keywords in `SKILL.md` descriptions are acceptable when helpful for discovery).
+3. **Exceptions**: Preserve upstream-synced components verbatim and keep intentionally language-specific skills (such as `humanizer-zh`) untouched.
+
 ## Deck Theme Requirements (`decks/<id>/`)
 
 Every Deck in `decks/<id>/` **must** adapt automatically to both Lumzel `'light'` and `'dark'` themes:
@@ -28,10 +36,20 @@ Every Deck in `decks/<id>/` **must** adapt automatically to both Lumzel `'light'
 3. **Runtime Sync**: Call `window.deck.context()` at startup (which `/sdk.js` uses to mirror `theme` onto `<html data-theme>` and update on live `theme.changed` pushes). Use `window.deck.ui.onThemeChange(theme => ...)` if Canvas/charts/subframes hold JS theme state.
 4. **Cover Previews**: Verify both `preview/cover-light.webp` and `preview/cover-dark.webp` render legibly with distinct light/dark palettes via `node tools/render-previews.mjs <deck-id>`.
 
+## Deck Multi-Language Requirements (`decks/<id>/`)
+
+Every Deck in `decks/<id>/` **must** support multiple languages (English default + localized translations such as `zh-CN`):
+
+1. **English Default Manifest & Static HTML**: Keep top-level `deck.json` fields (`title`, `description`, `params[]` `label`/`description`/`placeholder`/`options[].label`) and static HTML fallbacks (`index.html`, `<html lang="en">`) in English.
+2. **Manifest `i18n`**: Declare `i18n` blocks (including `en` and `zh-CN`) on `deck.json` and localized parameter labels/descriptions/placeholders under `params[].i18n`.
+3. **Runtime Locale Adaptation**: Read `ctx.locale` from `window.deck.context()` at startup (falling back to English for non-matching locales). Adapt all rendered UI strings, dynamic labels, generated Agent prompts, embedded iframe runtimes (`runtime/*.js`), and Market Preview sample data (`preview: true`) to the active locale—never leave hardcoded Chinese strings in English mode.
+4. **Bundled Skills & Agents**: Author bundled Deck `skills/` and `agents/` in English by default, and instruct Agents to author generated workspace artifacts in the user's conversation language.
+
 ## Validation Before Commit
 
 After editing `loadouts/`, `decks/`, `upstreams.json`, or `marketplace.json`:
 
 1. Run `node tools/sync-upstreams.mjs --counts` if component counts may have changed.
-2. Run `node tools/sync-upstreams.mjs --verify` and ensure all Loadouts and Decks pass count, JSON, theme, subagent tier, and Lumzel Market preview limits.
+2. Run `node tools/sync-upstreams.mjs --verify` and ensure all Loadouts and Decks pass count, JSON, language/i18n, theme, subagent tier, and Lumzel Market preview limits.
 3. If you modified a Deck's UI, run `node tools/render-previews.mjs <deck-id>` (when Playwright/cwebp are available) to verify both `light` and `dark` covers render with clear theme contrast.
+

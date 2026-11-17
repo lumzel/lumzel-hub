@@ -1,5 +1,5 @@
 interface:
   display_name: "Deck Guide"
-  short_description: "Which 方案工作台 skill fits now"
+  short_description: "Which Spec Workbench skill fits now"
 policy:
   allow_implicit_invocation: false

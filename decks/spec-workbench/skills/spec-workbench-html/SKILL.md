@@ -1,6 +1,6 @@
 ---
 name: spec-workbench-html
-description: Write feature designs and tickets as self-contained HTML Visual Docs that the 方案工作台 Deck shows, instead of Markdown. Never generate docs/results/ files.
+description: Write feature designs and tickets as self-contained HTML Visual Docs that the Spec Workbench Deck shows, instead of Markdown. Never generate docs/results/ files.
 ---
 
 # HTML doc
@@ -18,12 +18,13 @@ Do **not** generate `docs/results/` files; this workbench only manages feature d
    - Ticket of a design doc: `docs/features/<doc-id>/tickets/<NN-slug>.html` by copying `scaffolds/ticket.html`.
    - Prototype (plain clickable HTML, not a Visual Doc): `docs/features/<id>/prototype.html`.
 2. Edit the scaffold in place. Keep the `<html data-doc-*>` attributes and the hero. The page links no stylesheet and no script: this Deck adds its own (`runtime/doc.css`, `runtime/doc.js`) when it shows the doc, so the doc reads styled inside Lumzel and as plain HTML anywhere else.
-3. Pick the page recipe (`design` in [STYLE.md](STYLE.md), or the ticket scaffold) and write its blocks in order.
-4. Copy each block's markup from [REFERENCE.md](REFERENCE.md) with its class names. The look comes only from this Deck's `runtime/doc.css`: no `<link>`, no `<style>`, no hex colours, no fonts, CDNs or images by URL.
-5. Give every Node a stable kebab-case `data-doc-node` id, unique in the doc. Ids are addresses (`<doc>#<node>`): never rename one that code already tags.
-6. Every Node that is or will be code carries `data-doc-links`. `planned` Nodes may link to files that do not exist yet.
-7. Run `doc check [file]` (`pnpm lumzel check [file]` if the project has a `lumzel` script, otherwise follow the checklist below) and fix what it finds.
-8. In chat, give the path and at most three lines on what to look at first.
+3. Author human-readable prose (`<title>`, headings, summaries, labels, questions, options, notes) in the user's conversation language (default English if unspecified), setting `<html lang="...">` accordingly while keeping `data-doc-*` attributes and status pills (`planned`, `in-progress`, `done`, `draft`, `confirmed`) in English.
+4. Pick the page recipe (`design` in [STYLE.md](STYLE.md), or the ticket scaffold) and write its blocks in order.
+5. Copy each block's markup from [REFERENCE.md](REFERENCE.md) with its class names. The look comes only from this Deck's `runtime/doc.css`: no `<link>`, no `<style>`, no hex colours, no fonts, CDNs or images by URL.
+6. Give every Node a stable kebab-case `data-doc-node` id, unique in the doc. Ids are addresses (`<doc>#<node>`): never rename one that code already tags.
+7. Every Node that is or will be code carries `data-doc-links`. `planned` Nodes may link to files that do not exist yet.
+8. Run `doc check [file]` (`pnpm lumzel check [file]` if the project has a `lumzel` script, otherwise follow the checklist below) and fix what it finds.
+9. In chat, give the path and at most three lines on what to look at first.
 
 ## Rules
 
@@ -36,7 +37,7 @@ Do **not** generate `docs/results/` files; this workbench only manages feature d
 
 ## Pointed edit
 
-The user pointed at something instead of describing it. Do not ask where it is. Use this when the message contains a lumzel.context/v1 JSON, a ref like `invoice-cache#redis`, a `data-doc-src` or `src` location, or the user says 改这个.
+The user pointed at something instead of describing it. Do not ask where it is. Use this when the message contains a lumzel.context/v1 JSON, a ref like `invoice-cache#redis`, a `data-doc-src` or `src` location, or the user says "change this" / 改这个.
 
 1. Parse the pack: `ref` (`<doc-id>#<node-id>`), `doc` path, `links`, `src` (`file:line`), `intent`.
 2. Open the doc and read that Node's element (`data-doc-node="<node-id>"`) and its neighbours (same `data-doc-block`; edges or arrows that name it).

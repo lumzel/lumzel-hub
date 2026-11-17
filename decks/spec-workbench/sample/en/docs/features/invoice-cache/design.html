@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en" data-doc-id="invoice-cache" data-doc-type="design" data-doc-status="confirmed" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invoice Read Cache</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">design</span><span class="pill s-confirmed">confirmed</span><span class="pill">2026-11-12</span><code class="docid">invoice-cache</code></div>
+<h1>Invoice Read Cache</h1></div>
+<header class="summary" data-doc-summary>The invoice detail endpoint queries the DB on every request, hitting 120 ms p95 at peak. Add a Redis cache in front of reads and evict on write to stay under 20 ms p95.</header>
+<section class="lumzel-block" id="scope" data-doc-block="scope" data-doc-kind="kpi">
+<h2>Scope</h2>
+<div class="kpi">
+  <div class="card"><div class="label">Nodes</div><div class="value">6</div><div class="note">3 done · 1 in-progress · 2 planned</div></div>
+  <div class="card"><div class="label">Endpoints</div><div class="value">2</div><div class="note">1 read, 1 write</div></div>
+  <div class="card"><div class="label">Tickets</div><div class="value">3</div><div class="note">1 done · 1 in-progress</div></div>
+  <div class="card"><div class="label">p95 Target</div><div class="value">20 ms</div><div class="note">Currently 120 ms</div></div>
+</div>
+</section>
+
+<section class="lumzel-block" id="flow" data-doc-block="flow" data-doc-kind="flow">
+<h2>Read an Invoice</h2>
+<p class="lead" data-doc-lead>Return immediately on hit; load from DB, backfill, and return on miss.</p>
+<ol class="flow">
+  <li class="card step st st-done" data-doc-node="read" data-doc-status="done" data-doc-links="src/services/invoice-cache.ts">
+    <div class="n">01 <span class="pill s-done">done</span></div><div class="t" data-doc-label>Read Cache</div><div class="s">Query Redis by invoice id</div>
+    <div class="meta"><code class="lk">src/services/invoice-cache.ts</code></div>
+  </li>
+  <li class="card step st st-in-progress" data-doc-node="miss-load" data-doc-status="in-progress" data-doc-links="src/services/invoice-cache.ts">
+    <div class="n">02 <span class="pill s-in-progress">in-progress</span></div><div class="t" data-doc-label>Miss: Load &amp; Backfill</div><div class="s">Coalesce concurrent misses for the same id into one query</div>
+    <div class="meta"><code class="lk">src/services/invoice-cache.ts</code> <code class="lk">table:invoices</code></div>
+  </li>
+  <li class="card step gate st" data-doc-node="confirm-ttl" data-doc-gate>
+    <div class="n">03</div><div class="t" data-doc-label>Confirm TTL &amp; eviction policy</div>
+  </li>
+  <li class="card step st st-planned" data-doc-node="evict" data-doc-status="planned" data-doc-links="src/services/invoice-write.ts">
+    <div class="n">04 <span class="pill s-planned">planned</span></div><div class="t" data-doc-label>Evict on Write</div><div class="s">Delete cache entry on amount change or void</div>
+    <div class="meta"><code class="lk">src/services/invoice-write.ts</code></div>
+  </li>
+</ol>
+</section>
+
+<section class="lumzel-block" id="parts" data-doc-block="parts" data-doc-kind="architecture">
+<h2>Architecture</h2>
+<div class="card arch">
+  <div class="layer" data-doc-layer="API"><div class="layer-label">API</div><div class="nodes">
+    <div class="card node st st-done" data-doc-node="get-invoice" data-doc-status="done" data-doc-links="src/api/invoice.ts">
+      <div class="t"><span data-doc-label>GET /invoices/:id</span> <span class="pill s-done">done</span></div><div class="s">Read invoice via cache first</div>
+      <div class="meta"><code class="lk">src/api/invoice.ts</code></div>
+    </div>
+  </div></div>
+  <div class="layer" data-doc-layer="Service"><div class="layer-label">Service</div><div class="nodes">
+    <div class="card node st st-in-progress" data-doc-node="cache-service" data-doc-status="in-progress" data-doc-links="src/services/invoice-cache.ts">
+      <div class="t"><span data-doc-label>InvoiceCache</span> <span class="pill s-in-progress">in-progress</span></div><div class="s">get, load, and evict entrypoints</div>
+      <div class="meta"><code class="lk">src/services/invoice-cache.ts</code> <code class="lk">test:tests/invoice-cache.test.ts</code></div>
+    </div>
+  </div></div>
+  <div class="layer" data-doc-layer="Storage"><div class="layer-label">Storage</div><div class="nodes">
+    <div class="card node st st-done" data-doc-node="redis" data-doc-status="done" data-doc-links="src/infra/redis.ts">
+      <div class="t"><span data-doc-label>Redis</span> <span class="pill s-done">done</span></div><div class="s">invoice:&lt;id&gt; → JSON, 10 min TTL</div>
+      <div class="meta"><code class="lk">src/infra/redis.ts</code></div>
+    </div>
+    <div class="card node st st-done" data-doc-node="invoices" data-doc-status="done" data-doc-links="table:invoices">
+      <div class="t"><span data-doc-label>invoices table</span> <span class="pill s-done">done</span></div><div class="s">Source of truth for amounts and status</div>
+      <div class="meta"><code class="lk">table:invoices</code></div>
+    </div>
+  </div></div>
+  <ul class="edges">
+    <li data-doc-from="get-invoice" data-doc-to="cache-service"><span>GET /invoices/:id</span> <i>→</i> <span>InvoiceCache</span> <em data-doc-label>get(id)</em></li>
+    <li data-doc-from="cache-service" data-doc-to="redis"><span>InvoiceCache</span> <i>→</i> <span>Redis</span> <em data-doc-label>get / set / del</em></li>
+    <li data-doc-from="cache-service" data-doc-to="invoices"><span>InvoiceCache</span> <i>→</i> <span>invoices table</span> <em data-doc-label>query on miss only</em></li>
+  </ul>
+</div>
+</section>
+
+<section class="lumzel-block" id="decisions" data-doc-block="decisions" data-doc-kind="decisions">
+<h2>Decisions</h2>
+<div class="dec">
+  <div class="card d st" data-doc-node="store" data-doc-answer="Redis" data-doc-recommend="Redis" data-doc-adr="docs/adr/0001-cache-store.html" style="margin-left:0px">
+    <div class="q">✓ <span data-doc-label>Where to store the cache?</span></div>
+    <div class="opts"><span class="opt chosen">Redis</span><span class="opt">In-process</span></div>
+    <div class="a">→ Redis</div><div class="why">Why: Four instances run concurrently; in-process caches diverge and cannot be cleanly evicted on write.</div>
+  </div>
+  <div class="card d st" data-doc-node="ttl" data-doc-answer="10 minutes" data-doc-recommend="10 minutes" data-doc-depends="store" style="margin-left:28px">
+    <div class="q">✓ <span data-doc-label>How long should the TTL be?</span></div>
+    <div class="opts"><span class="opt">1 minute</span><span class="opt chosen">10 minutes</span><span class="opt">60 minutes</span></div>
+    <div class="a">→ 10 minutes</div><div class="why">Why: A missed eviction stays stale at most 10 minutes; anything shorter drops hit rate below 60%.</div>
+  </div>
+</div>
+</section>
+
+<section class="lumzel-block" id="risk" data-doc-block="risk" data-doc-kind="callout">
+<h2>Risks</h2>
+<div class="callout risk">Missing an eviction on any write path serves stale amounts. Ticket 03 adds a dedicated test for every write entrypoint.</div>
+</section>
+
+<section class="lumzel-block" id="tickets" data-doc-block="tickets" data-doc-kind="checklist">
+<h2>Tickets</h2>
+<div class="check">
+  <div class="card item st st-done" data-doc-node="t01" data-doc-status="done" data-doc-ticket="docs/features/invoice-cache/tickets/01-read-path.html"><span class="box"></span><div><span data-doc-label>01 Read Path: Cache Hit Skips DB</span></div><span class="pill s-done">done</span></div>
+  <div class="card item st st-in-progress" data-doc-node="t02" data-doc-status="in-progress" data-doc-ticket="docs/features/invoice-cache/tickets/02-miss-load.html" data-doc-blocked-by="t01"><span class="box"></span><div><span data-doc-label>02 Cache Miss: Load Once &amp; Backfill</span></div><span class="pill s-in-progress">in-progress</span></div>
+  <div class="card item st st-planned" data-doc-node="t03" data-doc-status="planned" data-doc-ticket="docs/features/invoice-cache/tickets/03-evict.html" data-doc-blocked-by="t02"><span class="box"></span><div><span data-doc-label>03 Evict on Write</span><div class="meta">blocked by t02</div></div><span class="pill s-planned">planned</span></div>
+</div>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../../../runtime/worktree.js"></script>
+</body>
+</html>

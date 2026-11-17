@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" data-doc-id="invoice-cache-03" data-doc-type="ticket" data-doc-status="confirmed" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 Evict on Write</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">ticket</span><span class="pill s-confirmed">confirmed</span><span class="pill">2026-11-12</span><code class="docid">invoice-cache-03</code></div>
+<h1>03 Evict on Write</h1></div>
+<header class="summary" data-doc-summary>Delete cache after commit on update amount, void, and refund write paths. Depends on Ticket 02.</header>
+<section class="lumzel-block" id="slice" data-doc-block="slice" data-doc-kind="architecture">
+<h2>Slice Architecture</h2>
+<div class="card arch"><div class="layer" data-doc-layer="This Ticket"><div class="layer-label">This Ticket</div><div class="nodes"><div class="card node st st-planned" data-doc-node="m-write" data-doc-status="planned"><div class="t"><span data-doc-label>InvoiceWrite</span> <span class="pill s-planned">planned</span></div><div class="s">Call evict after commit on all three write paths</div><div class="meta"><code class="lk">src/services/invoice-write.ts</code></div></div><div class="card node st st-planned" data-doc-node="m-evict" data-doc-status="planned"><div class="t"><span data-doc-label>InvoiceCache.evict</span> <span class="pill s-planned">planned</span></div><div class="s">Delete invoice:&lt;id&gt;</div><div class="meta"><code class="lk">src/services/invoice-cache.ts</code></div></div></div></div></div>
+</section>
+<section class="lumzel-block" id="done-when" data-doc-block="done-when" data-doc-kind="checklist">
+<h2>Done When</h2>
+<p class="lead" data-doc-lead>Ticket is done once every item is done.</p>
+<div class="check"><div class="card item st st-planned" data-doc-node="dw-1" data-doc-status="planned"><span class="box"></span><div><span data-doc-label>Next read sees updated amount after edit</span></div><span class="pill s-planned">planned</span></div><div class="card item st st-planned" data-doc-node="dw-2" data-doc-status="planned"><span class="box"></span><div><span data-doc-label>Next read sees voided status after void</span></div><span class="pill s-planned">planned</span></div><div class="card item st st-planned" data-doc-node="dw-3" data-doc-status="planned"><span class="box"></span><div><span data-doc-label>Does not evict cache when transaction rolls back</span></div><span class="pill s-planned">planned</span></div></div>
+</section>
+<section class="lumzel-block" id="delivers" data-doc-block="delivers" data-doc-kind="checklist">
+<h2>Delivers Nodes</h2>
+<div class="check"><div class="card item st st-planned" data-doc-node="n-evict" data-doc-status="planned" data-doc-links="docs/features/invoice-cache/design.html#evict"><span class="box"></span><div><span data-doc-label>Evict on Write</span></div><span class="pill s-planned">planned</span></div></div>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../../../../runtime/worktree.js"></script>
+</body>
+</html>

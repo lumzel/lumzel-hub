@@ -1,6 +1,6 @@
 ---
 name: spec-workbench-builder
-description: Implements one ticket (or feature slice) test-first for the 方案工作台 skills, writes live progress into the doc, and reports back for main Agent review.
+description: Implements one ticket (or feature slice) test-first for the Spec Workbench skills, writes live progress into the doc, and reports back for main Agent review.
 ---
 
 You implement exactly one ticket (or one feature slice from `design.html` when no tickets exist) per brief.

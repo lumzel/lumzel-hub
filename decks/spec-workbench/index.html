@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh" data-theme="light">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="color-scheme" content="light dark" />
-    <title>方案工作台</title>
+    <title>Spec Workbench</title>
     <link rel="stylesheet" href="styles/app.css" />
   </head>
   <body>
@@ -11,10 +11,10 @@
       <nav class="rail" id="rail" aria-label="Features">
         <div class="rail-head">
           <span class="rail-title-wrap">
-            <span data-i18n="featuresHeader">需求列表</span>
-            <span class="sort-badge" data-i18n="sortDescHint">时间倒序</span>
+            <span data-i18n="featuresHeader">Features</span>
+            <span class="sort-badge" data-i18n="sortDescHint">Newest first</span>
           </span>
-          <button type="button" class="ico" id="refresh" data-i18n-title="refresh" title="刷新">↻</button>
+          <button type="button" class="ico" id="refresh" data-i18n-title="refresh" title="Refresh">↻</button>
         </div>
         <div class="feats" id="feats"></div>
         <div class="archived-rail" id="archived-rail" hidden></div>
@@ -22,13 +22,13 @@
 
       <main class="main">
         <div class="topbar" id="topbar">
-          <button type="button" class="ico rail-toggle" id="rail-toggle" aria-expanded="true" data-i18n-title="collapseRail" data-i18n-aria="collapseRail" title="收起需求列表" aria-label="收起需求列表">
+          <button type="button" class="ico rail-toggle" id="rail-toggle" aria-expanded="true" data-i18n-title="collapseRail" data-i18n-aria="collapseRail" title="Collapse feature list" aria-label="Collapse feature list">
             <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
               <rect x="1.8" y="2.5" width="12.4" height="11" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.35"/>
               <path d="M5.8 2.5v11" stroke="currentColor" stroke-width="1.35"/>
             </svg>
           </button>
-          <button type="button" class="act primary-soft topbar-new" id="new-feat" data-i18n="newFeaturePlus">＋ 新建需求</button>
+          <button type="button" class="act primary-soft topbar-new" id="new-feat" data-i18n="newFeaturePlus">+ New Feature</button>
           <div class="live-runs" id="live-runs"></div>
           <span class="sp"></span>
           <div class="agent-wrap" id="agent-wrap" hidden>
@@ -39,10 +39,10 @@
             </button>
             <div class="agent-pop" id="agent-pop" role="dialog" hidden>
               <div class="agent-pop-head">
-                <strong data-i18n="agentTitle">会话 Agent 与模型</strong>
+                <strong data-i18n="agentTitle">Session Agent & Model</strong>
                 <div class="agent-pop-actions">
-                  <span class="agent-pill" id="agent-badge">默认</span>
-                  <button type="button" class="agent-link" id="agent-reset-btn" data-i18n="agentReset" hidden>恢复默认</button>
+                  <span class="agent-pill" id="agent-badge">Default</span>
+                  <button type="button" class="agent-link" id="agent-reset-btn" data-i18n="agentReset" hidden>Reset</button>
                 </div>
               </div>
               <label class="agent-field">
@@ -50,20 +50,20 @@
                 <select id="agent-select"></select>
               </label>
               <label class="agent-field">
-                <span data-i18n="agentFieldModel">模型</span>
+                <span data-i18n="agentFieldModel">Model</span>
                 <select id="agent-model-select"></select>
               </label>
               <label class="agent-field" id="agent-effort-row">
-                <span data-i18n="agentFieldEffort">思考强度</span>
+                <span data-i18n="agentFieldEffort">Thinking</span>
                 <select id="agent-effort-select"></select>
               </label>
               <div class="agent-pop-foot">
                 <p class="agent-hint" id="agent-hint"></p>
-                <button type="button" class="agent-save" id="agent-save-default-btn" data-i18n="agentSaveDefault" hidden>设为当前项目默认</button>
+                <button type="button" class="agent-save" id="agent-save-default-btn" data-i18n="agentSaveDefault" hidden>Save as Project Default</button>
               </div>
             </div>
           </div>
-          <button type="button" class="ico settings-btn" id="settings-btn" data-i18n-title="deckSettings" data-i18n-aria="deckSettings" title="Deck 设置" aria-label="Deck 设置">
+          <button type="button" class="ico settings-btn" id="settings-btn" data-i18n-title="deckSettings" data-i18n-aria="deckSettings" title="Deck Settings" aria-label="Deck Settings">
             <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
               <circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.35"/>
               <path d="M8 1.8v1.5M8 12.7v1.5M1.8 8h1.5M12.7 8h1.5M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M12.4 3.6l-1.1 1.1M4.7 11.3l-1.1 1.1" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/>
@@ -79,7 +79,7 @@
                 <b id="f-title"></b>
                 <span class="mono" id="f-id"></span>
                 <span class="pill" id="f-status"></span>
-                <span class="pill archived-pill" id="f-archived" data-i18n="archivedPill" hidden>已归档</span>
+                <span class="pill archived-pill" id="f-archived" data-i18n="archivedPill" hidden>Archived</span>
                 <span class="ftime mono" id="f-time"></span>
               </div>
               <div class="f-actions">
@@ -88,18 +88,18 @@
                 <button type="button" class="act" data-act="tickets"></button>
                 <button type="button" class="act primary-soft" data-act="implement"></button>
                 <button type="button" class="act" data-act="review"></button>
-                <button type="button" class="ico more-btn" id="f-more" data-i18n-title="moreActions" data-i18n-aria="moreActions" title="更多操作" aria-label="更多操作">⋯</button>
+                <button type="button" class="ico more-btn" id="f-more" data-i18n-title="moreActions" data-i18n-aria="moreActions" title="More actions" aria-label="More actions">⋯</button>
               </div>
             </div>
             <p class="fsum" id="f-summary"></p>
             <div class="session-strip" id="session-strip" hidden></div>
             <div class="tabs" role="tablist">
-              <button type="button" class="tab" role="tab" data-tab="design" data-i18n="design">设计</button>
+              <button type="button" class="tab" role="tab" data-tab="design" data-i18n="design">Design</button>
               <button type="button" class="tab" role="tab" data-tab="tickets">
-                <span data-i18n="tickets">工单</span><span class="count" id="t-count"></span>
+                <span data-i18n="tickets">Tickets</span><span class="count" id="t-count"></span>
               </button>
               <button type="button" class="tab" role="tab" data-tab="prototype">
-                <span data-i18n="prototype">原型</span><span class="tab-tag" id="p-tag"></span>
+                <span data-i18n="prototype">Prototype</span><span class="tab-tag" id="p-tag"></span>
               </button>
             </div>
           </header>
@@ -135,16 +135,16 @@
             <div class="proto-empty" id="proto-empty" hidden>
               <div class="empty-card">
                 <div class="dia">◇</div>
-                <h2 data-i18n="protoEmptyTitle">尚未生成原型（可选）</h2>
-                <p data-i18n="protoEmptyHint">原型不是前置条件，你可以直接开始实现；也可以一键让 Agent 生成可点击的 HTML 原型。</p>
-                <button type="button" class="primary" id="proto-gen-btn" data-i18n="protoGenNow">一键生成原型</button>
+                <h2 data-i18n="protoEmptyTitle">No prototype yet (optional)</h2>
+                <p data-i18n="protoEmptyHint">A prototype is optional — you can start implementing anytime, or generate a clickable HTML prototype in one click.</p>
+                <button type="button" class="primary" id="proto-gen-btn" data-i18n="protoGenNow">Generate Prototype</button>
               </div>
             </div>
             <div class="proto-ready" id="proto-ready" hidden>
               <div class="proto-bar">
-                <div class="screens" id="screens" role="tablist" data-i18n-aria="prototypeScreens" aria-label="原型屏"></div>
+                <div class="screens" id="screens" role="tablist" data-i18n-aria="prototypeScreens" aria-label="Prototype screens"></div>
                 <div class="proto-acts">
-                  <button type="button" class="act" id="proto-link-btn" aria-pressed="false" data-i18n="protoLinkingBtn" data-i18n-title="protoLinkingHint">设计联动</button>
+                  <button type="button" class="act" id="proto-link-btn" aria-pressed="false" data-i18n="protoLinkingBtn" data-i18n-title="protoLinkingHint">Link Design</button>
                   <button type="button" class="act" id="proto-regen-btn"></button>
                   <button type="button" class="act" id="proto-review-btn"></button>
                 </div>
@@ -158,14 +158,14 @@
         <section class="pane empty-pane" id="pane-pending" hidden>
           <div class="empty-card pending-card">
             <div class="pending-spinner" id="pending-spinner"></div>
-            <h2 id="pending-title" data-i18n="pendingTitle">正在会话中创建需求设计</h2>
+            <h2 id="pending-title" data-i18n="pendingTitle">Creating Feature design in Session</h2>
             <p class="mono" id="pending-id"></p>
             <p id="pending-brief"></p>
             <p class="pending-hint" id="pending-hint"></p>
             <div class="pending-acts">
-              <button type="button" class="primary" id="pending-open-session" data-i18n="viewSession">查看会话</button>
-              <button type="button" class="act" id="pending-refresh" data-i18n="refresh">刷新</button>
-              <button type="button" class="act" id="pending-remove" data-i18n="removePending" hidden>移除占位</button>
+              <button type="button" class="primary" id="pending-open-session" data-i18n="viewSession">Open Session</button>
+              <button type="button" class="act" id="pending-refresh" data-i18n="refresh">Refresh</button>
+              <button type="button" class="act" id="pending-remove" data-i18n="removePending" hidden>Dismiss</button>
             </div>
           </div>
         </section>
@@ -173,36 +173,36 @@
         <section class="pane empty-pane" id="pane-empty" hidden>
           <div class="empty-card">
             <div class="dia">◆</div>
-            <h2 data-i18n="emptyTitle">还没有需求</h2>
-            <p data-i18n="emptyHint">创建一个需求后，Agent 会在可见会话中生成设计文档（docs/features/&lt;id&gt;/design.html），工单与原型均为可选。</p>
-            <button type="button" class="primary" id="empty-new" data-i18n="newFeature">新建需求</button>
+            <h2 data-i18n="emptyTitle">No Feature yet</h2>
+            <p data-i18n="emptyHint">Create a Feature to start a visible design Session (docs/features/&lt;id&gt;/design.html). Tickets and prototypes are optional.</p>
+            <button type="button" class="primary" id="empty-new" data-i18n="newFeature">New Feature</button>
           </div>
         </section>
       </main>
 
       <div class="scrim" id="new-dialog" hidden>
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="new-h">
-          <h3 id="new-h" data-i18n="newFeature">新建需求</h3>
+          <h3 id="new-h" data-i18n="newFeature">New Feature</h3>
           <label
-            ><span data-i18n="briefLabel">需求说明</span>
-            <textarea id="new-brief" rows="5" data-i18n-placeholder="briefPlaceholder" placeholder="描述要解决的问题、目标或关键约束（如：给发票详情页加 Redis 缓存，目标 p95 < 20ms）"></textarea>
-            <small data-i18n="newAutoHint">需求 ID 与需求名称将根据说明自动生成，并直接发送给 Agent 开始设计。</small>
+            ><span data-i18n="briefLabel">What to build</span>
+            <textarea id="new-brief" rows="5" data-i18n-placeholder="briefPlaceholder" placeholder="Describe the problem, goals, or key constraints (e.g. Add Redis cache for invoice details, p95 &lt; 20ms)"></textarea>
+            <small data-i18n="newAutoHint">Feature ID and name will be auto-generated and sent directly to the Agent to start designing.</small>
           </label>
           <p class="err" id="new-err"></p>
           <div class="modal-row">
-            <button type="button" id="new-cancel" data-i18n="cancel">取消</button>
-            <button type="button" class="primary" id="new-ok" data-i18n="startDesign">创建会话并设计</button>
+            <button type="button" id="new-cancel" data-i18n="cancel">Cancel</button>
+            <button type="button" class="primary" id="new-ok" data-i18n="startDesign">Start Design Session</button>
           </div>
         </div>
       </div>
 
       <div class="scrim" id="confirm-dialog" hidden>
         <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-h">
-          <h3 id="confirm-h" data-i18n="confirmDeleteTitle">确认删除</h3>
+          <h3 id="confirm-h" data-i18n="confirmDeleteTitle">Confirm Delete</h3>
           <p class="confirm-body" id="confirm-body"></p>
           <div class="modal-row">
-            <button type="button" id="confirm-cancel" data-i18n="cancel">取消</button>
-            <button type="button" class="danger" id="confirm-ok" data-i18n="confirmDeleteBtn">确认删除</button>
+            <button type="button" id="confirm-cancel" data-i18n="cancel">Cancel</button>
+            <button type="button" class="danger" id="confirm-ok" data-i18n="confirmDeleteBtn">Delete</button>
           </div>
         </div>
       </div>

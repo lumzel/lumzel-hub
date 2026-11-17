@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" data-doc-id="invoice-cache-01" data-doc-type="ticket" data-doc-status="confirmed" data-doc-date="2026-11-12">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 Read Path: Cache Hit Skips DB</title>
+</head>
+<body>
+<main class="lumzel-doc">
+<div class="lumzel-hero"><div class="pills"><span class="pill kind">ticket</span><span class="pill s-confirmed">confirmed</span><span class="pill">2026-11-12</span><code class="docid">invoice-cache-01</code></div>
+<h1>01 Read Path: Cache Hit Skips DB</h1></div>
+<header class="summary" data-doc-summary>GET /invoices/:id checks Redis first and returns immediately on cache hit; dependencies: none.</header>
+<section class="lumzel-block" id="slice" data-doc-block="slice" data-doc-kind="architecture">
+<h2>Slice Architecture</h2>
+<div class="card arch"><div class="layer" data-doc-layer="This Ticket"><div class="layer-label">This Ticket</div><div class="nodes"><div class="card node st st-done" data-doc-node="m-api" data-doc-status="done"><div class="t"><span data-doc-label>GET /invoices/:id</span> <span class="pill s-done">done</span></div><div class="s">Wire InvoiceCache.get</div><div class="meta"><code class="lk">src/api/invoice.ts</code></div></div><div class="card node st st-done" data-doc-node="m-get" data-doc-status="done"><div class="t"><span data-doc-label>InvoiceCache.get</span> <span class="pill s-done">done</span></div><div class="s">Read invoice:&lt;id&gt;</div><div class="meta"><code class="lk">src/services/invoice-cache.ts</code></div></div></div></div></div>
+</section>
+<section class="lumzel-block" id="done-when" data-doc-block="done-when" data-doc-kind="checklist">
+<h2>Done When</h2>
+<p class="lead" data-doc-lead>Ticket is done once every item is done.</p>
+<div class="check"><div class="card item st st-done" data-doc-node="dw-1" data-doc-status="done"><span class="box"></span><div><span data-doc-label>Cache hit does not query DB</span></div><span class="pill s-done">done</span></div><div class="card item st st-done" data-doc-node="dw-2" data-doc-status="done"><span class="box"></span><div><span data-doc-label>Falls back to DB cleanly when Redis is unreachable</span></div><span class="pill s-done">done</span></div><div class="card item st st-done" data-doc-node="dw-3" data-doc-status="done"><span class="box"></span><div><span data-doc-label>p95 drops from 120 ms to 18 ms (at 500 rps load)</span></div><span class="pill s-done">done</span></div></div>
+</section>
+<section class="lumzel-block" id="delivers" data-doc-block="delivers" data-doc-kind="checklist">
+<h2>Delivers Nodes</h2>
+<div class="check"><div class="card item st st-done" data-doc-node="n-read" data-doc-status="done" data-doc-links="docs/features/invoice-cache/design.html#read"><span class="box"></span><div><span data-doc-label>Read Cache</span></div><span class="pill s-done">done</span></div><div class="card item st st-done" data-doc-node="n-get-invoice" data-doc-status="done" data-doc-links="docs/features/invoice-cache/design.html#get-invoice"><span class="box"></span><div><span data-doc-label>GET /invoices/:id</span></div><span class="pill s-done">done</span></div><div class="card item st st-done" data-doc-node="n-redis" data-doc-status="done" data-doc-links="docs/features/invoice-cache/design.html#redis"><span class="box"></span><div><span data-doc-label>Redis</span></div><span class="pill s-done">done</span></div></div>
+</section>
+</main>
+<!-- A sample page of the market preview. In a project, Lumzel appends the Deck's runtime to the page; here the page asks for it. -->
+<script src="../../../../../../runtime/worktree.js"></script>
+</body>
+</html>

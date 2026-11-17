@@ -232,7 +232,8 @@ export function applyTicketDone(ticketHtml, markDone, todayStr, options = {}) {
     const labelWrap = doc.createElement('div');
     const label = doc.createElement('span');
     label.setAttribute('data-doc-label', '');
-    label.textContent = '已完成验证';
+    const isZh = String(options.locale || 'en').toLowerCase().startsWith('zh');
+    label.textContent = isZh ? '已完成验证' : 'Verified';
     labelWrap.appendChild(label);
     const pill = doc.createElement('span');
     pill.className = `pill s-${nextStatus}`;
@@ -451,43 +452,83 @@ export function buildDesignReplyPrompt({
   settled = [],
   note = '',
   isNewSession = false,
+  locale = 'en',
 }) {
+  const isZh = String(locale || 'en').toLowerCase().startsWith('zh');
   const lines = [];
-  if (isNewSession) {
-    lines.push(
-      `继续推进 Feature ${feature.id}「${feature.title || feature.id}」的方案设计与答疑（新开会话，附完整上下文）。`,
-      `设计文档路径：${feature.design}`,
-      feature.summary ? `需求概述：${feature.summary}` : '',
-      feature.status ? `当前设计状态：${feature.status}` : '',
-    );
-    if (settled.length) {
-      lines.push('', '已确定的历史决策：');
-      for (const s of settled) {
-        lines.push(`- ${s.id} (${s.question}): ${s.answer}`);
+  if (isZh) {
+    if (isNewSession) {
+      lines.push(
+        `继续推进 Feature ${feature.id}「${feature.title || feature.id}」的方案设计与答疑（新开会话，附完整上下文）。`,
+        `设计文档路径：${feature.design}`,
+        feature.summary ? `需求概述：${feature.summary}` : '',
+        feature.status ? `当前设计状态：${feature.status}` : '',
+      );
+      if (settled.length) {
+        lines.push('', '已确定的历史决策：');
+        for (const s of settled) {
+          lines.push(`- ${s.id} (${s.question}): ${s.answer}`);
+        }
+      }
+    } else {
+      lines.push(`用户在方案工作台 Deck 中对 Feature ${feature.id}「${feature.title || feature.id}」(${feature.design}) 提交了答疑/补充：`);
+    }
+
+    if (answers.length) {
+      lines.push('', '用户对当前待决问题的回答：');
+      for (const a of answers) {
+        lines.push(`- [${a.id}] ${a.question} => ${a.value}`);
       }
     }
-  } else {
-    lines.push(`用户在方案工作台 Deck 中对 Feature ${feature.id}「${feature.title || feature.id}」(${feature.design}) 提交了答疑/补充：`);
-  }
-
-  if (answers.length) {
-    lines.push('', '用户对当前待决问题的回答：');
-    for (const a of answers) {
-      lines.push(`- [${a.id}] ${a.question} => ${a.value}`);
+    if (note && note.trim()) {
+      lines.push('', `用户补充说明：${note.trim()}`);
     }
-  }
-  if (note && note.trim()) {
-    lines.push('', `用户补充说明：${note.trim()}`);
-  }
 
-  lines.push(
-    '',
-    `请根据上述回答与说明更新 ${feature.design}：`,
-    '1. 将已回答的 `decisions` 节点写上 `data-doc-answer`（去掉 `.open` 类，把 `.q` 前缀改为 `✓`，`.opts` 中选中项加 `.chosen` 并去掉 `.rec`，更新 `.a` 为 `→ <答案>`）。',
-    '2. 根据新决策完善或调整对应设计块；若仍有新衍生问题则补充到 `decisions`（带 `data-doc-recommend`）。',
-    '3. 若所有 `decisions` 都已有 `data-doc-answer` 且设计已完整，将 `<html data-doc-status>` 与 hero 状态胶囊（`.pill.s-*`）设为 `confirmed`；若项目配置了 `lumzel` 脚本则运行 `pnpm lumzel check` 校验。',
-    '4. 不要生成任何 `docs/results/` 文件；回复简洁说明更新了哪些节点以及下一步建议。',
-  );
+    lines.push(
+      '',
+      `请根据上述回答与说明更新 ${feature.design}：`,
+      '1. 将已回答的 `decisions` 节点写上 `data-doc-answer`（去掉 `.open` 类，把 `.q` 前缀改为 `✓`，`.opts` 中选中项加 `.chosen` 并去掉 `.rec`，更新 `.a` 为 `→ <答案>`）。',
+      '2. 根据新决策完善或调整对应设计块；若仍有新衍生问题则补充到 `decisions`（带 `data-doc-recommend`）。',
+      '3. 若所有 `decisions` 都已有 `data-doc-answer` 且设计已完整，将 `<html data-doc-status>` 与 hero 状态胶囊（`.pill.s-*`）设为 `confirmed`；若项目配置了 `lumzel` 脚本则运行 `pnpm lumzel check` 校验。',
+      '4. 不要生成任何 `docs/results/` 文件；回复简洁说明更新了哪些节点以及下一步建议。',
+    );
+  } else {
+    if (isNewSession) {
+      lines.push(
+        `Continue designing Feature ${feature.id} "${feature.title || feature.id}" (new session with full context).`,
+        `Design doc path: ${feature.design}`,
+        feature.summary ? `Summary: ${feature.summary}` : '',
+        feature.status ? `Current design status: ${feature.status}` : '',
+      );
+      if (settled.length) {
+        lines.push('', 'Previously settled decisions:');
+        for (const s of settled) {
+          lines.push(`- ${s.id} (${s.question}): ${s.answer}`);
+        }
+      }
+    } else {
+      lines.push(`The user submitted answers/notes in Spec Workbench for Feature ${feature.id} "${feature.title || feature.id}" (${feature.design}):`);
+    }
+
+    if (answers.length) {
+      lines.push('', 'Answers to open questions:');
+      for (const a of answers) {
+        lines.push(`- [${a.id}] ${a.question} => ${a.value}`);
+      }
+    }
+    if (note && note.trim()) {
+      lines.push('', `Additional notes: ${note.trim()}`);
+    }
+
+    lines.push(
+      '',
+      `Update ${feature.design} based on the answers and notes above:`,
+      '1. For each answered `decisions` node, set `data-doc-answer` (remove `.open`, change the `.q` prefix to `✓`, add `.chosen` and remove `.rec` on the selected `.opts` item, and update `.a` to `→ <answer>`).',
+      '2. Refine or adjust the affected design blocks accordingly; if follow-up questions arise, add them to `decisions` (with `data-doc-recommend`).',
+      '3. If every `decisions` node now has `data-doc-answer` and the design is complete, set `<html data-doc-status>` and the hero status pill (`.pill.s-*`) to `confirmed`; run `pnpm lumzel check` if the project defines a `lumzel` script.',
+      '4. Do not generate any `docs/results/` files; reply concisely with the updated nodes and recommended next step.',
+    );
+  }
   return lines.filter(Boolean).join('\n');
 }
 
@@ -500,34 +541,66 @@ export function buildTicketsReplyPrompt({
   tickets = [],
   note = '',
   isNewSession = false,
+  locale = 'en',
 }) {
+  const isZh = String(locale || 'en').toLowerCase().startsWith('zh');
   const lines = [];
-  if (isNewSession) {
+  if (isZh) {
+    if (isNewSession) {
+      lines.push(
+        `继续推进 Feature ${feature.id}「${feature.title || feature.id}」的工单拆分与决策调整（新开会话，附完整上下文）。`,
+        `设计文档路径：${feature.design}`,
+        feature.prototype ? `原型路径：${feature.prototype}` : '',
+        tickets.length ? '现有工单列表：' : '当前尚无工单。',
+        ...tickets.map(tk => `- ${tk.path} (${tk.title}) [${tk.status}]`),
+      );
+    } else {
+      lines.push(`用户在方案工作台 Deck 中对 Feature ${feature.id}「${feature.title || feature.id}」的工单提交了决策/补充：`);
+    }
+
+    if (answers.length) {
+      lines.push('', '用户对工单决策（choices）的回答：');
+      for (const a of answers) {
+        lines.push(`- ${a.ticketPath} [${a.id}] ${a.question} => ${a.value}`);
+      }
+    }
+    if (note && note.trim()) {
+      lines.push('', `用户补充要求：${note.trim()}`);
+    }
+
     lines.push(
-      `继续推进 Feature ${feature.id}「${feature.title || feature.id}」的工单拆分与决策调整（新开会话，附完整上下文）。`,
-      `设计文档路径：${feature.design}`,
-      feature.prototype ? `原型路径：${feature.prototype}` : '',
-      tickets.length ? '现有工单列表：' : '当前尚无工单。',
-      ...tickets.map(tk => `- ${tk.path} (${tk.title}) [${tk.status}]`),
+      '',
+      '请根据上述回答与要求更新对应工单文件（写上 `data-doc-answer`、同步去掉 `.open` / 更新 `.q` `✓` / `.opts .chosen` / `.a`，调整切片或验收，增删工单时保持 `#delivers` 的 `data-doc-links="<designPath>#<nodeId>"` 并同步 `design.html` 的 `#tickets` 列表），若项目配置了 `lumzel` 脚本则运行 `pnpm lumzel check`。',
+      '不要生成任何 `docs/results/` 文件；回复简洁说明改动内容。',
     );
   } else {
-    lines.push(`用户在方案工作台 Deck 中对 Feature ${feature.id}「${feature.title || feature.id}」的工单提交了决策/补充：`);
-  }
-
-  if (answers.length) {
-    lines.push('', '用户对工单决策（choices）的回答：');
-    for (const a of answers) {
-      lines.push(`- ${a.ticketPath} [${a.id}] ${a.question} => ${a.value}`);
+    if (isNewSession) {
+      lines.push(
+        `Continue ticket slicing and decision updates for Feature ${feature.id} "${feature.title || feature.id}" (new session with full context).`,
+        `Design doc path: ${feature.design}`,
+        feature.prototype ? `Prototype path: ${feature.prototype}` : '',
+        tickets.length ? 'Existing tickets:' : 'No tickets yet.',
+        ...tickets.map(tk => `- ${tk.path} (${tk.title}) [${tk.status}]`),
+      );
+    } else {
+      lines.push(`The user submitted ticket decisions/notes in Spec Workbench for Feature ${feature.id} "${feature.title || feature.id}":`);
     }
-  }
-  if (note && note.trim()) {
-    lines.push('', `用户补充要求：${note.trim()}`);
-  }
 
-  lines.push(
-    '',
-    '请根据上述回答与要求更新对应工单文件（写上 `data-doc-answer`、同步去掉 `.open` / 更新 `.q` `✓` / `.opts .chosen` / `.a`，调整切片或验收，增删工单时保持 `#delivers` 的 `data-doc-links="<designPath>#<nodeId>"` 并同步 `design.html` 的 `#tickets` 列表），若项目配置了 `lumzel` 脚本则运行 `pnpm lumzel check`。',
-    '不要生成任何 `docs/results/` 文件；回复简洁说明改动内容。',
-  );
+    if (answers.length) {
+      lines.push('', 'Answers to ticket choices:');
+      for (const a of answers) {
+        lines.push(`- ${a.ticketPath} [${a.id}] ${a.question} => ${a.value}`);
+      }
+    }
+    if (note && note.trim()) {
+      lines.push('', `Additional instructions: ${note.trim()}`);
+    }
+
+    lines.push(
+      '',
+      'Update the corresponding ticket files based on the answers and notes above (set `data-doc-answer`, remove `.open`, update `.q` with `✓` / `.opts .chosen` / `.a`, adjust slices or acceptance criteria, keep `#delivers` `data-doc-links="<designPath>#<nodeId>"` and `design.html` `#tickets` list in sync when adding/removing tickets), and run `pnpm lumzel check` if the project defines a `lumzel` script.',
+      'Do not generate any `docs/results/` files; reply concisely summarizing the changes.',
+    );
+  }
   return lines.filter(Boolean).join('\n');
 }
