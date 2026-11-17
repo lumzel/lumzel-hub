@@ -55,9 +55,16 @@ nodes:
       Active DESIGN.md contract:
       {{outputs.load_context.designMd}}
 
-      Do NOT write HTML files yet. Return ONLY a JSON object matching the schema with:
-      - 2-3 concise discovery assumptions/clarifications
-      - 3 distinct visual directions (id, name, rationale, palette, typography, layoutIdea) tailored to the brief and DESIGN.md.
+      Do NOT write HTML files yet. Return ONLY valid JSON (no prose or markdown outside JSON) with:
+      - `assumptions`: 2-3 concise discovery assumptions/clarifications as plain strings
+      - `directions`: 3 distinct visual directions tailored to the brief and DESIGN.md
+
+      Every field inside each direction (`id`, `name`, `rationale`, `palette`, `typography`, `layoutIdea`) MUST be a single plain string (never a nested object or array):
+      - `palette`: concise single-line color summary string, e.g. `"#fbfbfb / #09090b / #0070e3"`
+      - `typography`: concise single-line font/scale summary string, e.g. `"Inter + Geist Mono tabular-nums"`
+
+      Reply with JSON only matching this exact shape:
+      {"assumptions":["string"],"directions":[{"id":"kebab-case-id","name":"string","rationale":"string","palette":"#bg / #surface / #fg / #accent","typography":"Display + Body + Mono summary","layoutIdea":"string"}]}
     outputSchema:
       type: object
       required: [assumptions, directions]
@@ -147,7 +154,8 @@ nodes:
       {{JSON.stringify(outputs.lint_artifact)}}
 
       Read `{{inputs.targetPath}}` and score 0-100 across Philosophy, Hierarchy, Execution, Specificity, and Restraint.
-      Return ONLY JSON matching the schema.
+      Return ONLY valid JSON (no prose or markdown outside JSON; `findings` MUST be an array of plain strings, NOT objects):
+      {"score":85,"passed":true,"summary":"1-2 sentence overall critique summary","axes":{"Philosophy":85,"Hierarchy":86,"Execution":84,"Specificity":85,"Restraint":85},"findings":["[data-od-id=\"...\"] Concrete issue and fix"]}
     outputSchema:
       type: object
       required: [score, passed, summary, findings]

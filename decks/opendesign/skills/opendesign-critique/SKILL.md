@@ -14,7 +14,7 @@ Evaluate the HTML artifact strictly against the active `DESIGN.md` contract and 
 4. **Specificity & Copy (20%)**: Authentic domain data and terminology (no `Lorem ipsum`, no `Acme`, no invented clichés).
 5. **Restraint & Anti-Slop (15%)**: Avoidance of gratuitous gradients, glow effects, decorative badges, and inconsistent radii.
 
-Return structured JSON with `score` (0–100), `axes`, `passed` (boolean), and `findings` (actionable list naming exact `data-od-id` elements).
+Return structured JSON with `score` (0–100 number), `passed` (boolean), `summary` (concise string), `axes` (object of numeric scores for Philosophy, Hierarchy, Execution, Specificity, Restraint), and `findings` (array of actionable strings naming exact `data-od-id` elements).
 
 ## Mode B: Targeted Element Revision
 
