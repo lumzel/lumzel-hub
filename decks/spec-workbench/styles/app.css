@@ -65,6 +65,28 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--fg) 16%, transparent) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--fg) 14%, transparent);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+  min-height: 32px;
+  min-width: 32px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--fg) 30%, transparent);
+  background-clip: content-box;
 }
 html,
 body {
@@ -382,35 +404,6 @@ button:disabled {
 .more-btn:hover {
   border-color: var(--brand);
   color: var(--brand);
-}
-.live-runs {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  overflow-x: auto;
-}
-.live-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 22px;
-  padding: 0 8px;
-  border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--border-strong));
-  border-radius: 999px;
-  background: var(--brand-soft);
-  color: var(--brand);
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.live-chip.warn {
-  border-color: color-mix(in srgb, var(--gate) 40%, var(--border-strong));
-  background: var(--gate-soft);
-  color: var(--gate);
-}
-.live-chip:hover {
-  filter: brightness(0.96);
 }
 .agent-wrap {
   position: relative;

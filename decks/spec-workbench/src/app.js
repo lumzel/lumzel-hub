@@ -737,7 +737,6 @@ function updateSessionStatusFromEvent(sessionId, nextStatus) {
   }
   if (matched) {
     syncActiveWatcher();
-    renderLiveRuns();
     renderRail();
     const cur = feature();
     if (cur?.pending) renderPendingPane();
@@ -802,28 +801,6 @@ function syncActiveWatcher() {
 }
 
 // ---------- rendering: rail & topbar
-
-function renderLiveRuns() {
-  const box = $('live-runs');
-  if (!box) return;
-  const active = allActiveSessions();
-  box.replaceChildren(
-    ...active.map(rec => {
-      const isWait = rec.status === 'needs_input';
-      return el(
-        'button',
-        {
-          type: 'button',
-          class: `live-chip${isWait ? ' warn' : ''}`,
-          title: t(isWait ? 'waitingOpenSession' : 'clickOpenSession'),
-          onclick: () => void openSession(rec.sessionId),
-        },
-        el('span', { class: `run-dot${isWait ? ' warn' : ''}`, 'aria-hidden': 'true' }),
-        `${rec.featureId} · ${sessionKindLabel(rec.kind)} · ${isWait ? t('waitingInputBtn') : t('runningBtn')}`,
-      );
-    }),
-  );
-}
 
 function buildFeatureRailItem(f, archived = false) {
   const p = progress(f);
@@ -936,7 +913,6 @@ function renderTopbar() {
   if (!topbar) return;
   topbar.hidden = false;
   syncRailToggle();
-  renderLiveRuns();
   const info = effectiveAgentInfo();
   const canSettings = typeof window.deck?.ui?.openSettings === 'function';
 
