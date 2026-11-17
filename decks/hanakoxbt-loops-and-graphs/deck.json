@@ -7,7 +7,7 @@
   "homepage": "https://agent-layers.vercel.app",
   "icon": "branch",
   "entry": "index.html",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "permissions": ["workflow", "db", "files", "agent", "open"],
   "capabilities": {
     "files": [".lumzel/hanakoxbt-loops-and-graphs/**"]

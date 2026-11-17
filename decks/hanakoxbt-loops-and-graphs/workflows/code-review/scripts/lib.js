@@ -106,3 +106,12 @@ export function firstJson(text) {
 export async function line(ctx, cmd, timeoutSec = 30) {
   return (await ctx.sh(cmd, { timeoutSec })).stdout.trim();
 }
+export function safeReadText(ctx, path) {
+  if (!ctx || typeof ctx.fsReadOrEmpty !== 'function' || typeof path !== 'string' || !path.trim()) return '';
+  try {
+    const content = ctx.fsReadOrEmpty(path);
+    return typeof content === 'string' && !content.includes('\0') ? content : '';
+  } catch (_) {
+    return '';
+  }
+}

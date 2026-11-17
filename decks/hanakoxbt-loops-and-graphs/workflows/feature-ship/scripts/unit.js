@@ -1,4 +1,4 @@
-import { tel, tail, parseNumstat, line, fnv1a, shQuote } from './lib.js';
+import { tel, tail, parseNumstat, line, fnv1a, shQuote, safeReadText } from './lib.js';
 const ENV_FAIL = /command not found|Cannot find module|ERR_MODULE_NOT_FOUND|could not find `Cargo\.toml`|No module named|executable not found/i;
 const SIG = /(FAIL|✗|×|panicked at|AssertionError|Error:|expected .* received|assert)/i;
 
@@ -11,7 +11,7 @@ export function laneStart(ctx) {
 }
 
 export async function redCheck(ctx) {
-  const { item, outputs, state, sh, fsReadOrEmpty } = ctx;
+  const { item, outputs, state, sh } = ctx;
   const a = (state.redAttempts || 0) + 1;
   state.redAttempts = a;
   const r = outputs.verify_red || {};
@@ -40,7 +40,7 @@ export async function redCheck(ctx) {
   if (ok) {
     const pinned = {};
     for (const f of item.checkFiles) {
-      pinned[f] = fnv1a(fsReadOrEmpty(f));
+      pinned[f] = fnv1a(safeReadText(ctx, f));
     }
     state.pinnedCheckHashes = pinned;
   }
@@ -49,7 +49,7 @@ export async function redCheck(ctx) {
 }
 
 export async function greenCheck(ctx) {
-  const { item, outputs, state, fsReadOrEmpty } = ctx;
+  const { item, outputs, state } = ctx;
   const a = (state.greenAttempts || 0) + 1;
   state.greenAttempts = a;
   const r = outputs.verify_green || {};
@@ -57,7 +57,7 @@ export async function greenCheck(ctx) {
   const pinned = state.pinnedCheckHashes || {};
   const touched = [];
   for (const f of item.checkFiles || []) {
-    if (pinned[f] !== undefined && fnv1a(fsReadOrEmpty(f)) !== pinned[f]) {
+    if (pinned[f] !== undefined && fnv1a(safeReadText(ctx, f)) !== pinned[f]) {
       touched.push(f);
     }
   }

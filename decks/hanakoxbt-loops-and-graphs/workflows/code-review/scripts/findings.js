@@ -1,4 +1,4 @@
-import { normText, lessonId } from './lib.js';
+import { normText, lessonId, safeReadText } from './lib.js';
 const RANK = { high: 3, medium: 2, low: 1 };
 const quoteOf = s => {
   const m = /`([^`]{6,})`/.exec(String(s || ''));
@@ -7,7 +7,7 @@ const quoteOf = s => {
 const squash = s => String(s || '').replace(/\s+/g, ' ').trim();
 
 export function evidence(ctx) {
-  const { outputs, item, state, fsReadOrEmpty } = ctx;
+  const { outputs, item, state } = ctx;
   const a = (state.evAttempts || 0) + 1;
   state.evAttempts = a;
   const changed = new Set(outputs.scope.files);
@@ -29,7 +29,7 @@ export function evidence(ctx) {
       invalid.push(`${f.file}:${f.line || '?'} "${f.title}": evidence has no \`code quote\``);
       continue;
     }
-    if (!squash(fsReadOrEmpty(f.file)).includes(squash(q))) {
+    if (!squash(safeReadText(ctx, f.file)).includes(squash(q))) {
       invalid.push(`${f.file}: quote not found in file: ${q.slice(0, 80)}`);
       continue;
     }

@@ -1,4 +1,4 @@
-import { parseNumstat, safeMessage, tail, line, tel } from './lib.js';
+import { parseNumstat, safeMessage, safeReadText, tail, line, tel } from './lib.js';
 
 const RULES = [
   [/(^|\/)(migrations?|schema)\/|\.sql$/i, 'high', 'schema / migration changes'],
@@ -59,7 +59,7 @@ async function collectWorkingTreeDiff(ctx, sh) {
     if (!rawLine.startsWith('?? ')) continue;
     const p = rawLine.slice(3).trim();
     if (!p || p.startsWith('.lumzel/') || seen.has(p)) continue;
-    const content = ctx.fsReadOrEmpty(p);
+    const content = safeReadText(ctx, p);
     const lines = content ? content.split('\n').length : 0;
     ns.files.push({ path: p, add: lines, del: 0 });
     ns.insertions += lines;

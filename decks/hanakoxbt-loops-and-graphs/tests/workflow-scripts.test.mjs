@@ -896,3 +896,81 @@ test('host retryRun recovers interrupted/stopped/failed runs via deck.workflow.r
     globalThis.document = prevDoc;
   }
 });
+
+test('integrate and code-review evidence tolerate binary or non-UTF-8 files when fsReadOrEmpty throws or returns NUL bytes', async () => {
+  const ctx = makeCtx({
+    state: { slug: 'binary-assets', fullCheckCmd: 'swift test' },
+    outputs: {
+      preflight: { fullCheckCmd: 'swift test' },
+      plan: { fullCheckCmd: 'swift test' },
+      units: { results: [{ item: { id: 'u1' }, ok: true, outputs: {} }] },
+    },
+    fsReadOrEmpty: p => {
+      if (p === 'Sources/App/Resources/AppIcon.icns') {
+        throw new Error(`failed to read '${p}': stream did not contain valid UTF-8`);
+      }
+      if (p === 'Sources/App/Resources/logo.png') {
+        return 'PNG\0binary';
+      }
+      if (p === 'Sources/App/NewView.swift') {
+        return 'line1\nline2\nline3';
+      }
+      return '';
+    },
+    sh: async cmd => {
+      if (cmd === 'git rev-parse --abbrev-ref HEAD') return { ok: true, code: 0, stdout: 'main\n', stderr: '' };
+      if (cmd === 'git rev-parse HEAD') return { ok: true, code: 0, stdout: 'def456\n', stderr: '' };
+      if (cmd.includes('diff --numstat')) return { ok: true, code: 0, stdout: '5\t1\tSources/App/App.swift\n', stderr: '' };
+      if (cmd.includes('status --porcelain')) {
+        return {
+          ok: true,
+          code: 0,
+          stdout: [
+            '?? Sources/App/Resources/AppIcon.icns',
+            '?? Sources/App/Resources/logo.png',
+            '?? Sources/App/NewView.swift',
+          ].join('\n'),
+          stderr: '',
+        };
+      }
+      return { ok: true, code: 0, stdout: 'ok', stderr: '' };
+    },
+  });
+
+  const out = await integrate(ctx);
+  assert.equal(out.shippable, true);
+  assert.equal(ctx.state.candidate.filesChanged, 4);
+  assert.equal(ctx.state.candidate.insertions, 8);
+  assert.equal(ctx.state.candidate.deletions, 1);
+
+  const rev = await reverify(ctx);
+  assert.equal(rev.ok, true);
+  assert.equal(ctx.state.candidate.filesChanged, 4);
+  assert.equal(ctx.state.candidate.insertions, 8);
+
+  const ev = reviewEvidence({
+    item: { id: 'security' },
+    state: {},
+    outputs: {
+      scope: { files: ['Sources/App/Resources/AppIcon.icns'] },
+      review: {
+        findings: [
+          {
+            file: 'Sources/App/Resources/AppIcon.icns',
+            line: 1,
+            title: 'Binary file finding',
+            severity: 'low',
+            evidence: 'Contains `binary_bytes_here`',
+          },
+        ],
+      },
+    },
+    fsReadOrEmpty: () => {
+      throw new Error('stream did not contain valid UTF-8');
+    },
+  });
+  assert.equal(ev.ok, false);
+  assert.equal(ev.valid.length, 0);
+  assert.equal(ev.dropped, 1);
+});
+

@@ -1,8 +1,8 @@
-import { composeConstraints, parseLessonsMd, line } from './lib.js';
+import { composeConstraints, parseLessonsMd, line, safeReadText } from './lib.js';
 const OWN = '.lumzel/hanakoxbt-loops-and-graphs/';
 
 export async function preflight(ctx) {
-  const { inputs, sh, fsReadOrEmpty } = ctx;
+  const { inputs, sh } = ctx;
   if (!(await sh('git rev-parse --is-inside-work-tree', { timeoutSec: 15 })).ok) {
     return { isGit: false, clean: false, dirty: [], dirtyCount: 0, reason: 'not a git repository', presetUnits: [] };
   }
@@ -12,7 +12,7 @@ export async function preflight(ctx) {
     .filter(Boolean)
     .map(l => l.slice(3).trim())
     .filter(p => p && !p.startsWith(OWN));
-  const fileLessons = parseLessonsMd(fsReadOrEmpty(inputs.lessonsFile || OWN + 'lessons.md'));
+  const fileLessons = parseLessonsMd(safeReadText(ctx, inputs.lessonsFile || OWN + 'lessons.md'));
   const merged = composeConstraints([...(inputs.constraints || []), ...fileLessons.map(l => l.text)]);
   const rootEntries = await listRootEntries(ctx, st.stdout);
   const setupCmd = inputs.setupCmd === 'auto' ? '' : String(inputs.setupCmd || '').trim();
