@@ -396,6 +396,10 @@ export function slugifyFeatureId(title, existingIds = []) {
   return `${base}-${seq}`;
 }
 
+export function isFallbackFeatureId(id) {
+  return /^feat-\d{8}-\d{4}(?:-\d+)?$/.test(String(id || '').trim());
+}
+
 export function todayIsoDate(now = new Date()) {
   const pad = n => String(n).padStart(2, '0');
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -407,6 +411,98 @@ export function extractDocCreatedAttr(html) {
   if (!rootMatch) return '';
   const attrMatch = rootMatch[0].match(/\bdata-(?:doc|lumzel)-created\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
   return String(attrMatch?.[1] ?? attrMatch?.[2] ?? '').trim();
+}
+
+export function extractDocPendingIdAttr(html) {
+  if (!html) return '';
+  const rootMatch = String(html).match(/<html\b[^>]*>/i);
+  if (!rootMatch) return '';
+  const attrMatch = rootMatch[0].match(/\bdata-(?:doc|lumzel)-pending-id\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+  return String(attrMatch?.[1] ?? attrMatch?.[2] ?? '').trim();
+}
+
+/**
+ * Match newly created disk features whose semantic id differs from the UI's temporary pending id
+ * back to their pending metadata/session records.
+ * @returns {Array<{ pendingId: string, finalId: string }>}
+ */
+export function reconcilePendingFeatureMatches({
+  diskFeatures = [],
+  metaMap = {},
+  docMetaMap = {},
+  sessMap = {},
+} = {}) {
+  const diskList = (diskFeatures || []).filter(f => Boolean(f?.id));
+  const diskIds = new Set(diskList.map(f => f.id));
+  const remainingDisk = diskList.filter(f => !metaMap[f.id]);
+  const remainingPending = Object.values(metaMap || {}).filter(m => m?.id && m.pending && !diskIds.has(m.id));
+  if (!remainingDisk.length || !remainingPending.length) return [];
+
+  const matches = [];
+  const usedDisk = new Set();
+  const usedPending = new Set();
+  const claim = (pendingId, finalId) => {
+    usedPending.add(pendingId);
+    usedDisk.add(finalId);
+    matches.push({ pendingId, finalId });
+  };
+
+  // Tier 1: Explicit data-doc-pending-id attribute on <html>
+  const pendingById = new Map(remainingPending.map(p => [p.id, p]));
+  for (const d of remainingDisk) {
+    if (usedDisk.has(d.id)) continue;
+    const tag = String(docMetaMap?.[d.id]?.pendingId || '').trim();
+    if (tag && pendingById.has(tag) && !usedPending.has(tag)) {
+      claim(tag, d.id);
+    }
+  }
+
+  // Tier 2: Exact or near-exact ISO timestamp match on data-doc-created
+  for (const d of remainingDisk) {
+    if (usedDisk.has(d.id)) continue;
+    const rawCreated = String(docMetaMap?.[d.id]?.created || '').trim();
+    const parsed = parseDocTimestamp(rawCreated);
+    if (!parsed.hasTime || parsed.ms <= 0) continue;
+
+    let best = null;
+    let bestDelta = Infinity;
+    let tied = false;
+    for (const p of remainingPending) {
+      if (usedPending.has(p.id)) continue;
+      const exactStr = p.docCreated && String(p.docCreated).trim() === rawCreated;
+      const pMs = Number(p.createdAt) || 0;
+      const delta = exactStr ? 0 : pMs > 0 ? Math.abs(parsed.ms - pMs) : Infinity;
+      if (!exactStr && delta > 2000) continue;
+      if (delta < bestDelta) {
+        best = p;
+        bestDelta = delta;
+        tied = false;
+      } else if (delta === bestDelta) {
+        tied = true;
+      }
+    }
+    if (best && !tied) {
+      claim(best.id, d.id);
+    }
+  }
+
+  // Tier 3: Conservative 1-to-1 fallback when Agent omitted both pending-id and ISO time
+  const leftDisk = remainingDisk.filter(d => !usedDisk.has(d.id));
+  const leftPending = remainingPending.filter(p => !usedPending.has(p.id));
+  if (leftDisk.length === 1 && leftPending.length === 1) {
+    const d = leftDisk[0];
+    const p = leftPending[0];
+    const hasUiOrigin = p.createdSource === 'ui';
+    const hasDesignSess = Boolean(sessMap?.[`design:${p.id}`]);
+    const pCreatedMs = Number(p.createdAt) || 0;
+    const pDate = pCreatedMs > 0 ? todayIsoDate(new Date(pCreatedMs)) : '';
+    const dDate = String(docMetaMap?.[d.id]?.created || d.updated || '').slice(0, 10);
+    if (hasUiOrigin && hasDesignSess && pDate && dDate && pDate === dDate) {
+      claim(p.id, d.id);
+    }
+  }
+
+  return matches;
 }
 
 export function parseDocTimestamp(raw) {

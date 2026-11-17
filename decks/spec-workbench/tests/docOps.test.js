@@ -12,15 +12,19 @@ import {
   buildTicketsReplyPrompt,
   deriveFeatureTitle,
   extractDocCreatedAttr,
+  extractDocPendingIdAttr,
   featureTimeInfo,
   formatShortTime,
   generateFeatureId,
+  isFallbackFeatureId,
   parseDesignDocQuestions,
   parseTicketChoices,
+  reconcilePendingFeatureMatches,
   removeDesignTicketItem,
   slugifyFeatureId,
   sortFeaturesDesc,
   syncDesignTicketItem,
+  todayIsoDate,
 } from '../src/docOps.js';
 import {
   SAMPLE_DOCS,
@@ -421,4 +425,97 @@ test('deriveFeatureTitle and generateFeatureId handle brief-only creation', () =
     generateFeatureId('给发票详情页加 Redis 缓存', ['feat-20261116-0905'], fixedNow),
     'feat-20261116-0905-2',
   );
+  assert.equal(isFallbackFeatureId('feat-20261116-0905'), true);
+  assert.equal(isFallbackFeatureId('feat-20261116-0905-2'), true);
+  assert.equal(isFallbackFeatureId('sae-logging-spec'), false);
+});
+
+test('extractDocPendingIdAttr & reconcilePendingFeatureMatches migrate semantic IDs cleanly and pass lintDoc', () => {
+  const scaffoldHtml = fs.readFileSync(
+    path.join(DECK_DIR, 'skills/spec-workbench-html/scaffolds/design.html'),
+    'utf8',
+  );
+  const withPendingAttr = scaffoldHtml
+    .replace('data-doc-id="sample"', 'data-doc-id="sae-logging-spec" data-doc-pending-id="feat-20261117-1516"')
+    .replace('<title>sample</title>', '<title>SAE Logging Spec</title>');
+  assert.equal(extractDocPendingIdAttr(withPendingAttr), 'feat-20261117-1516');
+  assert.deepEqual(lintDoc(extractDoc(parseHtml(withPendingAttr), 'docs/features/sae-logging-spec/design.html')), []);
+
+  // Tier 1 (explicit pending-id) + Tier 2 (ISO timestamp match) + unrelated owned disk feature
+  const t1 = Date.parse('2026-11-17T07:16:10.123Z');
+  const t2 = Date.parse('2026-11-17T07:20:05.456Z');
+  const matches = reconcilePendingFeatureMatches({
+    diskFeatures: [
+      { id: 'wallet', updated: '2026-11-12' },
+      { id: 'sae-logging-spec', updated: '2026-11-17' },
+      { id: 'oauth-session', updated: '2026-11-17' },
+    ],
+    metaMap: {
+      wallet: { id: 'wallet', pending: false },
+      'feat-20261117-1516': {
+        id: 'feat-20261117-1516',
+        pending: true,
+        createdAt: t1,
+        docCreated: '2026-11-17T07:16:10.123Z',
+        createdSource: 'ui',
+      },
+      'feat-20261117-1520': {
+        id: 'feat-20261117-1520',
+        pending: true,
+        createdAt: t2,
+        docCreated: '2026-11-17T07:20:05.456Z',
+        createdSource: 'ui',
+      },
+    },
+    docMetaMap: {
+      'sae-logging-spec': { created: '2026-11-17T07:16:10.123Z', pendingId: 'feat-20261117-1516' },
+      'oauth-session': { created: '2026-11-17T07:20:05.456Z', pendingId: '' },
+    },
+  });
+  assert.deepEqual(matches, [
+    { pendingId: 'feat-20261117-1516', finalId: 'sae-logging-spec' },
+    { pendingId: 'feat-20261117-1520', finalId: 'oauth-session' },
+  ]);
+
+  // Tier 3 (conservative 1-to-1 fallback when both pendingId and ISO time omitted, same local date)
+  const localTs = new Date(2026, 10, 17, 15, 30, 0).getTime();
+  const localDate = todayIsoDate(new Date(localTs));
+  const fallbackMatches = reconcilePendingFeatureMatches({
+    diskFeatures: [{ id: 'invoice-redis-cache', updated: localDate }],
+    metaMap: {
+      'feat-20261117-1530': {
+        id: 'feat-20261117-1530',
+        pending: true,
+        createdAt: localTs,
+        createdSource: 'ui',
+      },
+    },
+    docMetaMap: {
+      'invoice-redis-cache': { created: localDate, pendingId: '' },
+    },
+    sessMap: {
+      'design:feat-20261117-1530': { slotKey: 'design:feat-20261117-1530', featureId: 'feat-20261117-1530', sessionId: 's1' },
+    },
+  });
+  assert.deepEqual(fallbackMatches, [{ pendingId: 'feat-20261117-1530', finalId: 'invoice-redis-cache' }]);
+
+  // Must NOT match external/stale disk feature from another date
+  const noMatch = reconcilePendingFeatureMatches({
+    diskFeatures: [{ id: 'legacy-feature', updated: '2026-10-01' }],
+    metaMap: {
+      'feat-20261117-1530': {
+        id: 'feat-20261117-1530',
+        pending: true,
+        createdAt: localTs,
+        createdSource: 'ui',
+      },
+    },
+    docMetaMap: {
+      'legacy-feature': { created: '2026-10-01', pendingId: '' },
+    },
+    sessMap: {
+      'design:feat-20261117-1530': { slotKey: 'design:feat-20261117-1530', featureId: 'feat-20261117-1530', sessionId: 's1' },
+    },
+  });
+  assert.deepEqual(noMatch, []);
 });

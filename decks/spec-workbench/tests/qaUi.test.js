@@ -8,7 +8,12 @@ import { parseHTML } from 'linkedom';
 import {
   applyQaAnswerSelection,
   captureContainerScrollTop,
+  draftStoreKey,
+  hasQaDraftContent,
+  mergeStoredQaDrafts,
+  normalizeQaDraft,
   restoreContainerScrollTop,
+  shouldAutoOpenQaPanel,
   syncQaOptionButtons,
 } from '../src/qaUi.js';
 
@@ -109,7 +114,108 @@ test('captureContainerScrollTop and restoreContainerScrollTop preserve scroll fo
   assert.equal(otherBody.scrollTop, 0);
 });
 
-test('app.js uses in-place option selection instead of rebuilding QA panels on option click', () => {
+test('mergeStoredQaDrafts restores unsubmitted drafts across refresh while respecting dirty/cleared guards', () => {
+  const entries = [
+    {
+      key: 'design:feat-1',
+      value: {
+        kind: 'design',
+        featureId: 'feat-1',
+        answers: { q1: 'Redis', empty: '' },
+        note: 'Keep TTL short',
+        updatedAt: 200,
+      },
+    },
+    {
+      key: 'design:feat-dirty',
+      value: {
+        kind: 'design',
+        featureId: 'feat-dirty',
+        answers: { q1: 'Old' },
+        note: '',
+        updatedAt: 100,
+      },
+    },
+    {
+      key: 'design:feat-cleared',
+      value: {
+        kind: 'design',
+        featureId: 'feat-cleared',
+        answers: { q1: 'Stale' },
+        note: '',
+        updatedAt: 150,
+      },
+    },
+    {
+      key: 'tickets:feat-1',
+      value: {
+        kind: 'tickets',
+        featureId: 'feat-1',
+        answers: { 'docs/features/feat-1/tickets/01.html::d1': 'Option B' },
+        note: 'Check edge cases',
+        updatedAt: 300,
+      },
+    },
+  ];
+
+  const dirtyKeys = new Set([draftStoreKey('design', 'feat-dirty')]);
+  const clearedAtMap = { [draftStoreKey('design', 'feat-cleared')]: 200 };
+  const memoryDesign = {
+    'feat-dirty': { answers: { q1: 'Fresh local' }, note: 'Typing', updatedAt: 250 },
+  };
+
+  const mergedDesign = mergeStoredQaDrafts({
+    memoryDrafts: memoryDesign,
+    entries,
+    kind: 'design',
+    dirtyKeys,
+    clearedAtMap,
+  });
+
+  assert.deepEqual(mergedDesign['feat-1'], {
+    answers: { q1: 'Redis' },
+    note: 'Keep TTL short',
+    updatedAt: 200,
+  });
+  assert.deepEqual(mergedDesign['feat-dirty'], memoryDesign['feat-dirty']);
+  assert.equal(mergedDesign['feat-cleared'], undefined);
+
+  const mergedTickets = mergeStoredQaDrafts({
+    memoryDrafts: {},
+    entries,
+    kind: 'tickets',
+  });
+  assert.deepEqual(mergedTickets['feat-1'], {
+    answers: { 'docs/features/feat-1/tickets/01.html::d1': 'Option B' },
+    note: 'Check edge cases',
+    updatedAt: 300,
+  });
+});
+
+test('hasQaDraftContent, normalizeQaDraft, and shouldAutoOpenQaPanel handle draft notes and explicit collapse', () => {
+  assert.equal(hasQaDraftContent(null), false);
+  assert.equal(hasQaDraftContent({ answers: { a: '   ' }, note: '  ' }), false);
+  assert.equal(hasQaDraftContent({ answers: { a: 'Redis' }, note: '' }), true);
+  assert.equal(hasQaDraftContent({ answers: {}, note: 'Follow up' }), true);
+
+  assert.deepEqual(normalizeQaDraft({ answers: { k: 42, empty: '' }, note: 'hi', updatedAt: '10' }), {
+    answers: { k: '42' },
+    note: 'hi',
+    updatedAt: 10,
+  });
+
+  // Auto-opens when there are no open questions yet, as long as user has an unsaved draft note/answer
+  assert.equal(shouldAutoOpenQaPanel({ hasOpen: false, draft: { answers: {}, note: 'unsaved' } }), true);
+  assert.equal(shouldAutoOpenQaPanel({ hasOpen: false, draft: { answers: {}, note: '' } }), false);
+  // Explicit user collapse/expand overrides automatic open state
+  assert.equal(
+    shouldAutoOpenQaPanel({ hasOpen: false, draft: { answers: {}, note: 'unsaved' }, explicitCollapsed: true }),
+    false,
+  );
+  assert.equal(shouldAutoOpenQaPanel({ hasOpen: false, draft: { answers: {}, note: '' }, explicitCollapsed: false }), true);
+});
+
+test('app.js uses in-place option selection instead of rebuilding QA panels on option click and persists drafts', () => {
   const src = fs.readFileSync(APP_JS_PATH, 'utf8');
   const designStart = src.indexOf('function renderDesignQa(');
   const ticketsQaStart = src.indexOf('function renderTicketsQa(');
@@ -125,6 +231,7 @@ test('app.js uses in-place option selection instead of rebuilding QA panels on o
   );
   assert.doesNotMatch(designOptBlock, /renderDesignQa\s*\(/);
   assert.match(designOptBlock, /applyQaAnswerSelection\s*\(/);
+  assert.match(designOptBlock, /scheduleQaDraftSave\s*\(/);
 
   const ticketsOptBlock = ticketsQaFn.slice(
     ticketsQaFn.indexOf('class: `qa-opt'),
@@ -132,4 +239,11 @@ test('app.js uses in-place option selection instead of rebuilding QA panels on o
   );
   assert.doesNotMatch(ticketsOptBlock, /renderTicketsQa\s*\(/);
   assert.match(ticketsOptBlock, /applyQaAnswerSelection\s*\(/);
+  assert.match(ticketsOptBlock, /scheduleQaDraftSave\s*\(/);
+
+  assert.match(src, /mergeStoredQaDrafts\s*\(/);
+  assert.match(src, /clearQaDraft\s*\(\s*'design'/);
+  assert.match(src, /clearQaDraft\s*\(\s*'tickets'/);
+  assert.match(src, /addEventListener\s*\(\s*'pagehide',\s*flushPendingQaDrafts\s*\)/);
+  assert.match(src, /addEventListener\s*\(\s*'beforeunload',\s*flushPendingQaDrafts\s*\)/);
 });

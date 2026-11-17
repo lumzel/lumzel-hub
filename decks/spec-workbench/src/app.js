@@ -11,11 +11,14 @@ import {
   buildTicketsReplyPrompt,
   deriveFeatureTitle,
   extractDocCreatedAttr,
+  extractDocPendingIdAttr,
   featureTimeInfo,
   formatShortTime,
   generateFeatureId,
+  isFallbackFeatureId,
   parseDesignDocQuestions,
   parseTicketChoices,
+  reconcilePendingFeatureMatches,
   removeDesignTicketItem,
   sortFeaturesDesc,
   syncDesignTicketItem,
@@ -24,7 +27,12 @@ import {
 import {
   applyQaAnswerSelection,
   captureContainerScrollTop,
+  draftStoreKey,
+  hasQaDraftContent,
+  mergeStoredQaDrafts,
+  normalizeQaDraft,
   restoreContainerScrollTop,
+  shouldAutoOpenQaPanel,
 } from './qaUi.js';
 
 const $ = id => document.getElementById(id);
@@ -306,6 +314,134 @@ async function deleteTicketMeta(path) {
   delete state.ticketMeta[path];
   if (!state.preview && typeof window.deck?.store?.delete === 'function') {
     await window.deck.store.delete('tickets', path).catch(() => {});
+  }
+}
+
+const QA_DRAFT_COLLECTION = 'qaDrafts';
+const draftSaveTimers = new Map();
+const dirtyDraftKeys = new Set();
+const draftSeq = new Map();
+const draftClearedAt = {};
+let hasRestoredUiView = false;
+
+function getDraftMap(kind) {
+  return kind === 'tickets' ? state.ticketDrafts : state.designDrafts;
+}
+
+function ensureQaDraft(kind, featureId) {
+  const map = getDraftMap(kind);
+  if (!map[featureId]) {
+    map[featureId] = { answers: {}, note: '', updatedAt: 0 };
+  }
+  return map[featureId];
+}
+
+function nextDraftTimestamp(prev = 0) {
+  const now = Date.now();
+  return now > prev ? now : prev + 1;
+}
+
+function saveUiView() {
+  if (canUseStore()) {
+    void window.deck.store
+      .put('ui', 'view', {
+        featureId: state.featureId || '',
+        tab: state.tab || 'design',
+        ticket: state.ticket || '',
+      })
+      .catch(() => {});
+  }
+}
+
+async function persistQaDraftNow(kind, featureId) {
+  if (!featureId) return;
+  const storeKey = draftStoreKey(kind, featureId);
+  const timer = draftSaveTimers.get(storeKey);
+  if (timer) {
+    clearTimeout(timer);
+    draftSaveTimers.delete(storeKey);
+  }
+  const draft = getDraftMap(kind)[featureId];
+  const seq = draftSeq.get(storeKey) || 0;
+
+  try {
+    if (!hasQaDraftContent(draft)) {
+      draftClearedAt[storeKey] = nextDraftTimestamp(draftClearedAt[storeKey]);
+      if (!state.preview && typeof window.deck?.store?.delete === 'function') {
+        await window.deck.store.delete(QA_DRAFT_COLLECTION, storeKey).catch(() => {});
+      }
+    } else if (canUseStore()) {
+      delete draftClearedAt[storeKey];
+      const normalized = normalizeQaDraft(draft);
+      const payload = {
+        kind: kind === 'tickets' ? 'tickets' : 'design',
+        featureId,
+        answers: normalized.answers,
+        note: normalized.note,
+        updatedAt: normalized.updatedAt || Date.now(),
+      };
+      await window.deck.store.put(QA_DRAFT_COLLECTION, storeKey, payload).catch(() => {});
+    }
+  } finally {
+    if ((draftSeq.get(storeKey) || 0) === seq) {
+      dirtyDraftKeys.delete(storeKey);
+    }
+  }
+}
+
+function scheduleQaDraftSave(kind, featureId, { immediate = false } = {}) {
+  if (!featureId) return;
+  const draft = ensureQaDraft(kind, featureId);
+  const storeKey = draftStoreKey(kind, featureId);
+  draft.updatedAt = nextDraftTimestamp(Math.max(Number(draft.updatedAt) || 0, Number(draftClearedAt[storeKey]) || 0));
+  delete draftClearedAt[storeKey];
+  draftSeq.set(storeKey, (draftSeq.get(storeKey) || 0) + 1);
+  dirtyDraftKeys.add(storeKey);
+
+  const prevTimer = draftSaveTimers.get(storeKey);
+  if (prevTimer) {
+    clearTimeout(prevTimer);
+    draftSaveTimers.delete(storeKey);
+  }
+  if (immediate) {
+    void persistQaDraftNow(kind, featureId);
+    return;
+  }
+  const timer = setTimeout(() => {
+    draftSaveTimers.delete(storeKey);
+    void persistQaDraftNow(kind, featureId);
+  }, 150);
+  draftSaveTimers.set(storeKey, timer);
+}
+
+function flushPendingQaDrafts() {
+  for (const storeKey of [...draftSaveTimers.keys()]) {
+    const sep = storeKey.indexOf(':');
+    if (sep <= 0) continue;
+    const kind = storeKey.slice(0, sep);
+    const featureId = storeKey.slice(sep + 1);
+    void persistQaDraftNow(kind, featureId);
+  }
+}
+
+async function clearQaDraft(kind, featureId, { removeKey = false } = {}) {
+  if (!featureId) return;
+  const storeKey = draftStoreKey(kind, featureId);
+  const timer = draftSaveTimers.get(storeKey);
+  if (timer) {
+    clearTimeout(timer);
+    draftSaveTimers.delete(storeKey);
+  }
+  draftSeq.set(storeKey, (draftSeq.get(storeKey) || 0) + 1);
+  dirtyDraftKeys.delete(storeKey);
+  draftClearedAt[storeKey] = nextDraftTimestamp(draftClearedAt[storeKey]);
+
+  const map = getDraftMap(kind);
+  if (removeKey) delete map[featureId];
+  else map[featureId] = { answers: {}, note: '', updatedAt: 0 };
+
+  if (!state.preview && typeof window.deck?.store?.delete === 'function') {
+    await window.deck.store.delete(QA_DRAFT_COLLECTION, storeKey).catch(() => {});
   }
 }
 
@@ -1010,18 +1146,57 @@ function qaSessionHint(slotKey, probedReusable, probedSessionId, probedStatus) {
   return { text: t('qaNoOpenSessionHint'), reusable: false };
 }
 
+function captureQaFocus(box) {
+  const active = document.activeElement;
+  if (!box || !active || !box.contains(active)) return null;
+  const tag = active.tagName;
+  if (tag !== 'INPUT' && tag !== 'TEXTAREA') return null;
+  return {
+    id: active.id || '',
+    qaKey: active.dataset?.qaKey || '',
+    start: typeof active.selectionStart === 'number' ? active.selectionStart : null,
+    end: typeof active.selectionEnd === 'number' ? active.selectionEnd : null,
+  };
+}
+
+function restoreQaFocus(box, saved) {
+  if (!box || !saved) return;
+  let target = null;
+  if (saved.id) {
+    target = document.getElementById(saved.id);
+    if (target && !box.contains(target)) target = null;
+  }
+  if (!target && saved.qaKey) {
+    for (const input of box.querySelectorAll('.qa-input')) {
+      if (input.dataset?.qaKey === saved.qaKey) {
+        target = input;
+        break;
+      }
+    }
+  }
+  if (!target) return;
+  try {
+    target.focus({ preventScroll: true });
+    if (saved.start !== null && saved.end !== null && typeof target.setSelectionRange === 'function') {
+      target.setSelectionRange(saved.start, saved.end);
+    }
+  } catch {
+    // ignore focus restoration failure
+  }
+}
+
 function renderDesignQa(f) {
   const box = $('design-qa');
   if (!box) return;
   const prevScrollTop = captureContainerScrollTop(box, f.id, box.querySelector('.qa-body'));
+  const prevFocus = captureQaFocus(box);
   const qa = state.qaData[f.id]?.design || { open: [], settled: [] };
   const openQuestions = qa.open || [];
   const collapseKey = `${f.id}:design`;
   const hasOpen = openQuestions.length > 0;
-  const isCollapsed = collapseKey in state.qaCollapsed ? state.qaCollapsed[collapseKey] : !hasOpen;
-
-  if (!state.designDrafts[f.id]) state.designDrafts[f.id] = { answers: {}, note: '' };
-  const draft = state.designDrafts[f.id];
+  const draft = ensureQaDraft('design', f.id);
+  const explicitCollapsed = collapseKey in state.qaCollapsed ? state.qaCollapsed[collapseKey] : undefined;
+  const isCollapsed = !shouldAutoOpenQaPanel({ hasOpen, draft, explicitCollapsed });
 
   const hintInfo = state.liveSessionStatus[f.id];
   const hint = qaSessionHint(
@@ -1079,6 +1254,7 @@ function renderDesignQa(f) {
     const inputEl = el('input', {
       type: 'text',
       class: 'qa-input',
+      dataset: { qaKey: item.id },
       value: currentVal,
       placeholder: t('qaCustomPlaceholder'),
       oninput: e => {
@@ -1088,8 +1264,15 @@ function renderDesignQa(f) {
           value: e.target.value,
           itemEl: itemEl || e.target.closest('.qa-item'),
         });
+        scheduleQaDraftSave('design', f.id);
+      },
+      onblur: () => {
+        if (dirtyDraftKeys.has(draftStoreKey('design', f.id))) {
+          void persistQaDraftNow('design', f.id);
+        }
       },
     });
+    inputEl.value = currentVal;
 
     itemEl = el(
       'div',
@@ -1120,6 +1303,7 @@ function renderDesignQa(f) {
                       itemEl: itemEl || e.currentTarget.closest('.qa-item'),
                       inputEl,
                     });
+                    scheduleQaDraftSave('design', f.id, { immediate: true });
                   },
                 },
                 opt.label,
@@ -1140,6 +1324,12 @@ function renderDesignQa(f) {
     placeholder: t('qaDesignNotePlaceholder'),
     oninput: e => {
       draft.note = e.target.value;
+      scheduleQaDraftSave('design', f.id);
+    },
+    onblur: () => {
+      if (dirtyDraftKeys.has(draftStoreKey('design', f.id))) {
+        void persistQaDraftNow('design', f.id);
+      }
     },
   });
   noteArea.value = draft.note || '';
@@ -1159,6 +1349,7 @@ function renderDesignQa(f) {
 
   box.replaceChildren(head, body);
   restoreContainerScrollTop(box, f.id, prevScrollTop, body);
+  restoreQaFocus(box, prevFocus);
 }
 
 function renderTicketsQa(f) {
@@ -1167,11 +1358,14 @@ function renderTicketsQa(f) {
   if (!box || !toggleBtn) return;
   const ticketsEl = $('tickets');
   const prevScrollTop = captureContainerScrollTop(ticketsEl, f.id);
+  const prevFocus = captureQaFocus(box);
 
   const choices = state.qaData[f.id]?.ticketChoices || [];
   const collapseKey = `${f.id}:tickets`;
   const hasOpen = choices.length > 0;
-  const isOpen = collapseKey in state.qaCollapsed ? !state.qaCollapsed[collapseKey] : hasOpen;
+  const draft = ensureQaDraft('tickets', f.id);
+  const explicitCollapsed = collapseKey in state.qaCollapsed ? state.qaCollapsed[collapseKey] : undefined;
+  const isOpen = shouldAutoOpenQaPanel({ hasOpen, draft, explicitCollapsed });
 
   toggleBtn.textContent = hasOpen ? `${t('qaTicketsOpenTitle', { n: choices.length })}` : t('qaToggleShow');
   toggleBtn.classList.toggle('primary-soft', hasOpen);
@@ -1182,9 +1376,6 @@ function renderTicketsQa(f) {
     restoreContainerScrollTop(ticketsEl, f.id, prevScrollTop);
     return;
   }
-
-  if (!state.ticketDrafts[f.id]) state.ticketDrafts[f.id] = { answers: {}, note: '' };
-  const draft = state.ticketDrafts[f.id];
 
   const hintInfo = state.liveSessionStatus[f.id];
   const hint = qaSessionHint(
@@ -1214,6 +1405,7 @@ function renderTicketsQa(f) {
     const inputEl = el('input', {
       type: 'text',
       class: 'qa-input',
+      dataset: { qaKey: key },
       value: currentVal,
       placeholder: t('qaCustomPlaceholder'),
       oninput: e => {
@@ -1223,8 +1415,16 @@ function renderTicketsQa(f) {
           value: e.target.value,
           itemEl: itemEl || e.target.closest('.qa-item'),
         });
+        scheduleQaDraftSave('tickets', f.id);
+      },
+      onblur: () => {
+        if (dirtyDraftKeys.has(draftStoreKey('tickets', f.id))) {
+          void persistQaDraftNow('tickets', f.id);
+        }
       },
     });
+    inputEl.value = currentVal;
+
     itemEl = el(
       'div',
       { class: 'qa-item' },
@@ -1254,6 +1454,7 @@ function renderTicketsQa(f) {
                       itemEl: itemEl || e.currentTarget.closest('.qa-item'),
                       inputEl,
                     });
+                    scheduleQaDraftSave('tickets', f.id, { immediate: true });
                   },
                 },
                 opt.label,
@@ -1274,6 +1475,12 @@ function renderTicketsQa(f) {
     placeholder: t('qaTicketsNotePlaceholder'),
     oninput: e => {
       draft.note = e.target.value;
+      scheduleQaDraftSave('tickets', f.id);
+    },
+    onblur: () => {
+      if (dirtyDraftKeys.has(draftStoreKey('tickets', f.id))) {
+        void persistQaDraftNow('tickets', f.id);
+      }
     },
   });
   noteArea.value = draft.note || '';
@@ -1314,6 +1521,7 @@ function renderTicketsQa(f) {
     ),
   );
   restoreContainerScrollTop(ticketsEl, f.id, prevScrollTop);
+  restoreQaFocus(box, prevFocus);
 }
 
 // ---------- rendering: tickets tab
@@ -1666,7 +1874,9 @@ function renderPendingPane() {
   $('pending-brief').textContent = f.summary || '';
   $('pending-spinner').classList.toggle('stopped', !active);
   $('pending-hint').textContent = active
-    ? t('pendingHint', { id: f.id })
+    ? isFallbackFeatureId(f.id)
+      ? t('pendingHintAuto')
+      : t('pendingHint', { id: f.id })
     : t('pendingSessionStopped');
   const openBtn = $('pending-open-session');
   openBtn.hidden = !designSess?.sessionId;
@@ -1705,6 +1915,7 @@ function openFeature(id) {
     dropFrame('ticket');
     dropFrame('prototype');
   }
+  saveUiView();
   $('intro').hidden = true;
   render();
   const f = feature();
@@ -1717,6 +1928,7 @@ function openFeature(id) {
 function openTicket(path) {
   state.tab = 'tickets';
   state.ticket = path;
+  saveUiView();
   render();
 }
 
@@ -1769,14 +1981,16 @@ async function fetchFeatureMtimes(diskFeatures) {
   return map;
 }
 
-async function fetchFeatureDocCreated(diskFeatures, mtimeMap = {}) {
+async function fetchFeatureDocMeta(diskFeatures, mtimeMap = {}) {
   if (!Array.isArray(diskFeatures) || diskFeatures.length === 0) return {};
   if (state.preview) {
     const sampleDocs = getSampleData(getLocale()).docs || {};
     const map = {};
     for (const f of diskFeatures) {
-      const created = extractDocCreatedAttr(sampleDocs[f.design] || '');
-      if (created) map[f.id] = created;
+      const html = sampleDocs[f.design] || '';
+      const created = extractDocCreatedAttr(html);
+      const pendingId = extractDocPendingIdAttr(html);
+      if (created || pendingId) map[f.id] = { created, pendingId };
     }
     return map;
   }
@@ -1788,14 +2002,18 @@ async function fetchFeatureDocCreated(diskFeatures, mtimeMap = {}) {
       const mtime = Number(mtimeMap[f.id]) || 0;
       const cached = state.docCreatedCache[f.id];
       if (cached && cached.mtime === mtime) {
-        if (cached.created) map[f.id] = cached.created;
+        if (cached.created || cached.pendingId) {
+          map[f.id] = { created: cached.created || '', pendingId: cached.pendingId || '' };
+        }
         return;
       }
       try {
         const res = await window.deck.files.read(f.design, { encoding: 'utf8' });
-        const created = extractDocCreatedAttr(res?.content || '');
-        state.docCreatedCache[f.id] = { mtime, created };
-        if (created) map[f.id] = created;
+        const html = res?.content || '';
+        const created = extractDocCreatedAttr(html);
+        const pendingId = extractDocPendingIdAttr(html);
+        state.docCreatedCache[f.id] = { mtime, created, pendingId };
+        if (created || pendingId) map[f.id] = { created, pendingId };
       } catch {
         // ignore unreadable design doc
       }
@@ -1804,17 +2022,21 @@ async function fetchFeatureDocCreated(diskFeatures, mtimeMap = {}) {
   return map;
 }
 
-async function syncStoreFromDisk(diskFeatures) {
+async function syncStoreFromDisk(diskFeatures, docMetaMap = {}) {
   if (!canUseStore() || typeof window.deck?.store?.list !== 'function') return;
-  const [metaEntries, ticketEntries, sessEntries, railPref, sortPref] = await Promise.all([
+  const [metaEntries, ticketEntries, sessEntries, draftEntries, railPref, sortPref, viewPref] = await Promise.all([
     window.deck.store.list('features').catch(() => []),
     window.deck.store.list('tickets').catch(() => []),
     window.deck.store.list('sessions').catch(() => []),
+    window.deck.store.list(QA_DRAFT_COLLECTION).catch(() => []),
     typeof window.deck?.store?.get === 'function'
       ? window.deck.store.get('ui', 'railCollapsed').catch(() => null)
       : Promise.resolve(null),
     typeof window.deck?.store?.get === 'function'
       ? window.deck.store.get('ui', 'sortBy').catch(() => null)
+      : Promise.resolve(null),
+    typeof window.deck?.store?.get === 'function'
+      ? window.deck.store.get('ui', 'view').catch(() => null)
       : Promise.resolve(null),
   ]);
 
@@ -1822,6 +2044,11 @@ async function syncStoreFromDisk(diskFeatures) {
   for (const entry of metaEntries) {
     if (entry?.key && entry?.value) metaMap[entry.key] = entry.value;
   }
+  const sessMap = {};
+  for (const entry of sessEntries) {
+    if (entry?.key && entry?.value) sessMap[entry.key] = entry.value;
+  }
+
   const diskIds = new Set(diskFeatures.map(f => f.id));
   for (const [id, meta] of Object.entries(metaMap)) {
     if (meta.pending && diskIds.has(id)) {
@@ -1829,6 +2056,101 @@ async function syncStoreFromDisk(diskFeatures) {
       void window.deck.store.put('features', id, metaMap[id]).catch(() => {});
     }
   }
+
+  if (railPref && typeof railPref === 'object' && 'collapsed' in railPref) {
+    state.railCollapsed = Boolean(railPref.collapsed);
+  }
+  if (sortPref && typeof sortPref === 'object' && (sortPref.sortBy === 'created' || sortPref.sortBy === 'updated')) {
+    state.sortBy = sortPref.sortBy;
+  }
+  if (!hasRestoredUiView) {
+    hasRestoredUiView = true;
+    if (viewPref && typeof viewPref === 'object') {
+      if (typeof viewPref.featureId === 'string' && viewPref.featureId && !state.featureId) {
+        state.featureId = viewPref.featureId;
+      }
+      if (viewPref.tab === 'design' || viewPref.tab === 'tickets' || viewPref.tab === 'prototype') {
+        state.tab = viewPref.tab;
+      }
+      if (typeof viewPref.ticket === 'string' && viewPref.ticket) {
+        state.ticket = viewPref.ticket;
+      }
+    }
+  }
+
+  state.designDrafts = mergeStoredQaDrafts({
+    memoryDrafts: state.designDrafts,
+    entries: draftEntries,
+    kind: 'design',
+    dirtyKeys: dirtyDraftKeys,
+    clearedAtMap: draftClearedAt,
+  });
+  state.ticketDrafts = mergeStoredQaDrafts({
+    memoryDrafts: state.ticketDrafts,
+    entries: draftEntries,
+    kind: 'tickets',
+    dirtyKeys: dirtyDraftKeys,
+    clearedAtMap: draftClearedAt,
+  });
+
+  const pendingMatches = reconcilePendingFeatureMatches({
+    diskFeatures,
+    metaMap,
+    docMetaMap,
+    sessMap,
+  });
+  for (const { pendingId, finalId } of pendingMatches) {
+    const prevMeta = metaMap[pendingId];
+    if (prevMeta) {
+      metaMap[finalId] = { ...prevMeta, id: finalId, pending: false, updatedAt: Date.now() };
+      delete metaMap[pendingId];
+      void window.deck.store.put('features', finalId, metaMap[finalId]).catch(() => {});
+      if (typeof window.deck?.store?.delete === 'function') {
+        void window.deck.store.delete('features', pendingId).catch(() => {});
+      }
+    }
+    for (const [oldSlotKey, rec] of Object.entries(sessMap)) {
+      if (!rec || rec.featureId !== pendingId) continue;
+      const nextSlotKey =
+        rec.kind === 'design' ? slotDesign(finalId) : oldSlotKey.replace(`:${pendingId}`, `:${finalId}`);
+      const migratedRec = { ...rec, slotKey: nextSlotKey, featureId: finalId };
+      if (!sessMap[nextSlotKey]) {
+        sessMap[nextSlotKey] = migratedRec;
+        void window.deck.store.put('sessions', nextSlotKey, migratedRec).catch(() => {});
+      }
+      if (oldSlotKey !== nextSlotKey) {
+        delete sessMap[oldSlotKey];
+        if (typeof window.deck?.store?.delete === 'function') {
+          void window.deck.store.delete('sessions', oldSlotKey).catch(() => {});
+        }
+      }
+    }
+    if (inFlightSlots.has(slotDesign(pendingId))) {
+      inFlightSlots.delete(slotDesign(pendingId));
+      inFlightSlots.add(slotDesign(finalId));
+    }
+    for (const suffix of [':design', ':tickets']) {
+      if (`${pendingId}${suffix}` in state.qaCollapsed) {
+        state.qaCollapsed[`${finalId}${suffix}`] = state.qaCollapsed[`${pendingId}${suffix}`];
+        delete state.qaCollapsed[`${pendingId}${suffix}`];
+      }
+    }
+    for (const kind of ['design', 'tickets']) {
+      const draftMap = getDraftMap(kind);
+      if (draftMap[pendingId]) {
+        if (!hasQaDraftContent(draftMap[finalId]) && hasQaDraftContent(draftMap[pendingId])) {
+          draftMap[finalId] = draftMap[pendingId];
+          scheduleQaDraftSave(kind, finalId, { immediate: true });
+        }
+        void clearQaDraft(kind, pendingId, { removeKey: true });
+      }
+    }
+    if (state.featureId === pendingId) {
+      state.featureId = finalId;
+      saveUiView();
+    }
+  }
+
   state.featureMeta = metaMap;
 
   const ticketMap = {};
@@ -1837,17 +2159,6 @@ async function syncStoreFromDisk(diskFeatures) {
   }
   state.ticketMeta = ticketMap;
 
-  if (railPref && typeof railPref === 'object' && 'collapsed' in railPref) {
-    state.railCollapsed = Boolean(railPref.collapsed);
-  }
-  if (sortPref && typeof sortPref === 'object' && (sortPref.sortBy === 'created' || sortPref.sortBy === 'updated')) {
-    state.sortBy = sortPref.sortBy;
-  }
-
-  const sessMap = {};
-  for (const entry of sessEntries) {
-    if (entry?.key && entry?.value) sessMap[entry.key] = entry.value;
-  }
   // Verify active sessions against live host session state
   if (typeof window.deck?.agent?.logs === 'function') {
     await Promise.all(
@@ -1926,10 +2237,17 @@ async function load({ reload = false } = {}) {
             if (evt?.values) applyParamsValues(evt.values);
           });
         }
-        await syncStoreFromDisk(index.features || []);
         state.fileMtimeMap = await fetchFeatureMtimes(index.features || []);
       }
-      state.docCreatedMap = await fetchFeatureDocCreated(index.features || [], state.fileMtimeMap);
+      const docMetaMap = await fetchFeatureDocMeta(index.features || [], state.fileMtimeMap);
+      state.docCreatedMap = Object.fromEntries(
+        Object.entries(docMetaMap)
+          .filter(([, meta]) => meta.created)
+          .map(([id, meta]) => [id, meta.created]),
+      );
+      if (!state.preview) {
+        await syncStoreFromDisk(index.features || [], docMetaMap);
+      }
 
       const diskFeatures = index.features || [];
       const diskIds = new Set(diskFeatures.map(f => f.id));
@@ -1958,6 +2276,8 @@ async function load({ reload = false } = {}) {
       if (!state.features.some(f => f.id === state.featureId)) {
         const activeFeatures = state.features.filter(f => f.pending || !isFeatureArchived(f.id));
         state.featureId = activeFeatures[0]?.id || '';
+        state.tab = 'design';
+        state.ticket = '';
       }
       const selected = feature();
       if (state.ticket && !selected?.tickets?.some(x => x.path === state.ticket)) {
@@ -1991,7 +2311,13 @@ const freshen = () => {
   if (Date.now() - lastLoad > 2000) void load();
 };
 window.addEventListener('focus', freshen);
-document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && freshen());
+window.addEventListener('blur', flushPendingQaDrafts);
+window.addEventListener('pagehide', flushPendingQaDrafts);
+window.addEventListener('beforeunload', flushPendingQaDrafts);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') freshen();
+  else flushPendingQaDrafts();
+});
 
 // ---------- iframe message bridge
 
@@ -2011,6 +2337,7 @@ function buildPrototypeLabels(f) {
 function jumpToDesignNode(node) {
   state.tab = 'design';
   state.pendingDesignNode = node || '';
+  saveUiView();
   render();
   const designFrame = frames.get('design');
   if (node && designFrame?.dataset.ready === '1' && designFrame.contentWindow) {
@@ -2470,7 +2797,7 @@ async function submitDesignQa(f) {
         }),
     });
     if (outcome && !outcome.busy) {
-      state.designDrafts[f.id] = { answers: {}, note: '' };
+      await clearQaDraft('design', f.id);
       renderDesignQa(f);
     }
   } catch (error) {
@@ -2517,7 +2844,7 @@ async function submitTicketsQa(f) {
         }),
     });
     if (outcome && !outcome.busy) {
-      state.ticketDrafts[f.id] = { answers: {}, note: '' };
+      await clearQaDraft('tickets', f.id);
       renderTicketsQa(f);
     }
   } catch (error) {
@@ -2612,8 +2939,10 @@ async function archiveFeatureAction(f, archived) {
     dropFrame('design');
     dropFrame('ticket');
     dropFrame('prototype');
+    saveUiView();
   } else if (!archived && !state.featureId) {
     state.featureId = f.id;
+    saveUiView();
   }
   toast(t(archived ? 'archivedFeature' : 'unarchivedFeature'));
   render();
@@ -2636,6 +2965,7 @@ async function archiveTicketAction(f, ticket, archived) {
   if (archived && state.ticket === ticket.path) {
     state.ticket = '';
     dropFrame('ticket');
+    saveUiView();
   }
   toast(t(archived ? 'archivedTicket' : 'unarchivedTicket'));
   render();
@@ -2673,12 +3003,14 @@ async function deleteFeatureAction(f) {
   await Promise.all(ticketPaths.map(path => deleteTicketMeta(path)));
 
   await deleteFeatureMeta(f.id);
+  await Promise.all([
+    clearQaDraft('design', f.id, { removeKey: true }),
+    clearQaDraft('tickets', f.id, { removeKey: true }),
+  ]);
   delete state.docCreatedMap[f.id];
   delete state.docCreatedCache[f.id];
   delete state.qaData[f.id];
   delete state.liveSessionStatus[f.id];
-  delete state.designDrafts[f.id];
-  delete state.ticketDrafts[f.id];
   delete state.qaCollapsed[`${f.id}:design`];
   delete state.qaCollapsed[`${f.id}:tickets`];
 
@@ -2688,6 +3020,7 @@ async function deleteFeatureAction(f) {
     dropFrame('design');
     dropFrame('ticket');
     dropFrame('prototype');
+    saveUiView();
   }
   syncActiveWatcher();
   toast(t('deletedFeature', { name: f.title || f.id }));
@@ -2736,6 +3069,7 @@ async function deleteTicketAction(f, ticket) {
   if (state.ticket === ticket.path) {
     state.ticket = '';
     dropFrame('ticket');
+    saveUiView();
   }
   syncActiveWatcher();
   toast(t('deletedTicket', { name: ticket.title || ticket.n || ticket.path }));
@@ -2850,15 +3184,17 @@ async function submitNew() {
   const brief = $('new-brief').value.trim();
   if (!brief) return ($('new-err').textContent = t('briefRequired'));
 
-  const id = generateFeatureId(
-    brief,
-    state.features.map(f => f.id),
-  );
+  const now = Date.now();
+  const nowDate = new Date(now);
+  const createdIso = nowDate.toISOString();
+  const today = todayIsoDate(nowDate);
+  const existingIds = state.features.map(f => f.id);
+  const id = generateFeatureId(brief, existingIds, nowDate);
+  const isFallback = isFallbackFeatureId(id);
   const title = deriveFeatureTitle(brief) || id;
 
   $('new-ok').disabled = true;
   try {
-    const now = Date.now();
     await saveFeatureMeta(id, {
       id,
       title,
@@ -2866,23 +3202,38 @@ async function submitNew() {
       pending: true,
       createdAt: now,
       updatedAt: now,
+      docCreated: createdIso,
+      createdSource: 'ui',
     });
+    const avoidIds = existingIds.slice(0, 40).join(', ');
+    const avoidClause = avoidIds ? `, avoiding existing IDs: ${avoidIds}` : '';
+    const promptLines = isFallback
+      ? [
+          `Temporary Pending ID: ${id} (placeholder only — do NOT use this timestamp id for the folder or doc id).`,
+          `Derive a concise, semantic lowercase kebab-case Feature ID (2–4 English words matching ^[a-z][a-z0-9-]{1,31}$, e.g. "sae-logging-spec" or "invoice-redis-cache"${avoidClause}).`,
+          `Requirement description:\n${brief}`,
+          `Please automatically derive BOTH a concise, accurate Feature Name (for <title> and <h1>; do NOT copy the whole prompt verbatim) AND the semantic kebab-case Feature ID (<feature-id>). Follow spec-workbench-html to create docs/features/<feature-id>/design.html from scaffolds/design.html with data-doc-id="<feature-id>", data-doc-pending-id="${id}", data-doc-created="${createdIso}", and data-doc-date="${today}", updating .docid to <feature-id> and keeping the decision tree visible. Do NOT write any docs/results/ file.`,
+        ]
+      : [
+          `Suggested Feature ID: ${id}`,
+          `Use "${id}" or refine it to a cleaner 2–4 word lowercase kebab-case Feature ID matching ^[a-z][a-z0-9-]{1,31}$${avoidClause}.`,
+          `Requirement description:\n${brief}`,
+          `Please automatically derive a concise, accurate Feature Name (for <title> and <h1>; do NOT copy the whole prompt verbatim) and pick the final concise kebab-case Feature ID (<feature-id>, defaulting to "${id}" unless a cleaner slug fits better). Follow spec-workbench-html to create docs/features/<feature-id>/design.html from scaffolds/design.html with data-doc-id="<feature-id>", data-doc-pending-id="${id}", data-doc-created="${createdIso}", and data-doc-date="${today}", updating .docid to <feature-id> and keeping the decision tree visible. Do NOT write any docs/results/ file.`,
+        ];
     const res = await startTrackedRun({
       slotKey: slotDesign(id),
       featureId: id,
       kind: 'design',
       skill: 'spec-workbench-grilling',
-      prompt: [
-        `New Feature ID: ${id}`,
-        `Requirement description:\n${brief}`,
-        `Please automatically derive a concise, accurate Feature Name from the requirement description above (do NOT copy the whole prompt verbatim) and set <title> and <h1> to that generated Feature Name. Follow spec-workbench-html to create docs/features/${id}/design.html from scaffolds/design.html with data-doc-id="${id}", data-doc-created="${new Date(now).toISOString()}", and data-doc-date="${todayIsoDate(new Date(now))}", keeping the decision tree visible. Do NOT write any docs/results/ file.`,
-      ].join('\n\n'),
+      prompt: promptLines.join('\n\n'),
       actionId: `create-feature:${id}`,
     });
     if (res) {
       toast(t('sessionOpened', { id: res.sessionId }));
       state.featureId = id;
       state.tab = 'design';
+      state.ticket = '';
+      saveUiView();
       closeNew();
       $('new-brief').value = '';
       await load({ reload: false });
@@ -2979,7 +3330,12 @@ $('tickets-qa-toggle').addEventListener('click', () => {
   if (!f) return;
   const collapseKey = `${f.id}:tickets`;
   const choices = state.qaData[f.id]?.ticketChoices || [];
-  const currentlyOpen = collapseKey in state.qaCollapsed ? !state.qaCollapsed[collapseKey] : choices.length > 0;
+  const explicitCollapsed = collapseKey in state.qaCollapsed ? state.qaCollapsed[collapseKey] : undefined;
+  const currentlyOpen = shouldAutoOpenQaPanel({
+    hasOpen: choices.length > 0,
+    draft: state.ticketDrafts[f.id],
+    explicitCollapsed,
+  });
   state.qaCollapsed[collapseKey] = currentlyOpen;
   renderTicketsQa(f);
 });
@@ -3006,19 +3362,30 @@ $('pending-open-session').addEventListener('click', () => {
   const sess = f && state.sessions[slotDesign(f.id)];
   if (sess?.sessionId) void openSession(sess.sessionId);
 });
-$('pending-refresh').addEventListener('click', () => void load({ reload: true }));
+$('pending-refresh').addEventListener('click', () => {
+  flushPendingQaDrafts();
+  void load({ reload: true });
+});
 $('pending-remove').addEventListener('click', () => {
   const f = feature();
   if (f?.pending) void deleteFeatureAction(f).catch(error => toast(t('deleteFailed', { reason: error.message }), true));
 });
 
-$('ticket-back').addEventListener('click', () => ((state.ticket = ''), render()));
-$('refresh').addEventListener('click', () => void load({ reload: true }));
+$('ticket-back').addEventListener('click', () => {
+  state.ticket = '';
+  saveUiView();
+  render();
+});
+$('refresh').addEventListener('click', () => {
+  flushPendingQaDrafts();
+  void load({ reload: true });
+});
 for (const tab of document.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => {
     if (tab.disabled) return;
     if (tab.dataset.tab === 'tickets' && state.tab === 'tickets') state.ticket = '';
     state.tab = tab.dataset.tab;
+    saveUiView();
     render();
     const f = feature();
     if (f && !f.pending) {
