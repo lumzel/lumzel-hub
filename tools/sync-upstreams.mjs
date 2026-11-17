@@ -2405,6 +2405,69 @@ function verifyDeckManifest(entry, deckDir, deckJsonPath, errors) {
       }
     }
   }
+  verifyDeckThemeSupport(entry, deckDir, errors);
+}
+
+const DECK_THEME_SKIP_DIRS = new Set([
+  '.git',
+  'node_modules',
+  'preview',
+  'tests',
+  'test',
+  'skills',
+  'agents',
+  'rules',
+  'hooks',
+  'mcp',
+  'plugins',
+  'workflows',
+]);
+
+function collectDeckUiTexts(dir) {
+  const out = [];
+  const stack = [dir];
+  while (stack.length > 0) {
+    const cur = stack.pop();
+    for (const entry of fs.readdirSync(cur, { withFileTypes: true })) {
+      if (entry.isSymbolicLink() || shouldSkipEntry(entry.name)) continue;
+      const full = path.join(cur, entry.name);
+      if (entry.isDirectory()) {
+        if (!DECK_THEME_SKIP_DIRS.has(entry.name)) stack.push(full);
+      } else if (entry.isFile() && /\.(html?|css|m?[jt]sx?)$/i.test(entry.name)) {
+        out.push({ path: path.relative(dir, full), text: fs.readFileSync(full, 'utf8') });
+      }
+    }
+  }
+  return out;
+}
+
+function verifyDeckThemeSupport(entry, deckDir, errors) {
+  const files = collectDeckUiTexts(deckDir);
+  if (files.length === 0) return;
+
+  const hasBaseCss = files.some((f) => /\/lib\/v1\/base\.css\b/.test(f.text));
+  const hasDarkStyles = files.some(
+    (f) =>
+      /\[data-theme\s*=\s*['"]?dark['"]?\]/.test(f.text) ||
+      /@media\s*\([^)]*prefers-color-scheme\s*:\s*dark[^)]*\)/.test(f.text),
+  );
+  if (!hasBaseCss && !hasDarkStyles) {
+    errors.push(
+      `[deck:${entry.id}] Must support both light and dark themes (link /lib/v1/base.css or define [data-theme="dark"] / prefers-color-scheme: dark styles)`,
+    );
+  }
+
+  const readsHostTheme = files.some(
+    (f) =>
+      /\bdeck\.context\s*\(/.test(f.text) ||
+      /['"]ui\.context['"]/.test(f.text) ||
+      /\/lib\/v1\/components\.js\b/.test(f.text),
+  );
+  if (!readsHostTheme) {
+    errors.push(
+      `[deck:${entry.id}] Must read host theme via deck.context() (or load /lib/v1/components.js) so light/dark theme adapts to Lumzel`,
+    );
+  }
 }
 
 function verifyRepository() {

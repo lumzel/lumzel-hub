@@ -112,6 +112,7 @@ const state = {
 let unsubWorkflow = null;
 let unsubAgentDefaults = null;
 let unsubParams = null;
+let unsubTheme = null;
 let toastTimer = 0;
 
 function el(tag, attrs = {}, ...children) {
@@ -1781,6 +1782,12 @@ async function loadWorkspace() {
   state.preview = Boolean(ctx.preview);
   state.theme = ctx.theme === 'dark' ? 'dark' : 'light';
   document.documentElement.dataset.theme = state.theme;
+  if (!unsubTheme && typeof window.deck?.ui?.onThemeChange === 'function') {
+    unsubTheme = window.deck.ui.onThemeChange(nextTheme => {
+      state.theme = nextTheme === 'dark' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = state.theme;
+    });
+  }
   setLocale(ctx.locale || 'en');
   applyI18n();
 

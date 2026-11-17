@@ -12,6 +12,7 @@ export function createHost(store, demo) {
   let workflowUnsub = null;
   let defaultsUnsub = null;
   let paramsUnsub = null;
+  let themeUnsub = null;
   let pollTimer = null;
   let lastPushAt = 0;
   let pollNullCount = 0;
@@ -486,6 +487,14 @@ export function createHost(store, demo) {
         if (c.ok && c.v) applyContext(c.v);
       }
     });
+
+    if (!themeUnsub && typeof window.deck?.ui?.onThemeChange === 'function') {
+      themeUnsub = window.deck.ui.onThemeChange(nextTheme => {
+        const theme = nextTheme === 'dark' ? 'dark' : 'light';
+        document.documentElement.dataset.theme = theme;
+        store.set(s => ({ ...s, ctx: { ...s.ctx, theme } }));
+      });
+    }
 
     // 1. Context
     if (window.deck?.context) {

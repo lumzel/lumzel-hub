@@ -11,9 +11,25 @@
   var stateListeners = [];
   var defaultsListeners = [];
   var paramsListeners = [];
+  var themeListeners = [];
   var eventSubscribers = {};
   var workflowSubscribers = {};
   var UPLOAD_CHUNK_BYTES = 512 * 1024;
+
+  function normalizeTheme(raw) {
+    return raw === 'dark' ? 'dark' : raw === 'light' ? 'light' : null;
+  }
+
+  function applyTheme(raw) {
+    var theme = normalizeTheme(raw);
+    if (!theme) return null;
+    var root = window.document && window.document.documentElement;
+    if (root) {
+      if (typeof root.setAttribute === 'function') root.setAttribute('data-theme', theme);
+      if (root.style) root.style.colorScheme = theme;
+    }
+    return theme;
+  }
 
   function emitDomEvent(el, name, detail) {
     if (!el || typeof el.dispatchEvent !== 'function' || typeof window.CustomEvent !== 'function') return;
@@ -25,6 +41,18 @@
   }
 
   function handlePushEvent(msg) {
+    if (msg.event === 'theme.changed') {
+      var nextTheme = applyTheme(msg.theme);
+      if (!nextTheme) return;
+      for (var t = 0; t < themeListeners.length; t++) {
+        try {
+          themeListeners[t](nextTheme);
+        } catch (errTheme) {
+          report(errTheme && errTheme.message ? errTheme.message : errTheme, errTheme && errTheme.stack);
+        }
+      }
+      return;
+    }
     if (msg.event === 'agent.state') {
       if (msg.runToken && tokenButtons[msg.runToken]) {
         var btn = tokenButtons[msg.runToken];
@@ -323,6 +351,15 @@
     };
   }
 
+  function subscribeThemeChanged(cb) {
+    if (typeof cb !== 'function') throw new Error('ui.onThemeChange expects a callback');
+    themeListeners.push(cb);
+    return function unsubscribe() {
+      var idx = themeListeners.indexOf(cb);
+      if (idx >= 0) themeListeners.splice(idx, 1);
+    };
+  }
+
   function subscribeWorkflowEvents(runIdOrCb, maybeCb) {
     var rid = typeof runIdOrCb === 'function' ? '*' : String(runIdOrCb || '*');
     var cb = typeof runIdOrCb === 'function' ? runIdOrCb : maybeCb;
@@ -351,7 +388,10 @@
 
   window.deck = {
     context: function () {
-      return call('ui.context');
+      return call('ui.context').then(function (ctx) {
+        if (ctx && ctx.theme) applyTheme(ctx.theme);
+        return ctx;
+      });
     },
     // Agent execution, logs, live events, stop, and Session context/draft composition.
     // Defaults: `focus: false` (runs in background, visible in Session list), `wait: true` (returns Turn output),
@@ -561,6 +601,7 @@
       openSettings: function () {
         return call('ui.openSettings');
       },
+      onThemeChange: subscribeThemeChanged,
     },
     // Built-in Deck workflows (`permissions: ["workflow"]`).
     workflow: {

@@ -1651,6 +1651,15 @@ let loading = null;
 let lastLoad = 0;
 let defaultsSubscribed = false;
 let paramsSubscribed = false;
+let themeSubscribed = false;
+
+function applyDeckTheme(nextTheme) {
+  const theme = nextTheme === 'dark' ? 'dark' : 'light';
+  if (theme === state.theme) return;
+  state.theme = theme;
+  document.documentElement.dataset.theme = theme;
+  for (const frame of frames.values()) post(frame.contentWindow, 'theme', { theme });
+}
 
 function applyParamsValues(values) {
   if (!values || typeof values !== 'object') return;
@@ -1761,10 +1770,10 @@ async function load({ reload = false } = {}) {
       if (listed.error && !state.preview) throw listed.error;
       const index = state.preview ? SAMPLE_INDEX : listed;
       if (setLocale(ctx.locale)) applyI18n();
-      if (ctx.theme !== state.theme) {
-        state.theme = ctx.theme;
-        document.documentElement.dataset.theme = ctx.theme;
-        for (const frame of frames.values()) post(frame.contentWindow, 'theme', { theme: ctx.theme });
+      applyDeckTheme(ctx.theme);
+      if (!themeSubscribed && typeof deck.ui?.onThemeChange === 'function') {
+        themeSubscribed = true;
+        deck.ui.onThemeChange(applyDeckTheme);
       }
       if (!state.preview) {
         ensureAgentSubscriptions();

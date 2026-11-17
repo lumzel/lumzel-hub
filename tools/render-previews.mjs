@@ -108,6 +108,57 @@ const browser =
     ? await webkit.launch()
     : await chromium.launch(browserName === 'chrome' ? { channel: 'chrome' } : {});
 
+async function measureThemeContrast(browser, lightBuffer, darkBuffer) {
+  const page = await browser.newPage({ viewport: { width: 64, height: 64 } });
+  try {
+    const lightUrl = `data:image/png;base64,${lightBuffer.toString('base64')}`;
+    const darkUrl = `data:image/png;base64,${darkBuffer.toString('base64')}`;
+    return await page.evaluate(
+      async ([aUrl, bUrl]) => {
+        const load = src =>
+          new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Failed to decode preview PNG'));
+            img.src = src;
+          });
+        const [aImg, bImg] = await Promise.all([load(aUrl), load(bUrl)]);
+        const w = 160;
+        const h = 100;
+        const sample = img => {
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          return ctx.getImageData(0, 0, w, h).data;
+        };
+        const a = sample(aImg);
+        const b = sample(bImg);
+        const pixels = w * h;
+        let lumA = 0;
+        let lumB = 0;
+        let changed = 0;
+        for (let i = 0; i < a.length; i += 4) {
+          lumA += (0.2126 * a[i] + 0.7152 * a[i + 1] + 0.0722 * a[i + 2]) / 255;
+          lumB += (0.2126 * b[i] + 0.7152 * b[i + 1] + 0.0722 * b[i + 2]) / 255;
+          if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 24) {
+            changed += 1;
+          }
+        }
+        return {
+          lightLum: lumA / pixels,
+          darkLum: lumB / pixels,
+          changedRatio: changed / pixels,
+        };
+      },
+      [lightUrl, darkUrl],
+    );
+  } finally {
+    await page.close();
+  }
+}
+
 const ids = args.length ? args : (await readdir(path.join(root, 'decks'))).sort();
 // A Deck with more on screen names a larger window in its marketplace.json entry: "coverViewport": [1200, 750].
 const catalog = JSON.parse(await readFile(path.join(root, 'marketplace.json'), 'utf8'));
@@ -127,6 +178,7 @@ for (const id of ids) {
     continue; // not a Deck folder
   }
   await mkdir(path.join(folder, 'preview'), { recursive: true });
+  const pngBuffers = {};
   for (const theme of THEMES) {
     const page = await browser.newPage({ viewport: viewportOf(id), deviceScaleFactor: SCALE, colorScheme: theme });
     const errors = [];
@@ -136,7 +188,7 @@ for (const id of ids) {
     await page.goto(`${origin}/__host?${query}`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(600); // module scripts and the first context() round trip
     const png = path.join(scratch, `${id}-${theme}.png`);
-    await page.screenshot({ path: png });
+    pngBuffers[theme] = await page.screenshot({ path: png });
     await page.close();
     const out = path.join(folder, 'preview', `cover-${theme}.webp`);
     execFileSync('cwebp', ['-quiet', '-q', QUALITY, png, '-o', out]);
@@ -145,9 +197,19 @@ for (const id of ids) {
     for (const error of errors) console.log(`  ! ${error}`);
     failed ||= errors.length > 0;
   }
+  if (pngBuffers.light && pngBuffers.dark) {
+    const { lightLum, darkLum, changedRatio } = await measureThemeContrast(browser, pngBuffers.light, pngBuffers.dark);
+    const themeOk = changedRatio >= 0.05 && darkLum < lightLum && darkLum < 0.55;
+    if (!themeOk) {
+      console.log(
+        `  ! [${id}] light/dark theme contrast check failed (lightLum=${lightLum.toFixed(3)}, darkLum=${darkLum.toFixed(3)}, diff=${(changedRatio * 100).toFixed(1)}%)`,
+      );
+      failed = true;
+    }
+  }
 }
 await browser.close();
 server.close();
 await rm(scratch, { recursive: true, force: true });
-// A Deck that throws while it is previewed has a broken cover: fail so it is noticed.
+// A Deck that throws while it is previewed or ignores light/dark themes has a broken cover: fail so it is noticed.
 process.exit(failed ? 1 : 0);

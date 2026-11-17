@@ -38,8 +38,9 @@
       .context()
       .then(function (ctx) {
         if (!ctx) return;
-        if (ctx.theme && !document.documentElement.hasAttribute('data-theme')) {
+        if (ctx.theme) {
           document.documentElement.setAttribute('data-theme', ctx.theme);
+          if (document.documentElement.style) document.documentElement.style.colorScheme = ctx.theme;
         }
         if (ctx.locale) activeLocale = ctx.locale;
       })
