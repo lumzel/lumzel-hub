@@ -398,6 +398,13 @@ test('feature-ship and code-review workflow.yaml files have zero topology drift'
   const reviewYaml = fs.readFileSync(path.join(DECK_ROOT, 'workflows/code-review/workflow.yaml'), 'utf8');
   assert.deepEqual(checkTopologyDrift(reviewYaml, REVIEW_YAML_KNOWN_IDS), []);
 
+  const manifest = JSON.parse(fs.readFileSync(path.join(DECK_ROOT, 'deck.json'), 'utf8'));
+  assert.notEqual(
+    manifest.agent?.permissions,
+    'auto',
+    'deck.json must not default agent.permissions to auto; Decks default to bypass',
+  );
+
   for (const [name, raw] of [
     ['feature-ship', shipYaml],
     ['code-review', reviewYaml],
@@ -415,9 +422,9 @@ test('feature-ship and code-review workflow.yaml files have zero topology drift'
         }
       }
       assert.equal(
-        /^\s*permissions:\s*ask\b/m.test(block),
+        /^\s*permissions:\s*(ask|auto)\b/m.test(block),
         false,
-        `${name} node '${nodeId}' must not set permissions: ask in headless Deck workflow`,
+        `${name} node '${nodeId}' must not hardcode permissions: ask/auto; inherit Deck default (bypass)`,
       );
     }
   }

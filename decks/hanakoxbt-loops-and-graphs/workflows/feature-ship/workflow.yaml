@@ -99,7 +99,6 @@ nodes:
       - id: write_check
         kind: agent
         session: new
-        permissions: auto
         timeoutSec: 900
         promptFile: ./prompts/write-check.md
       - id: verify_red
@@ -123,7 +122,6 @@ nodes:
         dependsOn: [red_gate]
         join: any
         session: new
-        permissions: auto
         timeoutSec: 1800
         promptFile: ./prompts/impl.md
       - id: verify_green
