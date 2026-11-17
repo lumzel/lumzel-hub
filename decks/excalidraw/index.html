@@ -180,14 +180,15 @@
       <div class="scrim" id="modal-new" hidden>
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-new-h">
           <h3 id="modal-new-h" data-i18n="newModalTitle">New Diagram</h3>
-          <label>
-            <span data-i18n="fileNameLabel">File path (relative to project)</span>
-            <input id="new-path" class="mono" data-i18n-placeholder="fileNamePh" placeholder="diagrams/system-architecture.excalidraw" autocomplete="off" spellcheck="false" />
-          </label>
           <div class="modal-field">
             <span data-i18n="templateLabel">Starter template</span>
             <div class="ui-select" id="new-template"></div>
           </div>
+          <label>
+            <span data-i18n="diagramIdLabel">Diagram ID (optional)</span>
+            <input id="new-id" class="mono" data-i18n-placeholder="diagramIdPh" placeholder="Leave blank to auto-generate (e.g. auth-flow)" autocomplete="off" spellcheck="false" />
+          </label>
+          <p class="hint-sm mono-hint" id="new-dir-hint"></p>
           <p class="err" id="new-err"></p>
           <div class="modal-row">
             <button type="button" class="btn" id="new-cancel" data-i18n="cancelBtn">Cancel</button>
@@ -210,14 +211,17 @@
               <div class="ui-select" id="ai-type"></div>
             </div>
           </div>
-          <label id="ai-path-wrap">
-            <span data-i18n="aiTargetPathLabel">Target file path</span>
-            <input id="ai-path" class="mono" placeholder="diagrams/auth-flow.excalidraw" autocomplete="off" spellcheck="false" />
-          </label>
           <label>
             <span data-i18n="aiPromptLabel">Describe the diagram or changes</span>
             <textarea id="ai-prompt" rows="4" data-i18n-placeholder="aiPromptCreatePh" placeholder="Describe the architecture, flow, or changes..."></textarea>
           </label>
+          <div id="ai-id-wrap" class="modal-id-group">
+            <label>
+              <span data-i18n="diagramIdLabel">Diagram ID (optional)</span>
+              <input id="ai-id" class="mono" data-i18n-placeholder="aiIdPh" placeholder="Leave blank for AI to name it (e.g. oauth-flow)" autocomplete="off" spellcheck="false" />
+            </label>
+            <p class="hint-sm mono-hint" id="ai-dir-hint"></p>
+          </div>
           <label class="check-row">
             <input type="checkbox" id="ai-include-codebase" checked />
             <span data-i18n="aiIncludeCodebase">Allow Agent to inspect workspace files for accurate symbols &amp; paths</span>

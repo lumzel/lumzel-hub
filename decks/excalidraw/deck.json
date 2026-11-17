@@ -7,7 +7,7 @@
   "homepage": "https://github.com/excalidraw/excalidraw",
   "icon": "spark",
   "entry": "index.html",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "permissions": ["agent", "db", "files", "upload", "open"],
   "capabilities": {
     "files": [

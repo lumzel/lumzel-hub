@@ -28,6 +28,23 @@ const SKIP_SCAN_DIRS = new Set([
   'vendor',
   '.git',
   '.lumzel',
+  '.next',
+  '.nuxt',
+  '.turbo',
+  '.cache',
+  '.venv',
+  'venv',
+  'site-packages',
+  'Pods',
+  'DerivedData',
+  'tmp',
+  'logs',
+  '.parcel-cache',
+  '.vite',
+  '.svelte-kit',
+  '.output',
+  '.pytest_cache',
+  '.mypy_cache',
   '__pycache__',
   'coverage',
 ]);
@@ -98,6 +115,7 @@ let autoSaveTimer = 0;
 let toastTimer = 0;
 let pollRunsTimer = 0;
 let agentSubscribed = false;
+let galleryRenderToken = 0;
 
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -129,6 +147,14 @@ function isDiagramPath(p) {
   return DIAGRAM_EXT_RE.test(String(p || ''));
 }
 
+function getDefaultDir() {
+  return String(state.params.defaultDir ?? 'diagrams')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/\/+/g, '/');
+}
+
 function normalizeRelPath(raw) {
   let clean = String(raw || '').trim().replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+/g, '/');
   if (!clean) return '';
@@ -136,12 +162,28 @@ function normalizeRelPath(raw) {
   return clean;
 }
 
-function ensureDefaultDirPrefix(raw) {
-  const clean = String(raw || '').trim().replace(/\\/g, '/').replace(/^\/+/, '');
+function resolveDiagramPathFromId(rawId) {
+  const clean = String(rawId || '').trim().replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+/g, '/');
   if (!clean) return '';
   if (clean.includes('/')) return normalizeRelPath(clean);
-  const dir = String(state.params.defaultDir || 'diagrams').trim().replace(/^\/+|\/+$/g, '');
+  const dir = getDefaultDir();
   return normalizeRelPath(dir ? `${dir}/${clean}` : clean);
+}
+
+function generateAutoDiagramPath(prefix = 'diagram') {
+  const dir = getDefaultDir();
+  const base = String(prefix || 'diagram')
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'diagram';
+  const existing = new Set(state.files.map(f => f.path));
+  let n = 1;
+  while (n < 10000) {
+    const candidate = normalizeRelPath(dir ? `${dir}/${base}-${n}` : `${base}-${n}`);
+    if (!existing.has(candidate)) return candidate;
+    n += 1;
+  }
+  return normalizeRelPath(dir ? `${dir}/${base}-${Date.now().toString(36).slice(-4)}` : `${base}-${Date.now().toString(36).slice(-4)}`);
 }
 
 function displayTitleFromPath(p) {
@@ -149,22 +191,20 @@ function displayTitleFromPath(p) {
   return base.replace(/\.(excalidraw|excalidraw\.json)$/i, '') || base;
 }
 
-function formatSlugFromPrompt(prompt) {
-  const ascii = String(prompt || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 36);
-  const token = Date.now().toString(36).slice(-4);
-  return ascii ? `${ascii}-${token}` : `diagram-${token}`;
-}
-
 function computeSceneSignature(elements, appState, files) {
-  const nonDeleted = (elements || []).filter(item => !item?.isDeleted);
-  const version = getSceneVersion(nonDeleted);
+  const list = elements || [];
+  let activeCount = 0;
+  for (let i = 0; i < list.length; i += 1) {
+    if (!list[i]?.isDeleted) activeCount += 1;
+  }
+  const version = getSceneVersion(list);
   const bg = appState?.viewBackgroundColor || '#ffffff';
-  const fileKeys = Object.keys(files || {}).sort().join(',');
-  return `${version}:${nonDeleted.length}:${bg}:${fileKeys}`;
+  let fileKeys = '';
+  if (files) {
+    const keys = Object.keys(files);
+    if (keys.length) fileKeys = keys.sort().join(',');
+  }
+  return `${version}:${activeCount}:${bg}:${fileKeys}`;
 }
 
 function computeSceneStats(scene) {
@@ -466,20 +506,46 @@ async function saveActiveFile({ silent = false } = {}) {
   }
 }
 
+function sortFilesList() {
+  state.files.sort((a, b) => (b.modifiedAt || 0) - (a.modifiedAt || 0) || a.path.localeCompare(b.path));
+  $('file-count').textContent = String(state.files.length);
+  $('toolbar-file-count').textContent = String(state.files.length);
+}
+
+function upsertFileEntry(filePath, { size = 0, modifiedAt = Date.now(), scene } = {}) {
+  const idx = state.files.findIndex(f => f.path === filePath);
+  const entry = {
+    path: filePath,
+    name: filePath.split('/').pop(),
+    title: displayTitleFromPath(filePath),
+    size,
+    modifiedAt,
+    ...(scene ? { scene } : {}),
+  };
+  if (idx >= 0) state.files[idx] = { ...state.files[idx], ...entry };
+  else state.files.unshift(entry);
+  sortFilesList();
+}
+
+function removeFileEntry(filePath) {
+  state.files = state.files.filter(f => f.path !== filePath);
+  sortFilesList();
+}
+
 async function scanWorkspaceDiagrams() {
   if (state.preview || !state.hasProject) return;
 
   const found = [];
   const visited = new Set();
   const queue = [];
-  const defaultDir = String(state.params.defaultDir || 'diagrams').trim().replace(/^\/+|\/+$/g, '');
+  const defaultDir = getDefaultDir();
   if (defaultDir) queue.push({ dir: defaultDir, depth: 1 });
   if (defaultDir !== 'docs') queue.push({ dir: 'docs', depth: 1 });
   queue.push({ dir: '', depth: 0 });
 
-  const MAX_DIRS = 240;
-  const MAX_DEPTH = 6;
-  const CONCURRENCY = 6;
+  const MAX_DIRS = 80;
+  const MAX_DEPTH = 4;
+  const CONCURRENCY = 3;
 
   async function processOne(item) {
     const key = item.dir || '.';
@@ -525,10 +591,8 @@ async function scanWorkspaceDiagrams() {
     deduped.push(f);
   }
 
-  deduped.sort((a, b) => (b.modifiedAt || 0) - (a.modifiedAt || 0) || a.path.localeCompare(b.path));
   state.files = deduped;
-  $('file-count').textContent = String(deduped.length);
-  $('toolbar-file-count').textContent = String(deduped.length);
+  sortFilesList();
 }
 
 function filteredFiles() {
@@ -577,6 +641,12 @@ function renderRail() {
   renderRecentRuns();
 }
 
+function formatRunLabel(run) {
+  if (run.targetPath) return displayTitleFromPath(run.targetPath);
+  if (run.label) return run.label;
+  return t('aiAutoNaming');
+}
+
 function renderRecentRuns() {
   const wrap = $('rail-runs');
   const list = $('rail-runs-list');
@@ -612,7 +682,7 @@ function renderRecentRuns() {
             }
           },
         },
-        el('span', { class: 'run-row-path mono' }, displayTitleFromPath(run.targetPath)),
+        el('span', { class: 'run-row-path mono' }, formatRunLabel(run)),
         el('span', { class: `pill ${cls}` }, label),
       );
     }),
@@ -629,7 +699,7 @@ function updateAiStatusPill() {
     return;
   }
   pill.hidden = false;
-  $('ai-status-text').textContent = `${t('aiRunningTitle')} ${displayTitleFromPath(running.targetPath)}`;
+  $('ai-status-text').textContent = `${t('aiRunningTitle')} ${formatRunLabel(running)}`;
   pill.onclick = () => {
     if (running.sessionId && !state.preview) {
       window.deck.agent?.open?.(running.sessionId, { closeDeck: false }).catch(() => {});
@@ -652,9 +722,11 @@ async function renderSvgForScene(scene) {
   return svgEl;
 }
 
-async function hydrateGalleryCardThumb(file, thumbBox, countEl) {
+async function hydrateGalleryCardThumb(file, thumbBox, countEl, token) {
+  if (token !== galleryRenderToken) return;
   try {
     const scene = await loadSceneForPath(file.path);
+    if (token !== galleryRenderToken) return;
     const cacheKey = `${state.theme}:${file.modifiedAt || 0}:${(scene.elements || []).length}`;
     const cached = state.thumbCache.get(file.path);
     let svgMarkup = '';
@@ -672,6 +744,7 @@ async function hydrateGalleryCardThumb(file, thumbBox, countEl) {
       state.thumbCache.set(file.path, { key: cacheKey, svgMarkup, stats });
     }
 
+    if (token !== galleryRenderToken) return;
     if (countEl) {
       countEl.textContent = t('elementsCount', { n: stats.elements });
     }
@@ -681,11 +754,14 @@ async function hydrateGalleryCardThumb(file, thumbBox, countEl) {
       thumbBox.replaceChildren(el('span', { class: 'card-thumb-empty' }, t('tplBlank')));
     }
   } catch {
-    thumbBox.replaceChildren(el('span', { class: 'card-thumb-empty' }, '—'));
+    if (token === galleryRenderToken) {
+      thumbBox.replaceChildren(el('span', { class: 'card-thumb-empty' }, '—'));
+    }
   }
 }
 
 function renderGallery() {
+  const token = ++galleryRenderToken;
   const grid = $('gallery-grid');
   const emptyEl = $('gallery-empty');
   const items = filteredFiles();
@@ -696,6 +772,7 @@ function renderGallery() {
   }
   emptyEl.hidden = true;
 
+  const jobs = [];
   const cards = items.map(file => {
     const active = file.path === state.activePath;
     const thumbBox = el('div', {
@@ -776,11 +853,23 @@ function renderGallery() {
       ),
     );
 
-    void hydrateGalleryCardThumb(file, thumbBox, countPill);
+    jobs.push({ file, thumbBox, countPill });
     return card;
   });
 
   grid.replaceChildren(...cards);
+
+  let nextIdx = 0;
+  const worker = async () => {
+    while (nextIdx < jobs.length && token === galleryRenderToken) {
+      const job = jobs[nextIdx++];
+      await hydrateGalleryCardThumb(job.file, job.thumbBox, job.countPill, token);
+    }
+  };
+  const workers = Math.min(2, jobs.length);
+  for (let i = 0; i < workers; i += 1) {
+    void worker();
+  }
 }
 
 async function openPreviewModal(filePath) {
@@ -816,50 +905,45 @@ function openNewModal() {
     toast(t('previewBanner'));
     return;
   }
-  const dir = String(state.params.defaultDir || 'diagrams').trim().replace(/^\/+|\/+$/g, '');
-  const prefix = dir ? `${dir}/` : '';
-  const token = Date.now().toString(36).slice(-4);
-  $('new-path').value = `${prefix}diagram-${token}.excalidraw`;
+  const dir = getDefaultDir();
+  $('new-id').value = '';
+  $('new-dir-hint').textContent = t('globalDirHint', { dir: dir || '.' });
   $('new-err').textContent = '';
   setUiSelectValue($('new-template'), 'architecture');
   $('modal-new').hidden = false;
-  requestAnimationFrame(() => $('new-path').focus());
+  requestAnimationFrame(() => $('new-id').focus());
 }
 
 async function handleCreateNewDiagram() {
   const errEl = $('new-err');
   errEl.textContent = '';
-  const targetPath = ensureDefaultDirPrefix($('new-path').value);
+  const tpl = getUiSelectValue($('new-template')) || 'blank';
+  const rawId = $('new-id').value.trim();
+  const targetPath = rawId
+    ? resolveDiagramPathFromId(rawId)
+    : generateAutoDiagramPath(tpl === 'blank' ? 'diagram' : tpl);
   if (!targetPath) {
-    errEl.textContent = t('fileNameLabel');
+    errEl.textContent = t('diagramIdLabel');
     return;
   }
   if (state.files.some(f => f.path === targetPath)) {
     errEl.textContent = t('fileExistsErr', { path: targetPath });
     return;
   }
-  const tpl = getUiSelectValue($('new-template')) || 'blank';
   const scene = buildTemplateScene(tpl, state.locale);
   const jsonText = serializeAsJSON(scene.elements, scene.appState, scene.files || {}, 'local');
 
   if (!state.hasProject) {
-    state.files.unshift({
-      path: targetPath,
-      name: targetPath.split('/').pop(),
-      title: displayTitleFromPath(targetPath),
-      size: jsonText.length,
-      modifiedAt: Date.now(),
-      scene,
-    });
+    upsertFileEntry(targetPath, { size: jsonText.length, modifiedAt: Date.now(), scene });
     $('modal-new').hidden = true;
     await openFile(targetPath, { forceReload: true, switchToCanvas: true });
     return;
   }
 
   try {
-    await window.deck.files.write(targetPath, jsonText, { encoding: 'utf8' });
+    const res = await window.deck.files.write(targetPath, jsonText, { encoding: 'utf8' });
     $('modal-new').hidden = true;
-    await scanWorkspaceDiagrams();
+    upsertFileEntry(targetPath, { size: res?.size ?? jsonText.length, modifiedAt: Date.now() });
     await openFile(targetPath, { forceReload: true, switchToCanvas: true });
     toast(t('savedMsg', { path: targetPath }));
   } catch (err) {
@@ -890,16 +974,18 @@ async function handleConfirmRename() {
     return;
   }
   try {
-    await window.deck.files.rename(fromPath, toPath, { overwrite: false });
+    const res = await window.deck.files.rename(fromPath, toPath, { overwrite: false });
     $('modal-rename').hidden = true;
+    const prev = state.files.find(f => f.path === fromPath);
     state.sceneCache.delete(fromPath);
     state.thumbCache.delete(fromPath);
+    removeFileEntry(fromPath);
+    upsertFileEntry(toPath, { size: res?.size ?? prev?.size ?? 0, modifiedAt: Date.now() });
     if (state.activePath === fromPath) {
       state.activePath = toPath;
       $('active-file-path').textContent = toPath;
       window.deck.store?.put?.('activePath', toPath).catch(() => {});
     }
-    await scanWorkspaceDiagrams();
     renderRail();
     if (state.view === 'files') renderGallery();
     toast(t('savedMsg', { path: toPath }));
@@ -919,8 +1005,8 @@ async function duplicateFile(filePath) {
       candidate = `${base}-copy-${n}${ext}`;
       n += 1;
     }
-    await window.deck.files.write(candidate, res.content, { encoding: 'utf8' });
-    await scanWorkspaceDiagrams();
+    const writeRes = await window.deck.files.write(candidate, res.content, { encoding: 'utf8' });
+    upsertFileEntry(candidate, { size: writeRes?.size ?? res.content.length, modifiedAt: Date.now() });
     renderRail();
     if (state.view === 'files') renderGallery();
     toast(t('savedMsg', { path: candidate }));
@@ -943,7 +1029,7 @@ async function handleConfirmDelete() {
     await window.deck.files.delete(target);
     state.sceneCache.delete(target);
     state.thumbCache.delete(target);
-    await scanWorkspaceDiagrams();
+    removeFileEntry(target);
     if (state.activePath === target) {
       state.activePath = '';
       state.dirty = false;
@@ -970,14 +1056,14 @@ async function handleImportFiles() {
     return;
   }
   try {
-    const dir = String(state.params.defaultDir || 'diagrams').trim().replace(/^\/+|\/+$/g, '') || 'diagrams';
+    const dir = getDefaultDir() || 'diagrams';
     const res = await window.deck.files.pick({
       dir,
       multiple: true,
       accept: ['.excalidraw', '.excalidraw.json', 'application/json'],
       overwrite: false,
     });
-    const picked = res?.files || [];
+    const picked = Array.isArray(res) ? res : res?.files || [];
     if (!picked.length) return;
     await scanWorkspaceDiagrams();
     await openFile(picked[0].path, { forceReload: true, switchToCanvas: true });
@@ -1203,10 +1289,10 @@ function openAiModal(mode = 'create') {
   );
   setUiSelectValue($('ai-type'), state.params.defaultDiagramType || 'auto');
 
-  const dir = String(state.params.defaultDir || 'diagrams').trim().replace(/^\/+|\/+$/g, '');
-  const prefix = dir ? `${dir}/` : '';
-  $('ai-path').value = actualMode === 'revise' ? state.activePath : `${prefix}diagram-${Date.now().toString(36).slice(-4)}.excalidraw`;
-  $('ai-path-wrap').hidden = actualMode === 'revise';
+  const dir = getDefaultDir();
+  $('ai-id').value = '';
+  $('ai-dir-hint').textContent = t('globalDirHint', { dir: dir || '.' });
+  $('ai-id-wrap').hidden = actualMode === 'revise';
   $('ai-prompt').value = '';
   $('ai-prompt').setAttribute('placeholder', actualMode === 'revise' ? t('aiPromptRevisePh') : t('aiPromptCreatePh'));
 
@@ -1215,7 +1301,7 @@ function openAiModal(mode = 'create') {
   requestAnimationFrame(() => $('ai-prompt').focus());
 }
 
-function buildAiPrompt({ mode, diagramType, targetPath, userPrompt, includeCodebase }) {
+function buildAiPrompt({ mode, diagramType, targetPath, defaultDir, existingPaths, userPrompt, includeCodebase }) {
   const langInstruction = state.locale === 'zh-CN'
     ? 'Author all diagram labels, titles, and notes in Simplified Chinese (unless code symbols or proper nouns require English).'
     : 'Author all diagram labels, titles, and notes in the same language as the user request.';
@@ -1241,18 +1327,39 @@ function buildAiPrompt({ mode, diagramType, targetPath, userPrompt, includeCodeb
     ].join('\n');
   }
 
+  if (targetPath) {
+    return [
+      `Create a new Excalidraw diagram file at \`${targetPath}\`.`,
+      typeLine,
+      langInstruction,
+      contextLine,
+      '',
+      'Requirements:',
+      `- Write valid Excalidraw v2 JSON directly to \`${targetPath}\` (create parent directories if needed).`,
+      '- Ensure no overlapping nodes, clear spacing, bound text labels (`containerId`), valid arrow bindings (`startBinding`/`endBinding` + `boundElements`), and `fontFamily: 5`.',
+      '',
+      `Diagram specification:\n${userPrompt}`,
+    ].join('\n');
+  }
+
+  const dirPrefix = defaultDir ? `${defaultDir}/` : '';
+  const avoidLine = existingPaths?.length
+    ? `- Avoid overwriting existing files: ${existingPaths.slice(0, 30).map(p => `\`${p}\``).join(', ')}.`
+    : '';
+
   return [
-    `Create a new Excalidraw diagram file at \`${targetPath}\`.`,
+    `Create a new Excalidraw diagram file inside \`${dirPrefix || './'}\`.`,
     typeLine,
     langInstruction,
     contextLine,
     '',
     'Requirements:',
-    `- Write valid Excalidraw v2 JSON directly to \`${targetPath}\` (create parent directories if needed).`,
+    `- Choose a concise, descriptive kebab-case ID (e.g. \`oauth-token-flow\`, \`order-checkout-arch\`) and save valid Excalidraw v2 JSON to \`${dirPrefix}<id>.excalidraw\` (create parent directories if needed).`,
+    avoidLine,
     '- Ensure no overlapping nodes, clear spacing, bound text labels (`containerId`), valid arrow bindings (`startBinding`/`endBinding` + `boundElements`), and `fontFamily: 5`.',
     '',
     `Diagram specification:\n${userPrompt}`,
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
 
 function ensureAgentSubscriptions() {
@@ -1268,6 +1375,26 @@ function ensureAgentSubscriptions() {
       void handleRunStateUpdate(evt.sessionId, evt.status);
     }
   });
+}
+
+function detectAutoCreatedDiagram(run) {
+  const before = run.beforeFiles || {};
+  const dirPrefix = run.defaultDir ? `${run.defaultDir}/` : '';
+  const candidates = state.files.filter(f => {
+    if (!(f.path in before)) return true;
+    return (f.modifiedAt || 0) > (before[f.path] || 0);
+  });
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => {
+    const aNew = !(a.path in before) ? 1 : 0;
+    const bNew = !(b.path in before) ? 1 : 0;
+    if (aNew !== bNew) return bNew - aNew;
+    const aInDir = dirPrefix ? (a.path.startsWith(dirPrefix) ? 1 : 0) : 1;
+    const bInDir = dirPrefix ? (b.path.startsWith(dirPrefix) ? 1 : 0) : 1;
+    if (aInDir !== bInDir) return bInDir - aInDir;
+    return (b.modifiedAt || 0) - (a.modifiedAt || 0);
+  });
+  return candidates[0];
 }
 
 async function handleRunStateUpdate(sessionId, nextStatus) {
@@ -1289,16 +1416,28 @@ async function handleRunStateUpdate(sessionId, nextStatus) {
   renderRail();
 
   if (normalized === 'done') {
-    state.sceneCache.delete(run.targetPath);
-    state.thumbCache.delete(run.targetPath);
+    if (run.targetPath) {
+      state.sceneCache.delete(run.targetPath);
+      state.thumbCache.delete(run.targetPath);
+    }
     await scanWorkspaceDiagrams();
-    if (state.files.some(f => f.path === run.targetPath)) {
+    if (!run.targetPath && run.autoTarget) {
+      const matched = detectAutoCreatedDiagram(run);
+      if (matched) {
+        run.targetPath = matched.path;
+        window.deck.store?.put?.('recentRuns', state.runs.slice(0, 12)).catch(() => {});
+        renderRail();
+      }
+    }
+    if (run.targetPath && state.files.some(f => f.path === run.targetPath)) {
+      state.sceneCache.delete(run.targetPath);
+      state.thumbCache.delete(run.targetPath);
       await openFile(run.targetPath, { forceReload: true, switchToCanvas: true });
       toast(t('aiDoneMsg', { path: run.targetPath }));
     }
     if (state.view === 'files') renderGallery();
   } else if (normalized === 'error') {
-    toast(t('aiFailedMsg', { err: run.targetPath }), true);
+    toast(t('aiFailedMsg', { err: formatRunLabel(run) }), true);
   }
 }
 
@@ -1352,17 +1491,30 @@ async function submitAiGeneration({ composeOnly = false } = {}) {
     return;
   }
 
-  let targetPath = mode === 'revise' ? state.activePath : ensureDefaultDirPrefix($('ai-path').value);
-  if (!targetPath) {
-    const dir = String(state.params.defaultDir || 'diagrams').trim().replace(/^\/+|\/+$/g, '');
-    targetPath = normalizeRelPath(`${dir ? `${dir}/` : ''}${formatSlugFromPrompt(userPrompt)}.excalidraw`);
-  }
+  const defaultDir = getDefaultDir();
+  const rawId = $('ai-id').value.trim();
+  const targetPath = mode === 'revise'
+    ? state.activePath
+    : (rawId ? resolveDiagramPathFromId(rawId) : '');
+  const autoTarget = mode === 'create' && !targetPath;
 
   if (mode === 'revise' && state.dirty) {
     await saveActiveFile({ silent: true });
   }
 
-  const prompt = buildAiPrompt({ mode, diagramType, targetPath, userPrompt, includeCodebase });
+  const existingPaths = state.files.map(f => f.path).slice(0, 30);
+  const beforeFiles = Object.fromEntries(state.files.map(f => [f.path, f.modifiedAt || 0]));
+  const label = userPrompt.replace(/\s+/g, ' ').slice(0, 32);
+
+  const prompt = buildAiPrompt({
+    mode,
+    diagramType,
+    targetPath,
+    defaultDir,
+    existingPaths,
+    userPrompt,
+    includeCodebase,
+  });
 
   try {
     if (composeOnly) {
@@ -1372,7 +1524,7 @@ async function submitAiGeneration({ composeOnly = false } = {}) {
       }
       await window.deck.agent.compose({
         target: 'new',
-        title: `Excalidraw: ${displayTitleFromPath(targetPath)}`,
+        title: `Excalidraw: ${targetPath ? displayTitleFromPath(targetPath) : label}`,
         draft: `/excalidraw-diagram-generator\n\n${prompt}`,
         items,
         focus: true,
@@ -1397,6 +1549,10 @@ async function submitAiGeneration({ composeOnly = false } = {}) {
     const runRecord = {
       sessionId: res.sessionId,
       targetPath,
+      autoTarget,
+      defaultDir,
+      beforeFiles,
+      label,
       mode,
       diagramType,
       status: res.status || 'running',
@@ -1434,7 +1590,7 @@ function initStaticSelects() {
     value: 'create',
     onChange: val => {
       $('modal-ai-h').textContent = val === 'revise' ? t('aiModalReviseTitle') : t('aiModalCreateTitle');
-      $('ai-path-wrap').hidden = val === 'revise';
+      $('ai-id-wrap').hidden = val === 'revise';
       $('ai-prompt').setAttribute('placeholder', val === 'revise' ? t('aiPromptRevisePh') : t('aiPromptCreatePh'));
     },
   });
@@ -1543,6 +1699,7 @@ function wireEvents() {
   $('btn-apply-json').addEventListener('click', () => {
     try {
       const parsed = parseDiagramJson($('json-editor').value);
+      $('empty-canvas').hidden = true;
       mountOrUpdateCanvas(parsed);
       state.dirty = true;
       updateSaveBadge();
@@ -1603,7 +1760,7 @@ function wireEvents() {
   /* Modals */
   $('new-cancel').addEventListener('click', () => { $('modal-new').hidden = true; });
   $('new-create').addEventListener('click', () => void handleCreateNewDiagram());
-  $('new-path').addEventListener('keydown', e => {
+  $('new-id').addEventListener('keydown', e => {
     if (e.key === 'Enter') void handleCreateNewDiagram();
   });
 
@@ -1757,7 +1914,9 @@ async function boot() {
   } else {
     $('empty-canvas').hidden = !state.hasProject;
     $('btn-ai-revise').disabled = true;
-    mountOrUpdateCanvas(buildTemplateScene('blank', state.locale));
+    if (!state.hasProject) {
+      mountOrUpdateCanvas(buildTemplateScene('blank', state.locale));
+    }
   }
 
   $('app').dataset.state = 'ready';

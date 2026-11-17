@@ -61,6 +61,25 @@ const offlineFontUrlsPlugin = {
   },
 };
 
+const idleLaserTrailsPlugin = {
+  name: 'idle-laser-trails',
+  setup(build) {
+    build.onLoad({ filter: /@excalidraw[\/\\]excalidraw[\/\\]dist[\/\\]prod[\/\\]index\.js$/ }, async args => {
+      const { readFile } = await import('node:fs/promises');
+      let contents = await readFile(args.path, 'utf8');
+      const target = 'start(o){this.container=o,this.animationFrameHandler.start(this),this.localTrail.start(o)}stop(){this.animationFrameHandler.stop(this),this.localTrail.stop()}onFrame(){this.updateCollabTrails()}';
+      if (!contents.includes(target)) {
+        throw new Error(`Failed to find LaserTrails loop in ${args.path}`);
+      }
+      // Excalidraw 0.18 LaserTrails.onFrame returns undefined, keeping an unconditional 60fps RAF
+      // loop alive even with 0 collaborators. Only schedule collab trail frames when needed.
+      const replacement = 'start(o){this.container=o,this.app.state.collaborators?.size&&this.animationFrameHandler.start(this),this.localTrail.start(o)}stop(){this.animationFrameHandler.stop(this),this.localTrail.stop()}onFrame(){this.updateCollabTrails();if(!this.container||(!this.app.state.collaborators?.size&&!this.collabTrails.size))return!0}';
+      contents = contents.replace(target, replacement);
+      return { contents, loader: 'js' };
+    });
+  },
+};
+
 await rm(outDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
 
@@ -76,7 +95,7 @@ await esbuild.build({
   conditions: ['production'],
   jsx: 'automatic',
   external: ['./fonts/*'],
-  plugins: [trimLocalesPlugin, stubMermaidPlugin, offlineFontUrlsPlugin],
+  plugins: [trimLocalesPlugin, stubMermaidPlugin, offlineFontUrlsPlugin, idleLaserTrailsPlugin],
   define: {
     'process.env.NODE_ENV': '"production"',
   },

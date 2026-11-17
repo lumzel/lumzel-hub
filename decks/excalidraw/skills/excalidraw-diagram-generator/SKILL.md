@@ -11,6 +11,7 @@ Generate or update clean, valid `.excalidraw` (version 2) JSON files in the acti
 
 1. **Determine Target & Intent**:
    - Inspect whether the request asks to **create** a new `.excalidraw` file or **revise/extend** an existing `.excalidraw` file at a specified path.
+   - If the request specifies a target folder (e.g. `diagrams/<id>.excalidraw`) without a fixed filename, choose a concise, descriptive kebab-case ID matching the topic (e.g. `oauth-token-flow`) without overwriting existing diagrams.
    - When revising an existing file, read the current `.excalidraw` JSON first so you preserve existing element IDs, layout, and user-drawn elements unless the request explicitly asks to replace or remove them.
    - If the request references codebase modules, APIs, or docs, read the relevant files first so every node and edge reflects real symbols and paths rather than generic placeholders.
 
