@@ -7,15 +7,18 @@ import {
   setUiSelectOptions,
   setUiSelectValue,
 } from './uiSelect.js';
-import {
-  CaptureUpdateAction,
-  exportToBlob,
-  exportToSvg,
-  getSceneVersion,
-  mountExcalidraw,
-  restore,
-  serializeAsJSON,
-} from '../vendor/excalidraw.js';
+let excalidrawMod = null;
+let excalidrawModPromise = null;
+function getExcalidraw() {
+  if (excalidrawMod) return Promise.resolve(excalidrawMod);
+  if (!excalidrawModPromise) {
+    excalidrawModPromise = import('../vendor/excalidraw.js').then(mod => {
+      excalidrawMod = mod;
+      return mod;
+    });
+  }
+  return excalidrawModPromise;
+}
 
 const $ = id => document.getElementById(id);
 
@@ -26,6 +29,7 @@ const SKIP_SCAN_DIRS = new Set([
   'target',
   'out',
   'vendor',
+  'loadouts',
   '.git',
   '.lumzel',
   '.next',
@@ -116,6 +120,7 @@ let toastTimer = 0;
 let pollRunsTimer = 0;
 let agentSubscribed = false;
 let galleryRenderToken = 0;
+let mountToken = 0;
 
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -194,10 +199,14 @@ function displayTitleFromPath(p) {
 function computeSceneSignature(elements, appState, files) {
   const list = elements || [];
   let activeCount = 0;
+  let version = 0;
   for (let i = 0; i < list.length; i += 1) {
-    if (!list[i]?.isDeleted) activeCount += 1;
+    const item = list[i];
+    if (item) {
+      if (!item.isDeleted) activeCount += 1;
+      version += item.version || 1;
+    }
   }
-  const version = getSceneVersion(list);
   const bg = appState?.viewBackgroundColor || '#ffffff';
   let fileKeys = '';
   if (files) {
@@ -231,11 +240,12 @@ function excalidrawLangCode() {
   return state.locale === 'zh-CN' ? 'zh-CN' : 'en';
 }
 
-function parseDiagramJson(rawText) {
+async function parseDiagramJson(rawText) {
   const parsed = JSON.parse(rawText);
   if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.elements)) {
     throw new Error('Expected Excalidraw JSON object with "elements" array');
   }
+  const { restore } = await getExcalidraw();
   const restored = restore(
     {
       elements: parsed.elements || [],
@@ -319,7 +329,7 @@ function switchView(nextView) {
   } else if (nextView === 'files') {
     renderGallery();
   } else if (nextView === 'json') {
-    syncJsonEditorFromCanvas();
+    void syncJsonEditorFromCanvas();
   }
 }
 
@@ -338,16 +348,34 @@ function getLiveSceneData() {
   };
 }
 
-function syncJsonEditorFromCanvas() {
-  const { elements, appState, files } = getLiveSceneData();
-  const jsonText = serializeAsJSON(elements, appState, files, 'local');
-  $('json-path').textContent = state.activePath || 'untitled.excalidraw';
-  $('json-editor').value = jsonText;
-  const stats = computeSceneStats({ elements });
-  $('json-stats').textContent = t('jsonStats', stats);
+async function serializeSceneJson(elements, appState, files) {
+  const { serializeAsJSON } = await getExcalidraw();
+  return serializeAsJSON(elements, appState, files, 'local');
 }
 
-function mountOrUpdateCanvas(scene) {
+async function syncJsonEditorFromCanvas() {
+  const { elements, appState, files } = getLiveSceneData();
+  $('json-path').textContent = state.activePath || 'untitled.excalidraw';
+  const stats = computeSceneStats({ elements });
+  $('json-stats').textContent = t('jsonStats', stats);
+  let jsonText;
+  if (excalidrawMod) {
+    jsonText = excalidrawMod.serializeAsJSON(elements, appState, files, 'local');
+  } else {
+    $('btn-apply-json').disabled = true;
+    try {
+      jsonText = await serializeSceneJson(elements, appState, files);
+    } finally {
+      $('btn-apply-json').disabled = false;
+    }
+  }
+  if (state.view === 'json') {
+    $('json-editor').value = jsonText;
+  }
+}
+
+async function mountOrUpdateCanvas(scene) {
+  const token = ++mountToken;
   const mountEl = $('excalidraw-mount');
   const normalized = {
     elements: scene.elements || [],
@@ -363,6 +391,9 @@ function mountOrUpdateCanvas(scene) {
   state.lastSavedSignature = computeSceneSignature(normalized.elements, normalized.appState, normalized.files);
   state.dirty = false;
   updateSaveBadge();
+
+  const { CaptureUpdateAction, mountExcalidraw } = await getExcalidraw();
+  if (token !== mountToken) return;
 
   if (!state.excalidrawHost) {
     state.pendingLoadScene = normalized;
@@ -427,22 +458,26 @@ async function loadSceneForPath(filePath, { forceReload = false } = {}) {
   }
   const sampleEntry = state.files.find(f => f.path === filePath && f.scene);
   if (sampleEntry && (state.preview || !state.hasProject)) {
-    const restored = parseDiagramJson(JSON.stringify(sampleEntry.scene));
+    const restored = await parseDiagramJson(JSON.stringify(sampleEntry.scene));
     state.sceneCache.set(filePath, restored);
     return restored;
   }
-  const res = await window.deck.files.read(filePath, { encoding: 'utf8' });
-  const parsed = parseDiagramJson(res.content);
+  const [res] = await Promise.all([
+    window.deck.files.read(filePath, { encoding: 'utf8' }),
+    getExcalidraw(),
+  ]);
+  const parsed = await parseDiagramJson(res.content);
   state.sceneCache.set(filePath, parsed);
   return parsed;
 }
 
-async function openFile(filePath, { forceReload = false, switchToCanvas = false } = {}) {
-  if (!filePath) return;
+async function openFile(filePath, { forceReload = false, switchToCanvas = false, quietOnMissing = false } = {}) {
+  if (!filePath) return false;
   if (state.dirty && state.activePath && state.activePath !== filePath && !state.preview && state.hasProject) {
     await saveActiveFile({ silent: true });
   }
   try {
+    void getExcalidraw();
     const scene = await loadSceneForPath(filePath, { forceReload });
     state.activePath = filePath;
     state.activeScene = scene;
@@ -450,16 +485,20 @@ async function openFile(filePath, { forceReload = false, switchToCanvas = false 
     $('empty-canvas').hidden = true;
     $('btn-ai-revise').disabled = false;
 
-    mountOrUpdateCanvas(scene);
+    await mountOrUpdateCanvas(scene);
     renderRail();
-    if (state.view === 'json') syncJsonEditorFromCanvas();
+    if (state.view === 'json') void syncJsonEditorFromCanvas();
     if (switchToCanvas && state.view !== 'canvas') switchView('canvas');
 
     if (!state.preview && state.hasProject) {
       window.deck.store?.put?.('activePath', filePath).catch(() => {});
     }
+    return true;
   } catch (err) {
-    toast(t('invalidJson', { err: err.message || String(err) }), true);
+    if (!quietOnMissing) {
+      toast(t('invalidJson', { err: err.message || String(err) }), true);
+    }
+    return false;
   }
 }
 
@@ -476,7 +515,7 @@ async function saveActiveFile({ silent = false } = {}) {
 
   const { elements, appState, files } = getLiveSceneData();
   const sig = computeSceneSignature(elements, appState, files);
-  const jsonText = serializeAsJSON(elements, appState, files, 'local');
+  const jsonText = await serializeSceneJson(elements, appState, files);
 
   state.saving = true;
   updateSaveBadge();
@@ -484,7 +523,7 @@ async function saveActiveFile({ silent = false } = {}) {
     const res = await window.deck.files.write(state.activePath, jsonText, { encoding: 'utf8' });
     state.lastSavedSignature = sig;
     state.dirty = false;
-    state.activeScene = parseDiagramJson(jsonText);
+    state.activeScene = await parseDiagramJson(jsonText);
     state.sceneCache.set(state.activePath, state.activeScene);
     state.thumbCache.delete(state.activePath);
 
@@ -492,6 +531,7 @@ async function saveActiveFile({ silent = false } = {}) {
     if (existing) {
       existing.size = res.size ?? jsonText.length;
       existing.modifiedAt = Date.now();
+      persistFilesCache();
     }
     if (!silent) toast(t('savedMsg', { path: state.activePath }));
     renderRail();
@@ -512,6 +552,18 @@ function sortFilesList() {
   $('toolbar-file-count').textContent = String(state.files.length);
 }
 
+function persistFilesCache() {
+  if (state.preview || !state.hasProject) return;
+  const compact = state.files.slice(0, 200).map(f => ({
+    path: f.path,
+    name: f.name,
+    title: f.title,
+    size: f.size || 0,
+    modifiedAt: f.modifiedAt || 0,
+  }));
+  window.deck.store?.put?.('cachedFiles', compact).catch(() => {});
+}
+
 function upsertFileEntry(filePath, { size = 0, modifiedAt = Date.now(), scene } = {}) {
   const idx = state.files.findIndex(f => f.path === filePath);
   const entry = {
@@ -525,14 +577,18 @@ function upsertFileEntry(filePath, { size = 0, modifiedAt = Date.now(), scene } 
   if (idx >= 0) state.files[idx] = { ...state.files[idx], ...entry };
   else state.files.unshift(entry);
   sortFilesList();
+  persistFilesCache();
 }
 
 function removeFileEntry(filePath) {
   state.files = state.files.filter(f => f.path !== filePath);
   sortFilesList();
+  persistFilesCache();
 }
 
-async function scanWorkspaceDiagrams() {
+const QUICK_ROOT_DIAGRAM_DIRS = new Set(['diagrams', 'docs', 'design', 'designs', 'architecture', 'excalidraw']);
+
+async function scanWorkspaceDiagrams({ deep = false } = {}) {
   if (state.preview || !state.hasProject) return;
 
   const found = [];
@@ -543,9 +599,26 @@ async function scanWorkspaceDiagrams() {
   if (defaultDir !== 'docs') queue.push({ dir: 'docs', depth: 1 });
   queue.push({ dir: '', depth: 0 });
 
-  const MAX_DIRS = 80;
-  const MAX_DEPTH = 4;
-  const CONCURRENCY = 3;
+  if (!deep) {
+    const knownDirs = new Set();
+    if (state.activePath) {
+      const idx = state.activePath.lastIndexOf('/');
+      if (idx > 0) knownDirs.add(state.activePath.slice(0, idx));
+    }
+    for (const f of state.files) {
+      const idx = f.path.lastIndexOf('/');
+      if (idx > 0) knownDirs.add(f.path.slice(0, idx));
+    }
+    for (const d of knownDirs) {
+      if (d !== defaultDir && d !== 'docs' && knownDirs.size <= 10) {
+        queue.push({ dir: d, depth: 2 });
+      }
+    }
+  }
+
+  const MAX_DIRS = deep ? 60 : 16;
+  const MAX_DEPTH = deep ? 4 : 2;
+  const CONCURRENCY = deep ? 3 : 4;
 
   async function processOne(item) {
     const key = item.dir || '.';
@@ -563,6 +636,7 @@ async function scanWorkspaceDiagrams() {
       if (entry.isDir) {
         const name = entry.name || entry.path.split('/').pop();
         if (!name || name.startsWith('.') || SKIP_SCAN_DIRS.has(name)) continue;
+        if (!deep && item.dir === '' && !QUICK_ROOT_DIAGRAM_DIRS.has(name.toLowerCase())) continue;
         if (item.depth < MAX_DEPTH && visited.size + queue.length < MAX_DIRS) {
           queue.push({ dir: entry.path, depth: item.depth + 1 });
         }
@@ -593,6 +667,7 @@ async function scanWorkspaceDiagrams() {
 
   state.files = deduped;
   sortFilesList();
+  persistFilesCache();
 }
 
 function filteredFiles() {
@@ -708,6 +783,7 @@ function updateAiStatusPill() {
 }
 
 async function renderSvgForScene(scene) {
+  const { exportToSvg } = await getExcalidraw();
   const svgEl = await exportToSvg({
     elements: (scene.elements || []).filter(item => !item?.isDeleted),
     appState: {
@@ -905,6 +981,7 @@ function openNewModal() {
     toast(t('previewBanner'));
     return;
   }
+  void getExcalidraw();
   const dir = getDefaultDir();
   $('new-id').value = '';
   $('new-dir-hint').textContent = t('globalDirHint', { dir: dir || '.' });
@@ -931,7 +1008,7 @@ async function handleCreateNewDiagram() {
     return;
   }
   const scene = buildTemplateScene(tpl, state.locale);
-  const jsonText = serializeAsJSON(scene.elements, scene.appState, scene.files || {}, 'local');
+  const jsonText = await serializeSceneJson(scene.elements, scene.appState, scene.files || {});
 
   if (!state.hasProject) {
     upsertFileEntry(targetPath, { size: jsonText.length, modifiedAt: Date.now(), scene });
@@ -1080,6 +1157,7 @@ async function handleExport(kind) {
   const baseName = displayTitleFromPath(state.activePath || 'diagram');
 
   try {
+    const { exportToBlob, exportToSvg, serializeAsJSON } = await getExcalidraw();
     if (kind === 'json') {
       const jsonText = serializeAsJSON(elements, appState, files, 'local');
       if (state.preview || !window.deck?.files?.saveAs) {
@@ -1420,9 +1498,13 @@ async function handleRunStateUpdate(sessionId, nextStatus) {
       state.sceneCache.delete(run.targetPath);
       state.thumbCache.delete(run.targetPath);
     }
-    await scanWorkspaceDiagrams();
+    await scanWorkspaceDiagrams({ deep: false });
     if (!run.targetPath && run.autoTarget) {
-      const matched = detectAutoCreatedDiagram(run);
+      let matched = detectAutoCreatedDiagram(run);
+      if (!matched) {
+        await scanWorkspaceDiagrams({ deep: true });
+        matched = detectAutoCreatedDiagram(run);
+      }
       if (matched) {
         run.targetPath = matched.path;
         window.deck.store?.put?.('recentRuns', state.runs.slice(0, 12)).catch(() => {});
@@ -1661,7 +1743,7 @@ function wireEvents() {
   });
   $('btn-refresh').addEventListener('click', async () => {
     if (state.preview) return;
-    await scanWorkspaceDiagrams();
+    await scanWorkspaceDiagrams({ deep: true });
     if (state.activePath && state.files.some(f => f.path === state.activePath)) {
       await openFile(state.activePath, { forceReload: true });
     }
@@ -1696,11 +1778,11 @@ function wireEvents() {
     }
   });
 
-  $('btn-apply-json').addEventListener('click', () => {
+  $('btn-apply-json').addEventListener('click', async () => {
     try {
-      const parsed = parseDiagramJson($('json-editor').value);
+      const parsed = await parseDiagramJson($('json-editor').value);
       $('empty-canvas').hidden = true;
-      mountOrUpdateCanvas(parsed);
+      await mountOrUpdateCanvas(parsed);
       state.dirty = true;
       updateSaveBadge();
       toast(t('appliedJson'));
@@ -1824,12 +1906,19 @@ function wireEvents() {
 }
 
 async function boot() {
+  state.locale = normalizeLocale(navigator.language || getLocale());
+  setLocale(state.locale);
+  applyI18n();
+
   const ctx = await window.deck.context();
   state.preview = Boolean(ctx?.preview);
   state.hasProject = Boolean(ctx?.worktreePath);
-  state.locale = normalizeLocale(ctx?.locale || getLocale());
-  setLocale(state.locale);
-  applyI18n();
+  const nextLocale = normalizeLocale(ctx?.locale || getLocale());
+  if (nextLocale !== state.locale) {
+    state.locale = nextLocale;
+    setLocale(state.locale);
+    applyI18n();
+  }
   applyTheme(ctx?.theme === 'dark' ? 'dark' : 'light');
 
   window.deck.ui?.onThemeChange?.(next => applyTheme(next));
@@ -1838,6 +1927,7 @@ async function boot() {
   wireEvents();
 
   if (state.preview) {
+    void getExcalidraw();
     $('banner').textContent = t('previewBanner');
     $('banner').hidden = false;
     state.agentCatalog = SAMPLE_AGENT_CATALOG;
@@ -1855,21 +1945,24 @@ async function boot() {
     $('banner').hidden = false;
   }
 
-  try {
-    const pState = await window.deck.params?.get?.();
-    if (pState?.values) {
-      state.params = { ...state.params, ...pState.values };
-    }
-    window.deck.params?.onChange?.(next => {
-      if (next?.values) state.params = { ...state.params, ...next.values };
-    });
-  } catch {
-    // ignore
-  }
+  const [pState, catalog, recent, savedActivePath, cachedFiles] = await Promise.all([
+    window.deck.params?.get?.().catch(() => null),
+    window.deck.agent?.catalog?.().catch(() => null),
+    state.hasProject ? window.deck.store?.get?.('recentRuns').catch(() => null) : null,
+    state.hasProject ? window.deck.store?.get?.('activePath').catch(() => '') : '',
+    state.hasProject ? window.deck.store?.get?.('cachedFiles').catch(() => null) : null,
+  ]);
 
-  try {
-    state.agentCatalog = await window.deck.agent?.catalog?.();
-    const deckDef = state.agentCatalog?.defaults?.deck;
+  if (pState?.values) {
+    state.params = { ...state.params, ...pState.values };
+  }
+  window.deck.params?.onChange?.(next => {
+    if (next?.values) state.params = { ...state.params, ...next.values };
+  });
+
+  if (catalog) {
+    state.agentCatalog = catalog;
+    const deckDef = catalog?.defaults?.deck;
     if (deckDef) {
       state.selectedAgent = {
         provider: deckDef.provider || '',
@@ -1883,42 +1976,57 @@ async function boot() {
         renderAgentPill();
       }
     });
-  } catch {
+  } else {
     state.agentCatalog = SAMPLE_AGENT_CATALOG;
   }
   syncAgentPickers('ex');
   renderAgentPill();
 
-  let savedActivePath = '';
-  if (state.hasProject) {
-    try {
-      const recent = await window.deck.store?.get?.('recentRuns');
-      if (Array.isArray(recent)) state.runs = recent;
-      savedActivePath = (await window.deck.store?.get?.('activePath')) || '';
-    } catch {
-      // ignore
-    }
-    await scanWorkspaceDiagrams();
+  if (Array.isArray(recent)) state.runs = recent;
+  if (Array.isArray(cachedFiles) && cachedFiles.length) {
+    state.files = cachedFiles;
+    sortFilesList();
   }
-
+  const initialCandidate = savedActivePath || state.files[0]?.path || '';
+  if (initialCandidate) {
+    state.activePath = initialCandidate;
+  }
   renderRail();
   syncRunPoller();
 
-  const initialPath =
-    (savedActivePath && state.files.some(f => f.path === savedActivePath) && savedActivePath) ||
-    state.files[0]?.path ||
-    '';
+  const quickScanPromise = state.hasProject
+    ? scanWorkspaceDiagrams({ deep: false })
+    : Promise.resolve();
 
-  if (initialPath) {
-    await openFile(initialPath);
+  if (initialCandidate) {
+    const opened = await openFile(initialCandidate, { quietOnMissing: true });
+    await quickScanPromise;
+    if (!opened) {
+      const fallback = state.files[0]?.path || '';
+      if (fallback && fallback !== initialCandidate) {
+        await openFile(fallback);
+      } else {
+        state.activePath = '';
+        $('active-file-path').textContent = 'untitled.excalidraw';
+        $('empty-canvas').hidden = !state.hasProject;
+        $('btn-ai-revise').disabled = true;
+      }
+    }
   } else {
-    $('empty-canvas').hidden = !state.hasProject;
-    $('btn-ai-revise').disabled = true;
-    if (!state.hasProject) {
-      mountOrUpdateCanvas(buildTemplateScene('blank', state.locale));
+    if (state.hasProject) {
+      $('empty-canvas').hidden = false;
+      $('btn-ai-revise').disabled = true;
+    }
+    await quickScanPromise;
+    const first = state.files[0]?.path || '';
+    if (first) {
+      await openFile(first);
+    } else if (!state.hasProject) {
+      void mountOrUpdateCanvas(buildTemplateScene('blank', state.locale));
     }
   }
 
+  renderRail();
   $('app').dataset.state = 'ready';
 }
 
