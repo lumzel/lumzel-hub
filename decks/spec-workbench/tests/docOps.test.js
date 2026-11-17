@@ -11,6 +11,9 @@ import {
   buildDesignReplyPrompt,
   buildTicketsReplyPrompt,
   deriveFeatureTitle,
+  extractDocCreatedAttr,
+  featureTimeInfo,
+  formatShortTime,
   generateFeatureId,
   parseDesignDocQuestions,
   parseTicketChoices,
@@ -158,6 +161,75 @@ test('sortFeaturesDesc orders features by newest timestamp first', () => {
     sorted.map(f => f.id),
     ['pending-newest', 'same-day-new', 'same-day-old', 'older'],
   );
+});
+
+test('sortFeaturesDesc defaults to created order and supports switching to updated order', () => {
+  const oct27 = Date.parse('2026-10-27T00:00:00');
+  const nov16Created = Date.parse('2026-11-16T21:03:00');
+  const nov17Created = Date.parse('2026-11-17T10:00:00');
+  const nov17Touched = Date.parse('2026-11-17T14:19:00');
+
+  const features = [
+    // Old disk feature touched by git pull/rebase at 14:19, plus legacy polluted meta.createdAt
+    { id: 'html-deck', updated: '2026-10-27' },
+    // Created via UI on Nov 16, later updated on Nov 17
+    { id: 'ui-feature', updated: '2026-11-17' },
+    // Created via CLI/chat with data-doc-created on Nov 17 10:00
+    { id: 'cli-feature', updated: '2026-11-17' },
+  ];
+  const metaMap = {
+    'html-deck': { createdAt: nov17Touched, updatedAt: nov17Touched },
+    'ui-feature': { pending: false, brief: 'build theme', createdAt: nov16Created, updatedAt: nov17Touched - 60000 },
+  };
+  const mtimes = {
+    'html-deck': nov17Touched,
+    'ui-feature': nov17Touched - 60000,
+    'cli-feature': nov17Created,
+  };
+  const docCreatedMap = {
+    'cli-feature': '2026-11-17T10:00:00',
+  };
+
+  // Default ('created') keeps newest-created first and ignores git mtime / polluted meta
+  const byCreated = sortFeaturesDesc(features, metaMap, mtimes, { docCreatedMap });
+  assert.deepEqual(
+    byCreated.map(f => f.id),
+    ['cli-feature', 'ui-feature', 'html-deck'],
+  );
+
+  // Explicit 'updated' orders by latest mtime/updatedAt
+  const byUpdated = sortFeaturesDesc(features, metaMap, mtimes, { sortBy: 'updated', docCreatedMap });
+  assert.deepEqual(
+    byUpdated.map(f => f.id),
+    ['html-deck', 'ui-feature', 'cli-feature'],
+  );
+
+  // Date-only created docs format without a fake 00:00 clock suffix
+  const htmlDeckCreated = featureTimeInfo(features[0], metaMap['html-deck'], mtimes['html-deck'], {
+    sortBy: 'created',
+  });
+  assert.equal(htmlDeckCreated.ms, oct27);
+  assert.equal(htmlDeckCreated.hasTime, false);
+  assert.equal(formatShortTime(htmlDeckCreated.ms, features[0].updated, { hasTime: htmlDeckCreated.hasTime }), '2026-10-27');
+
+  const uiCreated = featureTimeInfo(features[1], metaMap['ui-feature'], mtimes['ui-feature'], {
+    sortBy: 'created',
+  });
+  assert.equal(uiCreated.ms, nov16Created);
+  assert.equal(uiCreated.hasTime, true);
+  assert.equal(formatShortTime(uiCreated.ms, features[1].updated, { hasTime: uiCreated.hasTime }), '2026-11-16 21:03');
+});
+
+test('extractDocCreatedAttr parses data-doc-created and legacy data-lumzel-created from html tag', () => {
+  assert.equal(
+    extractDocCreatedAttr('<!doctype html>\n<html lang="en" data-doc-id="x" data-doc-created="2026-11-17T14:20:00Z">'),
+    '2026-11-17T14:20:00Z',
+  );
+  assert.equal(
+    extractDocCreatedAttr("<html lang='zh' data-lumzel-created='2026-10-28'>"),
+    '2026-10-28',
+  );
+  assert.equal(extractDocCreatedAttr('<html lang="en" data-doc-date="2026-10-28">'), '');
 });
 
 test('slugifyFeatureId produces safe unique kebab-case ids', () => {

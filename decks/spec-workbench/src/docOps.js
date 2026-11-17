@@ -401,30 +401,124 @@ export function todayIsoDate(now = new Date()) {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-/**
- * Compute best millisecond timestamp for a feature from disk mtime, store metadata, and doc date.
- */
-export function featureSortTimestamp(feature, meta = null, fileMtimeMs = 0) {
+export function extractDocCreatedAttr(html) {
+  if (!html) return '';
+  const rootMatch = String(html).match(/<html\b[^>]*>/i);
+  if (!rootMatch) return '';
+  const attrMatch = rootMatch[0].match(/\bdata-(?:doc|lumzel)-created\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+  return String(attrMatch?.[1] ?? attrMatch?.[2] ?? '').trim();
+}
+
+export function parseDocTimestamp(raw) {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return { ms: 0, hasTime: false };
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const parsed = Date.parse(`${trimmed}T00:00:00`);
+    return Number.isFinite(parsed) ? { ms: parsed, hasTime: false } : { ms: 0, hasTime: false };
+  }
+  if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(trimmed)) {
+    const parsed = Date.parse(trimmed);
+    return Number.isFinite(parsed) ? { ms: parsed, hasTime: true } : { ms: 0, hasTime: false };
+  }
+  return { ms: 0, hasTime: false };
+}
+
+function isTrustedCreatedMeta(meta, docCreatedInfo, docDateInfo) {
+  const createdMs = Number(meta?.createdAt) || 0;
+  if (createdMs <= 0) return false;
+  if (meta && ('pending' in meta || Boolean(meta.brief) || meta.createdSource === 'ui')) {
+    return true;
+  }
+  const refMs = docCreatedInfo.ms || docDateInfo.ms;
+  if (refMs > 0 && createdMs > refMs + 86400000) {
+    return false;
+  }
+  return true;
+}
+
+export function featureCreatedInfo(feature, meta = null, docCreated = '') {
+  const docCreatedValue = docCreated || meta?.docCreated || feature?.created || '';
+  const docCreatedInfo = parseDocTimestamp(docCreatedValue);
+  const docDateInfo = parseDocTimestamp(feature?.updated);
+  const createdMs = Number(meta?.createdAt) || 0;
+  const trustedMeta = isTrustedCreatedMeta(meta, docCreatedInfo, docDateInfo);
+
+  if (docCreatedInfo.ms > 0) {
+    if (docCreatedInfo.hasTime) {
+      return { ms: docCreatedInfo.ms, hasTime: true };
+    }
+    if (
+      trustedMeta &&
+      createdMs >= docCreatedInfo.ms - 86400000 &&
+      createdMs < docCreatedInfo.ms + 86400000
+    ) {
+      return { ms: createdMs, hasTime: true };
+    }
+    return docCreatedInfo;
+  }
+
+  if (trustedMeta) {
+    if (docDateInfo.ms > 0) {
+      const createdInUi = Boolean(meta && ('pending' in meta || meta.brief || meta.createdSource === 'ui'));
+      if (createdInUi || createdMs >= docDateInfo.ms) {
+        return { ms: createdMs, hasTime: true };
+      }
+      return docDateInfo;
+    }
+    return { ms: createdMs, hasTime: true };
+  }
+
+  if (docDateInfo.ms > 0) return docDateInfo;
+  return { ms: 0, hasTime: false };
+}
+
+export function featureUpdatedInfo(feature, meta = null, fileMtimeMs = 0) {
   const updatedMs = Number(meta?.updatedAt) || 0;
   const createdMs = Number(meta?.createdAt) || 0;
   const mtime = Number(fileMtimeMs) || 0;
-  let dateMs = 0;
-  if (feature?.updated && /^\d{4}-\d{2}-\d{2}$/.test(feature.updated)) {
-    const parsed = Date.parse(`${feature.updated}T00:00:00`);
-    if (Number.isFinite(parsed)) dateMs = parsed;
+  const docDateInfo = parseDocTimestamp(feature?.updated);
+  const bestExact = Math.max(mtime, updatedMs, createdMs);
+  if (docDateInfo.ms > bestExact) {
+    return docDateInfo;
   }
-  return Math.max(mtime, updatedMs, createdMs, dateMs);
+  if (bestExact > 0) {
+    return { ms: bestExact, hasTime: true };
+  }
+  return { ms: 0, hasTime: false };
+}
+
+export function featureTimeInfo(feature, meta = null, fileMtimeMs = 0, options = {}) {
+  const sortBy = options?.sortBy === 'updated' ? 'updated' : 'created';
+  if (sortBy === 'updated') {
+    return featureUpdatedInfo(feature, meta, fileMtimeMs);
+  }
+  return featureCreatedInfo(feature, meta, options?.docCreated || '');
+}
+
+/**
+ * Compute best millisecond timestamp for a feature according to `sortBy` ('created' | 'updated').
+ */
+export function featureSortTimestamp(feature, meta = null, fileMtimeMs = 0, options = {}) {
+  return featureTimeInfo(feature, meta, fileMtimeMs, options).ms;
 }
 
 /**
  * Sort features (including pending features) in reverse chronological order (newest first).
  */
-export function sortFeaturesDesc(features, metaMap = {}, fileMtimeMap = {}) {
+export function sortFeaturesDesc(features, metaMap = {}, fileMtimeMap = {}, options = {}) {
+  const sortBy = options?.sortBy === 'updated' ? 'updated' : 'created';
+  const docCreatedMap = options?.docCreatedMap || {};
   return [...(features || [])].sort((a, b) => {
     const ma = metaMap[a.id] || null;
     const mb = metaMap[b.id] || null;
-    const ta = featureSortTimestamp(a, ma, fileMtimeMap[a.id] || 0);
-    const tb = featureSortTimestamp(b, mb, fileMtimeMap[b.id] || 0);
+    const ta = featureSortTimestamp(a, ma, fileMtimeMap[a.id] || 0, {
+      sortBy,
+      docCreated: docCreatedMap[a.id] || '',
+    });
+    const tb = featureSortTimestamp(b, mb, fileMtimeMap[b.id] || 0, {
+      sortBy,
+      docCreated: docCreatedMap[b.id] || '',
+    });
     if (tb !== ta) return tb - ta;
     const ca = Number(ma?.createdAt) || 0;
     const cb = Number(mb?.createdAt) || 0;
@@ -433,12 +527,14 @@ export function sortFeaturesDesc(features, metaMap = {}, fileMtimeMap = {}) {
   });
 }
 
-export function formatShortTime(tsMs, fallbackDate = '') {
+export function formatShortTime(tsMs, fallbackDate = '', options = {}) {
   const ts = Number(tsMs);
+  const hasTime = options?.hasTime !== false;
   if (Number.isFinite(ts) && ts > 0) {
     const d = new Date(ts);
     const pad = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const datePart = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    return hasTime ? `${datePart} ${pad(d.getHours())}:${pad(d.getMinutes())}` : datePart;
   }
   return fallbackDate || '';
 }

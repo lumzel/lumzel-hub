@@ -62,7 +62,7 @@ The doc goes stale the moment code moves. Close the gap before reporting done. U
    - line numbers moved → fix the `file:line` links
    - a ticket delivers the Node (a `delivers` item has `data-doc-links="<design-path>#<node-id>"`) → copy the new status to that item
 4. Changed code with no Node: add the Node to the right block, or tell the user it is undocumented.
-5. Bump `data-doc-date` on the doc's `<html>` to today.
+5. Bump `data-doc-date` on the doc's `<html>` to today (keep `data-doc-created` unchanged).
 6. Run `doc check`. Zero problems before you report.
 
 ## Scaffold, check, confirm
@@ -77,7 +77,7 @@ Lumzel only provides `pnpm lumzel check [file]` when a project has a `lumzel` sc
 | `doc confirm <id>` | set `data-doc-status="confirmed"` on `design.html`'s `<html>` and hero `<span class="pill s-confirmed">confirmed</span>` (only when every `decisions` item has `data-doc-answer`) |
 | Trace | derived automatically by Lumzel from ticket `#delivers` (`data-doc-links`) and `design.html` `#tickets` (`data-doc-ticket`, `data-doc-blocked-by`) |
 
-After copying a scaffold: set `data-doc-id` (design: `<id>`; ticket: `<doc-id>-<NN>`), `data-doc-date` to today, the `<title>`, the `<h1>` and the `.docid` shown in the hero, and replace every `sample` path in it with the real one.
+After copying a scaffold: set `data-doc-id` (design: `<id>`; ticket: `<doc-id>-<NN>`), `data-doc-date` to today (and on a new `design.html` set `data-doc-created` to today or an ISO-8601 timestamp, keeping it immutable on future edits), the `<title>`, the `<h1>` and the `.docid` shown in the hero, and replace every `sample` path in it with the real one.
 
 `doc check` checklist, for each doc you touched:
 

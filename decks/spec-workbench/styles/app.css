@@ -171,12 +171,22 @@ button:disabled {
   gap: 6px;
 }
 .sort-badge {
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 999px;
   background: var(--surface-selected);
   color: var(--muted);
   font-size: 10px;
   font-weight: 500;
+  line-height: 1.5;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.sort-badge:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+.sort-badge.is-updated {
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 .ico {
   display: inline-grid;

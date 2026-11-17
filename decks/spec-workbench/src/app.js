@@ -10,7 +10,8 @@ import {
   buildDesignReplyPrompt,
   buildTicketsReplyPrompt,
   deriveFeatureTitle,
-  featureSortTimestamp,
+  extractDocCreatedAttr,
+  featureTimeInfo,
   formatShortTime,
   generateFeatureId,
   parseDesignDocQuestions,
@@ -40,6 +41,9 @@ const state = {
   featureMeta: {}, // id -> { id, title, brief, pending, createdAt, updatedAt, previousStatus, archived, archivedAt }
   ticketMeta: {}, // path -> { path, featureId, archived, archivedAt }
   fileMtimeMap: {}, // id -> max modifiedAt ms
+  docCreatedMap: {}, // id -> raw data-doc-created attribute from design.html
+  docCreatedCache: {}, // id -> { mtime, created }
+  sortBy: 'created', // 'created' | 'updated'
   sessions: {}, // slotKey -> { slotKey, featureId, kind, ticketPath, sessionId, status, updatedAt }
   liveSessionStatus: {}, // featureId -> { designReusable, designSessionId, designStatus, ticketsReusable, ticketsSessionId, ticketsStatus }
   qaData: {}, // featureId -> { design: { open, settled, hasTicketsBlock }, ticketChoices: [...], nodeLabels: {...}, loadedKey }
@@ -272,7 +276,7 @@ function canUseStore() {
 }
 
 async function saveFeatureMeta(id, patch) {
-  const prev = state.featureMeta[id] || { id, createdAt: Date.now() };
+  const prev = state.featureMeta[id] || { id };
   const next = { ...prev, ...patch, id };
   state.featureMeta[id] = next;
   if (canUseStore()) {
@@ -321,6 +325,31 @@ async function setRailCollapsed(collapsed) {
   syncRailToggle();
   if (canUseStore()) {
     await window.deck.store.put('ui', 'railCollapsed', { collapsed: state.railCollapsed }).catch(() => {});
+  }
+}
+
+function syncSortToggle() {
+  const btn = $('sort-toggle');
+  if (!btn) return;
+  const isUpdated = state.sortBy === 'updated';
+  btn.textContent = t(isUpdated ? 'sortUpdated' : 'sortCreated');
+  btn.classList.toggle('is-updated', isUpdated);
+  btn.setAttribute('aria-pressed', isUpdated ? 'true' : 'false');
+  const modeLabel = t(isUpdated ? 'sortUpdatedLabel' : 'sortCreatedLabel');
+  const hint = t('sortToggleHint', { mode: modeLabel });
+  btn.title = hint;
+  btn.setAttribute('aria-label', hint);
+}
+
+async function setSortBy(nextSort) {
+  state.sortBy = nextSort === 'updated' ? 'updated' : 'created';
+  state.features = sortFeaturesDesc(state.features, state.featureMeta, state.fileMtimeMap, {
+    sortBy: state.sortBy,
+    docCreatedMap: state.docCreatedMap,
+  });
+  render();
+  if (canUseStore()) {
+    await window.deck.store.put('ui', 'sortBy', { sortBy: state.sortBy }).catch(() => {});
   }
 }
 
@@ -664,8 +693,11 @@ function buildFeatureRailItem(f, archived = false) {
   const p = progress(f);
   const activeRuns = activeSessionsForFeature(f.id);
   const hasWait = activeRuns.some(r => r.status === 'needs_input');
-  const ts = featureSortTimestamp(f, state.featureMeta[f.id], state.fileMtimeMap[f.id] || 0);
-  const timeText = formatShortTime(ts, f.updated);
+  const timeInfo = featureTimeInfo(f, state.featureMeta[f.id], state.fileMtimeMap[f.id] || 0, {
+    sortBy: state.sortBy,
+    docCreated: state.docCreatedMap[f.id] || '',
+  });
+  const timeText = formatShortTime(timeInfo.ms, f.updated, { hasTime: timeInfo.hasTime });
   const subText = f.pending
     ? t('pendingStatus')
     : p.all
@@ -713,6 +745,7 @@ function buildFeatureRailItem(f, archived = false) {
 }
 
 function renderRail() {
+  syncSortToggle();
   const active = [];
   const archived = [];
   for (const f of state.features) {
@@ -858,8 +891,21 @@ function renderFeature() {
   statusEl.textContent = docStatusLabel(f.status);
   statusEl.dataset.status = f.status || '';
   $('f-archived').hidden = !isFeatureArchived(f.id);
-  const ts = featureSortTimestamp(f, state.featureMeta[f.id], state.fileMtimeMap[f.id] || 0);
-  $('f-time').textContent = formatShortTime(ts, f.updated);
+  const meta = state.featureMeta[f.id];
+  const mtime = state.fileMtimeMap[f.id] || 0;
+  const docCreated = state.docCreatedMap[f.id] || '';
+  const curTime = featureTimeInfo(f, meta, mtime, { sortBy: state.sortBy, docCreated });
+  const createdInfo = featureTimeInfo(f, meta, mtime, { sortBy: 'created', docCreated });
+  const updatedInfo = featureTimeInfo(f, meta, mtime, { sortBy: 'updated', docCreated });
+  $('f-time').textContent = formatShortTime(curTime.ms, f.updated, { hasTime: curTime.hasTime });
+  const createdLabel = formatShortTime(createdInfo.ms, f.updated, { hasTime: createdInfo.hasTime });
+  const updatedLabel = formatShortTime(updatedInfo.ms, f.updated, { hasTime: updatedInfo.hasTime });
+  $('f-time').title = [
+    createdLabel ? `${t('sortCreatedLabel')}: ${createdLabel}` : '',
+    updatedLabel ? `${t('sortUpdatedLabel')}: ${updatedLabel}` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
   $('f-summary').textContent = f.summary || '';
   const activeTickets = activeFeatureTickets(f);
   $('t-count').textContent = activeTickets.length ? String(activeTickets.length) : '';
@@ -1723,14 +1769,52 @@ async function fetchFeatureMtimes(diskFeatures) {
   return map;
 }
 
+async function fetchFeatureDocCreated(diskFeatures, mtimeMap = {}) {
+  if (!Array.isArray(diskFeatures) || diskFeatures.length === 0) return {};
+  if (state.preview) {
+    const sampleDocs = getSampleData(getLocale()).docs || {};
+    const map = {};
+    for (const f of diskFeatures) {
+      const created = extractDocCreatedAttr(sampleDocs[f.design] || '');
+      if (created) map[f.id] = created;
+    }
+    return map;
+  }
+  if (typeof window.deck?.files?.read !== 'function') return {};
+  const map = {};
+  await Promise.all(
+    diskFeatures.map(async f => {
+      if (!f?.id || !f?.design) return;
+      const mtime = Number(mtimeMap[f.id]) || 0;
+      const cached = state.docCreatedCache[f.id];
+      if (cached && cached.mtime === mtime) {
+        if (cached.created) map[f.id] = cached.created;
+        return;
+      }
+      try {
+        const res = await window.deck.files.read(f.design, { encoding: 'utf8' });
+        const created = extractDocCreatedAttr(res?.content || '');
+        state.docCreatedCache[f.id] = { mtime, created };
+        if (created) map[f.id] = created;
+      } catch {
+        // ignore unreadable design doc
+      }
+    }),
+  );
+  return map;
+}
+
 async function syncStoreFromDisk(diskFeatures) {
   if (!canUseStore() || typeof window.deck?.store?.list !== 'function') return;
-  const [metaEntries, ticketEntries, sessEntries, railPref] = await Promise.all([
+  const [metaEntries, ticketEntries, sessEntries, railPref, sortPref] = await Promise.all([
     window.deck.store.list('features').catch(() => []),
     window.deck.store.list('tickets').catch(() => []),
     window.deck.store.list('sessions').catch(() => []),
     typeof window.deck?.store?.get === 'function'
       ? window.deck.store.get('ui', 'railCollapsed').catch(() => null)
+      : Promise.resolve(null),
+    typeof window.deck?.store?.get === 'function'
+      ? window.deck.store.get('ui', 'sortBy').catch(() => null)
       : Promise.resolve(null),
   ]);
 
@@ -1755,6 +1839,9 @@ async function syncStoreFromDisk(diskFeatures) {
 
   if (railPref && typeof railPref === 'object' && 'collapsed' in railPref) {
     state.railCollapsed = Boolean(railPref.collapsed);
+  }
+  if (sortPref && typeof sortPref === 'object' && (sortPref.sortBy === 'created' || sortPref.sortBy === 'updated')) {
+    state.sortBy = sortPref.sortBy;
   }
 
   const sessMap = {};
@@ -1842,6 +1929,7 @@ async function load({ reload = false } = {}) {
         await syncStoreFromDisk(index.features || []);
         state.fileMtimeMap = await fetchFeatureMtimes(index.features || []);
       }
+      state.docCreatedMap = await fetchFeatureDocCreated(index.features || [], state.fileMtimeMap);
 
       const diskFeatures = index.features || [];
       const diskIds = new Set(diskFeatures.map(f => f.id));
@@ -1862,7 +1950,10 @@ async function load({ reload = false } = {}) {
         }));
 
       state.index = index;
-      state.features = sortFeaturesDesc([...diskFeatures, ...pendingFeatures], state.featureMeta, state.fileMtimeMap);
+      state.features = sortFeaturesDesc([...diskFeatures, ...pendingFeatures], state.featureMeta, state.fileMtimeMap, {
+        sortBy: state.sortBy,
+        docCreatedMap: state.docCreatedMap,
+      });
 
       if (!state.features.some(f => f.id === state.featureId)) {
         const activeFeatures = state.features.filter(f => f.pending || !isFeatureArchived(f.id));
@@ -2582,6 +2673,8 @@ async function deleteFeatureAction(f) {
   await Promise.all(ticketPaths.map(path => deleteTicketMeta(path)));
 
   await deleteFeatureMeta(f.id);
+  delete state.docCreatedMap[f.id];
+  delete state.docCreatedCache[f.id];
   delete state.qaData[f.id];
   delete state.liveSessionStatus[f.id];
   delete state.designDrafts[f.id];
@@ -2782,7 +2875,7 @@ async function submitNew() {
       prompt: [
         `New Feature ID: ${id}`,
         `Requirement description:\n${brief}`,
-        `Please automatically derive a concise, accurate Feature Name from the requirement description above (do NOT copy the whole prompt verbatim) and set <title> and <h1> to that generated Feature Name. Follow spec-workbench-html to create docs/features/${id}/design.html from scaffolds/design.html with data-doc-id="${id}", keeping the decision tree visible. Do NOT write any docs/results/ file.`,
+        `Please automatically derive a concise, accurate Feature Name from the requirement description above (do NOT copy the whole prompt verbatim) and set <title> and <h1> to that generated Feature Name. Follow spec-workbench-html to create docs/features/${id}/design.html from scaffolds/design.html with data-doc-id="${id}", data-doc-created="${new Date(now).toISOString()}", and data-doc-date="${todayIsoDate(new Date(now))}", keeping the decision tree visible. Do NOT write any docs/results/ file.`,
       ].join('\n\n'),
       actionId: `create-feature:${id}`,
     });
@@ -2826,6 +2919,7 @@ $('empty-new').addEventListener('click', openNew);
 
 // ---------- wiring
 
+$('sort-toggle')?.addEventListener('click', () => void setSortBy(state.sortBy === 'created' ? 'updated' : 'created'));
 $('rail-toggle').addEventListener('click', () => void setRailCollapsed(!state.railCollapsed));
 $('f-more').addEventListener('click', e => {
   e.stopPropagation();

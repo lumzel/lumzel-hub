@@ -15,7 +15,7 @@ Links inside `.meta` are relative to the doc: `<rel>/<path>`.
 
 ```html
 <!doctype html>
-<html lang="en" data-doc-id="invoice-cache" data-doc-type="design" data-doc-status="draft" data-doc-date="2026-10-28">
+<html lang="en" data-doc-id="invoice-cache" data-doc-type="design" data-doc-status="draft" data-doc-created="2026-10-28" data-doc-date="2026-10-28">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -35,7 +35,7 @@ Links inside `.meta` are relative to the doc: `<rel>/<path>`.
 ```
 
 - `data-doc-id`: the doc id (folder name for designs, `NN-slug` for tickets).
-- `data-doc-type`: `design` | `ticket`. `data-doc-status`: `draft` | `confirmed` | `done`. `data-doc-date`: `YYYY-MM-DD`, bump on every edit. Keep the hero pills in step with these.
+- `data-doc-type`: `design` | `ticket`. `data-doc-status`: `draft` | `confirmed` | `done`. `data-doc-created`: immutable creation date/timestamp (`YYYY-MM-DD` or ISO-8601) set once on new designs. `data-doc-date`: `YYYY-MM-DD`, bump on every edit. Keep the hero pills in step with these.
 - Set `lang` on `<html>` to match the doc language (`en`, `zh`, etc.).
 - No `<link>`, no `<style>`, no `<script src>`, no external resources: the Deck styles the page when it shows it.
 

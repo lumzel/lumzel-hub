@@ -2,7 +2,11 @@
 export const STRINGS = {
   zh: {
     featuresHeader: "需求列表",
-    sortDescHint: "时间倒序",
+    sortCreated: "创建时间 ↓",
+    sortUpdated: "更新时间 ↓",
+    sortToggleHint: "当前按{mode}排序，点击切换（创建时间 / 更新时间）",
+    sortCreatedLabel: "创建时间",
+    sortUpdatedLabel: "更新时间",
     collapseRail: "收起需求列表",
     expandRail: "展开需求列表",
     refresh: "刷新",
@@ -161,7 +165,11 @@ export const STRINGS = {
   },
   en: {
     featuresHeader: "Features",
-    sortDescHint: "Newest first",
+    sortCreated: "Created ↓",
+    sortUpdated: "Updated ↓",
+    sortToggleHint: "Sorted by {mode} — click to switch (Created / Updated)",
+    sortCreatedLabel: "Created",
+    sortUpdatedLabel: "Updated",
     collapseRail: "Collapse feature list",
     expandRail: "Expand feature list",
     refresh: "Refresh",
