@@ -152,6 +152,10 @@ const STRINGS = {
     agentSavedDefault: 'Saved as project Deck default',
     deckSettings: 'Deck Settings',
     reviseModelLabel: 'Run with',
+    inspectorToggle: 'Inspector',
+    regenIdTitle: 'Generate new ID',
+    fieldIdPh: 'Auto-generated (editable)',
+    closePanel: 'Close',
   },
   'zh-CN': {
     brandTitle: 'OpenDesign',
@@ -304,6 +308,10 @@ const STRINGS = {
     agentSavedDefault: '已保存为当前项目的 Deck 默认配置',
     deckSettings: 'Deck 设置',
     reviseModelLabel: '当前执行模型',
+    inspectorToggle: '批注面板',
+    regenIdTitle: '重新生成 ID',
+    fieldIdPh: '自动生成（可自定义）',
+    closePanel: '关闭',
   },
 };
 

@@ -16,6 +16,14 @@ import {
   parseTokensCss,
   serializeTokensCss,
 } from './canvasBridge.js';
+import {
+  focusUiSelect,
+  getUiSelectValue,
+  initUiSelect,
+  isSelectMenuOwnedBy,
+  setUiSelectOptions,
+  setUiSelectValue,
+} from './uiSelect.js';
 
 const $ = id => document.getElementById(id);
 
@@ -106,6 +114,9 @@ const state = {
   agentCatalog: null,
   selectedAgent: { provider: '', model: '', effort: '' },
   agentMenuOpen: false,
+  narrowDrawer: '', // '' | 'rail' | 'inspector'
+  draftAutoId: '',
+  draftSystemSlug: '',
   params: { defaultSurface: 'prototype', skipDirectionGate: false, designNotes: '' },
 };
 
@@ -147,6 +158,48 @@ function slugify(text) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 48);
+}
+
+function shortRandomToken(len = 6) {
+  const timePart = Date.now().toString(36).slice(-3);
+  const randPart = Math.random().toString(36).slice(2, 2 + Math.max(2, len - 3));
+  return `${timePart}${randPart}`.replace(/[^a-z0-9]/g, '').slice(0, len);
+}
+
+function ensureUniqueSlug(base, usedSet) {
+  const clean = slugify(base) || `design-${shortRandomToken(6)}`;
+  if (!usedSet.has(clean)) return clean;
+  let n = 2;
+  while (usedSet.has(`${clean}-${n}`)) n += 1;
+  return `${clean}-${n}`;
+}
+
+function generateArtifactId(title = '', surface = 'prototype', avoid = '') {
+  const used = new Set(state.artifacts.map(a => a.id));
+  if (avoid) used.add(avoid);
+  const fromTitle = slugify(title);
+  if (fromTitle) return ensureUniqueSlug(fromTitle, used);
+  const prefixMap = {
+    prototype: 'proto',
+    dashboard: 'dash',
+    mobile: 'mobile',
+    slides: 'slides',
+    slide: 'slides',
+  };
+  const prefix = prefixMap[surface] || 'design';
+  return ensureUniqueSlug(`${prefix}-${shortRandomToken(6)}`, used);
+}
+
+function generateSystemSlug(name = '', avoid = '') {
+  const used = new Set(state.systems.map(s => s.slug));
+  if (avoid) used.add(avoid);
+  const fromName = slugify(name);
+  if (fromName) return ensureUniqueSlug(fromName, used);
+  return ensureUniqueSlug(`system-${shortRandomToken(6)}`, used);
+}
+
+function isNarrowViewport() {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 980px)').matches;
 }
 
 function currentArtifact() {
@@ -356,30 +409,89 @@ function populateAgentSelectTriplet(agentSel, modelSel, effortSel, effortRow, in
   if (!agentSel || !modelSel || !effortSel) return;
   const selected = state.selectedAgent;
   const hostName = info.hostAgent?.name || info.hostAgent?.id || 'Default';
-  agentSel.replaceChildren(
-    el('option', { value: '' }, t('agentFollowHost', { name: hostName })),
-    ...info.agents.map(a => el('option', { value: a.id }, a.name || a.id)),
+  const nextAgent = selected.provider && info.agents.some(a => a.id === selected.provider) ? selected.provider : '';
+  setUiSelectOptions(
+    agentSel,
+    [
+      { value: '', label: t('agentFollowHost', { name: hostName }), muted: true },
+      ...info.agents.map(a => ({ value: a.id, label: a.name || a.id })),
+    ],
+    nextAgent,
   );
-  agentSel.value = selected.provider && info.agents.some(a => a.id === selected.provider) ? selected.provider : '';
 
   const defModelObj = info.models.find(m => m.id === info.defaultModelId);
   const defModelLabel = defModelObj?.name || info.defaultModelId || '—';
-  modelSel.replaceChildren(
-    el('option', { value: '' }, t('agentFollowDefaultModel', { name: defModelLabel })),
-    ...info.models.map(m => el('option', { value: m.id }, m.name || m.id)),
+  const nextModel = selected.model && info.models.some(m => m.id === selected.model) ? selected.model : '';
+  setUiSelectOptions(
+    modelSel,
+    [
+      { value: '', label: t('agentFollowDefaultModel', { name: defModelLabel }), muted: true },
+      ...info.models.map(m => ({ value: m.id, label: m.name || m.id })),
+    ],
+    nextModel,
   );
-  modelSel.value = selected.model && info.models.some(m => m.id === selected.model) ? selected.model : '';
 
   if (effortRow) effortRow.hidden = info.efforts.length === 0;
   if (info.efforts.length > 0) {
-    effortSel.replaceChildren(
-      el('option', { value: '' }, t('agentFollowDefaultEffort', { effort: info.defaultEffort || info.efforts[0] })),
-      ...info.efforts.map(e => el('option', { value: e }, e)),
+    const nextEffort = selected.effort && info.efforts.includes(selected.effort) ? selected.effort : '';
+    setUiSelectOptions(
+      effortSel,
+      [
+        { value: '', label: t('agentFollowDefaultEffort', { effort: info.defaultEffort || info.efforts[0] }), muted: true },
+        ...info.efforts.map(e => ({ value: e, label: e })),
+      ],
+      nextEffort,
     );
-    effortSel.value = selected.effort && info.efforts.includes(selected.effort) ? selected.effort : '';
   } else {
-    effortSel.replaceChildren();
+    setUiSelectOptions(effortSel, [], '');
   }
+}
+
+function renderStaticSelects() {
+  const surfaceSel = $('new-surface');
+  if (surfaceSel) {
+    const cur = getUiSelectValue(surfaceSel) || 'prototype';
+    setUiSelectOptions(
+      surfaceSel,
+      [
+        { value: 'prototype', label: t('surfacePrototype') },
+        { value: 'dashboard', label: t('surfaceDashboard') },
+        { value: 'mobile', label: t('surfaceMobile') },
+        { value: 'slides', label: t('surfaceSlides') },
+      ],
+      cur,
+    );
+  }
+
+  const sourceSel = $('ext-source-kind');
+  if (sourceSel) {
+    const cur = getUiSelectValue(sourceSel) || 'codebase';
+    setUiSelectOptions(
+      sourceSel,
+      [
+        { value: 'codebase', label: t('sourceCodebase') },
+        { value: 'url', label: t('sourceUrl') },
+        { value: 'brief', label: t('sourceBrief') },
+      ],
+      cur,
+    );
+  }
+}
+
+function syncNarrowDrawers() {
+  if (!isNarrowViewport() && state.narrowDrawer) {
+    state.narrowDrawer = '';
+  }
+  const canvasPane = $('view-canvas');
+  const railOpen = state.narrowDrawer === 'rail';
+  const insOpen = state.narrowDrawer === 'inspector';
+  if (canvasPane) {
+    canvasPane.dataset.drawer = state.narrowDrawer || '';
+  }
+  const scrim = $('drawer-scrim');
+  if (scrim) scrim.hidden = !railOpen && !insOpen;
+  $('btn-toggle-rail')?.setAttribute('aria-expanded', railOpen ? 'true' : 'false');
+  $('btn-toggle-inspector')?.setAttribute('aria-expanded', insOpen ? 'true' : 'false');
 }
 
 function renderAgentControls() {
@@ -496,10 +608,16 @@ function renderTopbar() {
   $('view-canvas').hidden = state.view !== 'canvas';
   $('view-systems').hidden = state.view !== 'systems';
   $('view-workflows').hidden = state.view !== 'workflows';
+  if (state.view !== 'canvas' && state.narrowDrawer) {
+    state.narrowDrawer = '';
+  }
+  syncNarrowDrawers();
 }
 
 function renderArtifactRail() {
-  $('artifact-count').textContent = String(state.artifacts.length);
+  const countText = String(state.artifacts.length);
+  $('artifact-count').textContent = countText;
+  if ($('toolbar-artifact-count')) $('toolbar-artifact-count').textContent = countText;
   const list = $('artifact-list');
   if (!state.artifacts.length) {
     list.replaceChildren(el('p', { class: 'hint-sm', style: 'padding:8px 4px;' }, t('emptyArtifacts')));
@@ -517,6 +635,7 @@ function renderArtifactRail() {
             state.activeVersion = null;
             state.selectedEl = null;
             state.lastRenderedKey = '';
+            if (isNarrowViewport()) state.narrowDrawer = '';
             renderAll();
           },
         },
@@ -546,7 +665,9 @@ function renderInspector() {
   $('ins-versions').hidden = state.insTab !== 'versions';
 
   const comments = art ? state.comments[art.id] || [] : [];
-  $('comment-count').textContent = String(comments.length);
+  const commentCountText = String(comments.length);
+  $('comment-count').textContent = commentCountText;
+  if ($('toolbar-comment-count')) $('toolbar-comment-count').textContent = commentCountText;
 
   const selVal = $('selected-val');
   if (state.selectedEl) {
@@ -858,7 +979,7 @@ function renderSystemsView() {
       ),
       el(
         'div',
-        { class: 'spec-card', style: 'display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;' },
+        { class: 'spec-card spec-swatches' },
         ...[
           ['--od-bg', vars['--od-bg']],
           ['--od-surface', vars['--od-surface']],
@@ -1481,14 +1602,52 @@ async function retryWorkflowNode(runId, nodeId) {
 
 // ---------- Modals & Init
 
+function initSelects() {
+  for (const id of [
+    'od-agent-select',
+    'od-model-select',
+    'od-effort-select',
+    'new-surface',
+    'new-system',
+    'new-agent',
+    'new-model',
+    'new-effort',
+    'ext-source-kind',
+    'ext-agent',
+    'ext-model',
+    'ext-effort',
+  ]) {
+    initUiSelect($(id));
+  }
+}
+
 function openNewDesignModal() {
   state.agentMenuOpen = false;
-  $('new-system').replaceChildren(
-    ...state.systems.map(s => el('option', { value: s.slug, selected: s.slug === state.activeSystemSlug }, s.name)),
+  $('new-title').value = '';
+  $('new-brief').value = '';
+  delete $('new-id').dataset.touched;
+
+  const rawDefaultSurface = state.params?.defaultSurface;
+  const normalizedSurface = rawDefaultSurface === 'slide' ? 'slides' : rawDefaultSurface || 'prototype';
+  renderStaticSelects();
+  setUiSelectValue($('new-surface'), normalizedSurface);
+
+  setUiSelectOptions(
+    $('new-system'),
+    state.systems.map(s => {
+      const parsed = parseTokensCss(s.tokensCss);
+      return {
+        value: s.slug,
+        label: s.name,
+        swatch: parsed['--od-accent'] || s.swatches?.[3] || '#0070e3',
+      };
+    }),
+    state.activeSystemSlug,
   );
-  if ($('new-surface') && state.params?.defaultSurface) {
-    $('new-surface').value = state.params.defaultSurface;
-  }
+
+  state.draftAutoId = generateArtifactId('', getUiSelectValue($('new-surface')) || 'prototype');
+  $('new-id').value = state.draftAutoId;
+
   if ($('new-skip-gate')) {
     $('new-skip-gate').checked = Boolean(state.params?.skipDirectionGate);
   }
@@ -1500,6 +1659,12 @@ function openNewDesignModal() {
 
 function openExtractModal() {
   state.agentMenuOpen = false;
+  $('ext-name').value = '';
+  $('ext-source-val').value = '';
+  delete $('ext-slug').dataset.touched;
+  renderStaticSelects();
+  state.draftSystemSlug = generateSystemSlug('');
+  $('ext-slug').value = state.draftSystemSlug;
   $('ext-err').textContent = '';
   renderAgentControls();
   $('modal-extract').hidden = false;
@@ -1507,12 +1672,52 @@ function openExtractModal() {
 }
 
 function bindEvents() {
+  initSelects();
+
   for (const btn of document.querySelectorAll('.main-tab')) {
     btn.addEventListener('click', () => {
       state.view = btn.dataset.view;
       renderAll();
     });
   }
+  $('btn-toggle-rail')?.addEventListener('click', () => {
+    state.narrowDrawer = state.narrowDrawer === 'rail' ? '' : 'rail';
+    syncNarrowDrawers();
+  });
+  $('btn-toggle-inspector')?.addEventListener('click', () => {
+    state.narrowDrawer = state.narrowDrawer === 'inspector' ? '' : 'inspector';
+    syncNarrowDrawers();
+  });
+  $('btn-close-rail')?.addEventListener('click', () => {
+    state.narrowDrawer = '';
+    syncNarrowDrawers();
+  });
+  $('btn-close-inspector')?.addEventListener('click', () => {
+    state.narrowDrawer = '';
+    syncNarrowDrawers();
+  });
+  $('drawer-scrim')?.addEventListener('click', () => {
+    state.narrowDrawer = '';
+    syncNarrowDrawers();
+  });
+  const narrowMql = typeof window.matchMedia === 'function' ? window.matchMedia('(max-width: 980px)') : null;
+  if (narrowMql) {
+    const onBpChange = () => {
+      if (!narrowMql.matches && state.narrowDrawer) {
+        state.narrowDrawer = '';
+        syncNarrowDrawers();
+      }
+    };
+    if (typeof narrowMql.addEventListener === 'function') narrowMql.addEventListener('change', onBpChange);
+    else narrowMql.addListener?.(onBpChange);
+  }
+  window.addEventListener('resize', () => {
+    if (!isNarrowViewport() && state.narrowDrawer) {
+      state.narrowDrawer = '';
+      syncNarrowDrawers();
+    }
+  });
+
   $('agent-override-pill').addEventListener('click', e => {
     e.stopPropagation();
     state.agentMenuOpen = !state.agentMenuOpen;
@@ -1522,7 +1727,7 @@ function bindEvents() {
     e.stopPropagation();
     state.agentMenuOpen = true;
     renderAgentControls();
-    $('od-model-select').focus();
+    focusUiSelect($('od-model-select'));
   });
   $('od-agent-reset').addEventListener('click', () => {
     resetAgentDefaults();
@@ -1536,19 +1741,31 @@ function bindEvents() {
     ['ext-agent', 'ext-model', 'ext-effort'],
   ]) {
     $(agentId).addEventListener('change', e => {
-      setAgentOverride({ provider: e.target.value, model: '', effort: '' });
+      setAgentOverride({ provider: getUiSelectValue(e.currentTarget), model: '', effort: '' });
     });
     $(modelId).addEventListener('change', e => {
-      setAgentOverride({ model: e.target.value, effort: '' });
+      setAgentOverride({ model: getUiSelectValue(e.currentTarget), effort: '' });
     });
     $(effortId).addEventListener('change', e => {
-      setAgentOverride({ effort: e.target.value });
+      setAgentOverride({ effort: getUiSelectValue(e.currentTarget) });
     });
   }
   document.addEventListener('pointerdown', e => {
     if (!state.agentMenuOpen) return;
     const wrap = $('agent-override-wrap');
-    if (wrap && !wrap.contains(e.target) && e.target !== $('revise-agent-chip')) {
+    if (
+      wrap &&
+      !wrap.contains(e.target) &&
+      !isSelectMenuOwnedBy(e.target, wrap) &&
+      e.target !== $('revise-agent-chip') &&
+      !$('revise-agent-chip')?.contains(e.target)
+    ) {
+      state.agentMenuOpen = false;
+      renderAgentControls();
+    }
+  });
+  window.addEventListener('blur', () => {
+    if (state.agentMenuOpen && document.activeElement === $('canvas-iframe')) {
       state.agentMenuOpen = false;
       renderAgentControls();
     }
@@ -1676,15 +1893,35 @@ function bindEvents() {
 
   // Modals
   $('new-title').addEventListener('input', e => {
-    if (!$('new-id').dataset.touched) $('new-id').value = slugify(e.target.value);
+    if ($('new-id').dataset.touched) return;
+    const slug = slugify(e.target.value);
+    const used = new Set(state.artifacts.map(a => a.id));
+    $('new-id').value = slug ? ensureUniqueSlug(slug, used) : state.draftAutoId;
+  });
+  $('new-surface').addEventListener('change', () => {
+    if ($('new-id').dataset.touched || slugify($('new-title').value)) return;
+    state.draftAutoId = generateArtifactId('', getUiSelectValue($('new-surface')) || 'prototype');
+    $('new-id').value = state.draftAutoId;
   });
   $('new-id').addEventListener('input', () => {
-    $('new-id').dataset.touched = '1';
+    if ($('new-id').value.trim()) $('new-id').dataset.touched = '1';
+    else delete $('new-id').dataset.touched;
+  });
+  $('btn-regen-id').addEventListener('click', () => {
+    delete $('new-id').dataset.touched;
+    const surface = getUiSelectValue($('new-surface')) || 'prototype';
+    const nextId = generateArtifactId('', surface, $('new-id').value.trim());
+    state.draftAutoId = nextId;
+    $('new-id').value = nextId;
+    $('new-err').textContent = '';
   });
   $('new-cancel').addEventListener('click', () => ($('modal-new').hidden = true));
   $('new-starter').addEventListener('click', async () => {
     const title = $('new-title').value.trim();
-    const id = $('new-id').value.trim() || slugify(title);
+    const surface = getUiSelectValue($('new-surface')) || 'prototype';
+    const rawId = $('new-id').value.trim();
+    const id = rawId || generateArtifactId(title, surface);
+    if (!rawId) $('new-id').value = id;
     if (!title || !/^[a-z0-9-]+$/.test(id)) {
       $('new-err').textContent = !title ? t('errRequired') : t('errIdInvalid');
       return;
@@ -1693,14 +1930,17 @@ function bindEvents() {
     await createStarterArtifact({
       id,
       title,
-      surface: $('new-surface').value,
-      systemSlug: $('new-system').value,
+      surface,
+      systemSlug: getUiSelectValue($('new-system')) || state.activeSystemSlug,
       brief: $('new-brief').value.trim(),
     });
   });
   $('new-run').addEventListener('click', async () => {
     const title = $('new-title').value.trim();
-    const id = $('new-id').value.trim() || slugify(title);
+    const surface = getUiSelectValue($('new-surface')) || 'prototype';
+    const rawId = $('new-id').value.trim();
+    const id = rawId || generateArtifactId(title, surface);
+    if (!rawId) $('new-id').value = id;
     const brief = $('new-brief').value.trim();
     if (!title || !brief || !/^[a-z0-9-]+$/.test(id)) {
       $('new-err').textContent = !title || !brief ? t('errRequired') : t('errIdInvalid');
@@ -1710,23 +1950,36 @@ function bindEvents() {
     await startDesignPipeline({
       id,
       title,
-      surface: $('new-surface').value,
-      systemSlug: $('new-system').value,
+      surface,
+      systemSlug: getUiSelectValue($('new-system')) || state.activeSystemSlug,
       brief,
       skipDirectionGate: $('new-skip-gate').checked,
     });
   });
 
   $('ext-name').addEventListener('input', e => {
-    if (!$('ext-slug').dataset.touched) $('ext-slug').value = slugify(e.target.value);
+    if ($('ext-slug').dataset.touched) return;
+    const slug = slugify(e.target.value);
+    const used = new Set(state.systems.map(s => s.slug));
+    $('ext-slug').value = slug ? ensureUniqueSlug(slug, used) : state.draftSystemSlug;
   });
   $('ext-slug').addEventListener('input', () => {
-    $('ext-slug').dataset.touched = '1';
+    if ($('ext-slug').value.trim()) $('ext-slug').dataset.touched = '1';
+    else delete $('ext-slug').dataset.touched;
+  });
+  $('btn-regen-slug').addEventListener('click', () => {
+    delete $('ext-slug').dataset.touched;
+    const nextSlug = generateSystemSlug('', $('ext-slug').value.trim());
+    state.draftSystemSlug = nextSlug;
+    $('ext-slug').value = nextSlug;
+    $('ext-err').textContent = '';
   });
   $('ext-cancel').addEventListener('click', () => ($('modal-extract').hidden = true));
   $('ext-run').addEventListener('click', async () => {
     const name = $('ext-name').value.trim();
-    const slug = $('ext-slug').value.trim() || slugify(name);
+    const rawSlug = $('ext-slug').value.trim();
+    const slug = rawSlug || generateSystemSlug(name);
+    if (!rawSlug) $('ext-slug').value = slug;
     const sourceValue = $('ext-source-val').value.trim();
     if (!name || !sourceValue || !/^[a-z0-9-]+$/.test(slug)) {
       $('ext-err').textContent = !name || !sourceValue ? t('errRequired') : t('errIdInvalid');
@@ -1736,7 +1989,7 @@ function bindEvents() {
     await startExtractPipeline({
       name,
       slug,
-      sourceKind: $('ext-source-kind').value,
+      sourceKind: getUiSelectValue($('ext-source-kind')) || 'codebase',
       sourceValue,
     });
   });
@@ -1749,6 +2002,10 @@ function bindEvents() {
       if (state.agentMenuOpen) {
         state.agentMenuOpen = false;
         renderAgentControls();
+      }
+      if (state.narrowDrawer) {
+        state.narrowDrawer = '';
+        syncNarrowDrawers();
       }
     }
   });
@@ -1765,7 +2022,9 @@ function bindEvents() {
     } else if (msg.type === 'od:select') {
       state.selectedEl = msg;
       state.insTab = 'comments';
+      if (isNarrowViewport()) state.narrowDrawer = 'inspector';
       renderInspector();
+      syncNarrowDrawers();
       $('comment-input').focus();
     }
   });
@@ -1790,6 +2049,7 @@ async function loadWorkspace() {
   }
   setLocale(ctx.locale || 'en');
   applyI18n();
+  renderStaticSelects();
 
   if (state.preview) {
     $('banner').textContent = t('previewBanner');
