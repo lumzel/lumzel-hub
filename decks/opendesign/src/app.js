@@ -259,8 +259,63 @@ function postToCanvas(msg) {
   }
 }
 
+function fitStageViewport() {
+  const stage = $('canvas-stage');
+  const slot = $('stage-scale-slot');
+  const wrap = $('stage-wrap');
+  if (!stage || !slot || !wrap || slot.hidden) return;
+
+  const cs = window.getComputedStyle(stage);
+  const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+  const availW = Math.max(0, stage.clientWidth - padX);
+  const availH = Math.max(0, stage.clientHeight - padY);
+  if (!availW || !availH) return;
+
+  const vp = state.viewport;
+  const targets = {
+    desktop: { w: 1280, h: 0 },
+    tablet: { w: 820, h: 0 },
+    mobile: { w: 390, h: 0 },
+    slide: { w: 1280, h: 720 },
+  };
+  const target = targets[vp] || targets.desktop;
+
+  let scale = 1;
+  if (vp === 'slide') {
+    scale = Math.min(1, availW / target.w, availH / target.h);
+  } else if (availW < target.w) {
+    scale = availW / target.w;
+  }
+
+  const clearScaledStyles = () => {
+    wrap.classList.remove('is-scaled');
+    wrap.style.width = '';
+    wrap.style.height = '';
+    wrap.style.transform = '';
+    slot.style.width = '';
+    slot.style.height = '';
+  };
+
+  if (vp === 'slide' || scale < 0.999) {
+    const logicalW = target.w;
+    const logicalH = target.h > 0 ? target.h : Math.max(240, Math.round(availH / scale));
+    const visualW = Math.floor(logicalW * scale);
+    const visualH = Math.floor(logicalH * scale);
+    slot.style.width = `${visualW}px`;
+    slot.style.height = `${visualH}px`;
+    wrap.classList.add('is-scaled');
+    wrap.style.width = `${logicalW}px`;
+    wrap.style.height = `${logicalH}px`;
+    wrap.style.transform = `scale(${scale})`;
+  } else {
+    clearScaledStyles();
+  }
+}
+
 function syncCanvasFrame(forceReload = false) {
   const art = currentArtifact();
+  const slot = $('stage-scale-slot');
   const wrap = $('stage-wrap');
   const codePane = $('code-pane');
   const empty = $('empty-canvas');
@@ -268,6 +323,7 @@ function syncCanvasFrame(forceReload = false) {
   const frame = $('canvas-iframe');
 
   if (!art) {
+    if (slot) slot.hidden = true;
     wrap.hidden = true;
     codePane.hidden = true;
     empty.hidden = false;
@@ -281,6 +337,7 @@ function syncCanvasFrame(forceReload = false) {
       : art.html || '';
 
   if (state.mode === 'code') {
+    if (slot) slot.hidden = true;
     wrap.hidden = true;
     codePane.hidden = false;
     $('code-path').textContent = art.path;
@@ -289,8 +346,10 @@ function syncCanvasFrame(forceReload = false) {
   }
 
   codePane.hidden = true;
+  if (slot) slot.hidden = false;
   wrap.hidden = false;
   wrap.className = `stage-frame-wrap vp-${state.viewport}`;
+  fitStageViewport();
 
   const vpDims = {
     desktop: 'Desktop · Fluid (<= 1280px)',
@@ -2039,7 +2098,12 @@ function bindEvents() {
       state.narrowDrawer = '';
       syncNarrowDrawers();
     }
+    fitStageViewport();
   });
+  if (typeof ResizeObserver === 'function' && $('canvas-stage')) {
+    const stageRo = new ResizeObserver(() => fitStageViewport());
+    stageRo.observe($('canvas-stage'));
+  }
 
   $('agent-override-pill').addEventListener('click', e => {
     e.stopPropagation();

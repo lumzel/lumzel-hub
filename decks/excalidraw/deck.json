@@ -7,7 +7,7 @@
   "homepage": "https://github.com/excalidraw/excalidraw",
   "icon": "spark",
   "entry": "index.html",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "permissions": ["agent", "db", "files", "upload", "open"],
   "capabilities": {
     "files": [
@@ -94,6 +94,21 @@
         "zh-CN": {
           "label": "自动保存画布修改",
           "description": "手动编辑画布后自动防抖写回当前打开的 .excalidraw 文件。"
+        }
+      }
+    },
+    {
+      "key": "externalUrl",
+      "type": "string",
+      "label": "External Browser URL",
+      "description": "Default Excalidraw web URL opened when clicking \"Open in Browser\" (e.g. https://excalidraw.com).",
+      "placeholder": "https://excalidraw.com",
+      "default": "https://excalidraw.com",
+      "i18n": {
+        "zh-CN": {
+          "label": "外部浏览器默认地址",
+          "description": "点击“在浏览器中打开”时默认打开的 Excalidraw 网页地址（例如 https://excalidraw.com）。",
+          "placeholder": "https://excalidraw.com"
         }
       }
     }

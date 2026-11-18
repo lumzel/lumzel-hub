@@ -247,3 +247,29 @@ test('app.js uses in-place option selection instead of rebuilding QA panels on o
   assert.match(src, /addEventListener\s*\(\s*'pagehide',\s*flushPendingQaDrafts\s*\)/);
   assert.match(src, /addEventListener\s*\(\s*'beforeunload',\s*flushPendingQaDrafts\s*\)/);
 });
+
+test('topbar omits global live-runs strip and scrollbars use custom pill styling', () => {
+  const indexHtml = fs.readFileSync(path.resolve(HERE, '../index.html'), 'utf8');
+  const appJs = fs.readFileSync(APP_JS_PATH, 'utf8');
+  const appCss = fs.readFileSync(path.resolve(HERE, '../styles/app.css'), 'utf8');
+  const docCss = fs.readFileSync(path.resolve(HERE, '../runtime/doc.css'), 'utf8');
+  const protoJs = fs.readFileSync(path.resolve(HERE, '../runtime/prototype.js'), 'utf8');
+
+  assert.doesNotMatch(indexHtml, /id=["']live-runs["']/);
+  assert.doesNotMatch(appJs, /\brenderLiveRuns\b/);
+  assert.doesNotMatch(appCss, /\.live-runs\b|\.live-chip\b/);
+
+  for (const [label, cssText] of [
+    ['styles/app.css', appCss],
+    ['runtime/doc.css', docCss],
+    ['runtime/prototype.js', protoJs],
+  ]) {
+    assert.match(cssText, /::-webkit-scrollbar\b/, `${label} defines ::-webkit-scrollbar`);
+    assert.match(cssText, /::-webkit-scrollbar-thumb\b/, `${label} defines ::-webkit-scrollbar-thumb`);
+    assert.match(cssText, /background-clip:\s*content-box/, `${label} uses background-clip: content-box`);
+  }
+  assert.doesNotMatch(appCss, /\*\s*\{[^}]*scrollbar-width\s*:/s);
+  assert.doesNotMatch(docCss, /\*\s*\{[^}]*scrollbar-width\s*:/s);
+  assert.match(appCss, /\.screens\s*\{[^}]*scrollbar-width:\s*none/s);
+  assert.match(appCss, /\.screens::-webkit-scrollbar\s*\{\s*display:\s*none/s);
+});

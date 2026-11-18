@@ -115,17 +115,19 @@
           </div>
 
           <div class="stage" id="canvas-stage">
-            <div class="stage-frame-wrap vp-desktop" id="stage-wrap">
-              <div class="vp-bar" id="vp-bar" hidden>
-                <span id="vp-dims">1280 × 800</span>
-                <span id="artifact-path-pill" class="mono"></span>
+            <div class="stage-scale-slot" id="stage-scale-slot">
+              <div class="stage-frame-wrap vp-desktop" id="stage-wrap">
+                <div class="vp-bar" id="vp-bar" hidden>
+                  <span id="vp-dims">1280 × 800</span>
+                  <span id="artifact-path-pill" class="mono"></span>
+                </div>
+                <iframe
+                  id="canvas-iframe"
+                  class="canvas-iframe"
+                  title="OpenDesign Canvas"
+                  sandbox="allow-scripts"
+                ></iframe>
               </div>
-              <iframe
-                id="canvas-iframe"
-                class="canvas-iframe"
-                title="OpenDesign Canvas"
-                sandbox="allow-scripts"
-              ></iframe>
             </div>
 
             <div class="code-pane" id="code-pane" hidden>

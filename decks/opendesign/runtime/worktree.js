@@ -12,7 +12,15 @@
     if (!el) {
       el = document.createElement('style');
       el.id = id;
-      (document.head || document.documentElement).appendChild(el);
+      var head = document.head || document.documentElement;
+      if (id === 'od-system-tokens') {
+        var tweaksEl = document.getElementById('od-tweaks');
+        if (tweaksEl && tweaksEl.parentNode === head) {
+          head.insertBefore(el, tweaksEl);
+          return el;
+        }
+      }
+      head.appendChild(el);
     }
     return el;
   }
@@ -214,7 +222,7 @@
       setMode(msg.mode);
     } else if (msg.type === 'od:tokens') {
       if (typeof msg.tokensCss === 'string') {
-        ensureStyle('od-tokens').textContent = msg.tokensCss;
+        ensureStyle('od-system-tokens').textContent = msg.tokensCss;
       }
       if ('tweaks' in msg) {
         applyTweaks(msg.tweaks);

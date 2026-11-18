@@ -286,6 +286,19 @@ function canUseStore() {
 async function saveFeatureMeta(id, patch) {
   const prev = state.featureMeta[id] || { id };
   const next = { ...prev, ...patch, id };
+  if (!next.docCreated) {
+    const existingFeature =
+      state.features.find(f => f.id === id) ||
+      state.index?.features?.find(f => f.id === id);
+    const snapshot =
+      state.docCreatedMap[id] ||
+      existingFeature?.created ||
+      existingFeature?.updated ||
+      '';
+    if (snapshot) {
+      next.docCreated = snapshot;
+    }
+  }
   state.featureMeta[id] = next;
   if (canUseStore()) {
     await window.deck.store.put('features', id, next).catch(() => {});
@@ -1977,7 +1990,7 @@ async function fetchFeatureDocMeta(diskFeatures, mtimeMap = {}) {
       if (!f?.id || !f?.design) return;
       const mtime = Number(mtimeMap[f.id]) || 0;
       const cached = state.docCreatedCache[f.id];
-      if (cached && cached.mtime === mtime) {
+      if (cached && mtime > 0 && cached.mtime === mtime) {
         if (cached.created || cached.pendingId) {
           map[f.id] = { created: cached.created || '', pendingId: cached.pendingId || '' };
         }
@@ -2223,6 +2236,11 @@ async function load({ reload = false } = {}) {
       );
       if (!state.preview) {
         await syncStoreFromDisk(index.features || [], docMetaMap);
+      }
+      for (const [id, meta] of Object.entries(state.featureMeta)) {
+        if (!state.docCreatedMap[id] && meta?.docCreated) {
+          state.docCreatedMap[id] = meta.docCreated;
+        }
       }
 
       const diskFeatures = index.features || [];
@@ -2689,6 +2707,7 @@ async function toggleFeatureDone(f) {
       }
       const nextHtml = applyDesignStatus(html, fallbackStatus, today);
       await window.deck.files.write(f.design, nextHtml, { encoding: 'utf8' });
+      delete state.docCreatedCache[f.id];
       await saveFeatureMeta(f.id, { updatedAt: Date.now() });
       toast(t('reopenedFeature'));
     } else {
@@ -2698,6 +2717,7 @@ async function toggleFeatureDone(f) {
       });
       const nextHtml = applyDesignStatus(html, 'done', today);
       await window.deck.files.write(f.design, nextHtml, { encoding: 'utf8' });
+      delete state.docCreatedCache[f.id];
       toast(t('markedFeatureDone'));
     }
     await load({ reload: true });
@@ -2729,6 +2749,7 @@ async function toggleTicketDone(f, ticket) {
       window.deck.files.write(ticket.path, nextTicketHtml, { encoding: 'utf8' }),
       window.deck.files.write(f.design, nextDesignHtml, { encoding: 'utf8' }),
     ]);
+    delete state.docCreatedCache[f.id];
     await saveFeatureMeta(f.id, { updatedAt: Date.now() });
     toast(t(markDone ? 'markedTicketDone' : 'reopenedTicket'));
     await load({ reload: true });

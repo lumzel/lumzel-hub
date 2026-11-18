@@ -69,7 +69,7 @@ export function buildSrcdocHtml(rawHtml, tokensCss = '', tweaks = {}) {
   const bridgeUrl = new URL('runtime/worktree.js', window.location.href).href;
   const tweaksCss = buildTweaksBlock(tweaks);
   const injection = [
-    tokensCss ? `<style id="od-tokens">\n${tokensCss}\n</style>` : '',
+    tokensCss ? `<style id="od-system-tokens">\n${tokensCss}\n</style>` : '',
     tweaksCss ? `<style id="od-tweaks">\n${tweaksCss}\n</style>` : '',
     `<script src="${bridgeUrl}"></script>`,
   ]
@@ -95,9 +95,9 @@ export function buildStandaloneHtml(rawHtml, tokensCss = '', tweaks = {}) {
   const combinedCss = [tokensCss.trim(), tweaksCss.trim()].filter(Boolean).join('\n');
   if (!combinedCss) return html;
 
-  const styleTag = `<style id="od-tokens">\n${combinedCss}\n</style>`;
-  if (/<style\s+id=["']od-tokens["'][^>]*>[\s\S]*?<\/style>/i.test(html)) {
-    html = html.replace(/<style\s+id=["']od-tokens["'][^>]*>[\s\S]*?<\/style>/i, styleTag);
+  const styleTag = `<style id="od-system-tokens">\n${combinedCss}\n</style>`;
+  if (/<style\s+id=["']od-system-tokens["'][^>]*>[\s\S]*?<\/style>/i.test(html)) {
+    html = html.replace(/<style\s+id=["']od-system-tokens["'][^>]*>[\s\S]*?<\/style>/i, styleTag);
   } else if (/<\/head>/i.test(html)) {
     html = html.replace(/<\/head>/i, `${styleTag}\n</head>`);
   } else {

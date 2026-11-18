@@ -392,6 +392,19 @@ button { border: 0; background: none; padding: 0; cursor: pointer; }
   justify-content: center;
   overflow: auto;
 }
+.stage-scale-slot {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: auto;
+}
+.stage-scale-slot[hidden] {
+  display: none;
+}
 .stage-frame-wrap {
   display: flex;
   flex-direction: column;
@@ -401,6 +414,12 @@ button { border: 0; background: none; padding: 0; cursor: pointer; }
   box-shadow: var(--shadow-frame);
   overflow: hidden;
   min-height: 0;
+}
+.stage-frame-wrap.is-scaled {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
 }
 .stage-frame-wrap.vp-desktop {
   width: 100%;

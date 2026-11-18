@@ -65,8 +65,6 @@
 
 * {
   box-sizing: border-box;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--fg) 16%, transparent) transparent;
 }
 ::-webkit-scrollbar {
   width: 10px;
@@ -98,6 +96,7 @@ body {
   color: var(--fg);
   background: var(--canvas);
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
 }
 button,
 input,
@@ -1152,6 +1151,10 @@ button:disabled {
   gap: 4px;
   overflow-x: auto;
   min-width: 0;
+  scrollbar-width: none;
+}
+.screens::-webkit-scrollbar {
+  display: none;
 }
 .screens button {
   flex: none;

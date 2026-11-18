@@ -97,15 +97,33 @@ test('applyDesignStatus marks feature done and reopens cleanly while passing lin
   const extractedDone = extractDoc(doneDoc);
   assert.equal(extractedDone.status, 'done');
   assert.equal(extractedDone.updated, '2026-11-16');
+  assert.equal(extractDocCreatedAttr(doneHtml), '2026-11-12');
+  const createdAfterDone = featureTimeInfo(
+    { id: 'invoice-cache', updated: extractedDone.updated },
+    null,
+    0,
+    { sortBy: 'created', docCreated: extractDocCreatedAttr(doneHtml) },
+  );
+  assert.equal(createdAfterDone.ms, Date.parse('2026-11-12T00:00:00'));
+  assert.equal(formatShortTime(createdAfterDone.ms, extractedDone.updated, { hasTime: createdAfterDone.hasTime }), '2026-11-12');
   assert.deepEqual(lintDoc(extractedDone), []);
   assert.equal(doneDoc.querySelector('.lumzel-hero .pill.s-done')?.textContent.trim(), 'done');
 
-  const reopenedHtml = applyDesignStatus(doneHtml, 'confirmed', '2026-11-16', { parseHtml });
+  const reopenedHtml = applyDesignStatus(doneHtml, 'confirmed', '2026-11-18', { parseHtml });
   const reopenedDoc = parseHtml(reopenedHtml);
   const extractedReopened = extractDoc(reopenedDoc);
   assert.equal(extractedReopened.status, 'confirmed');
+  assert.equal(extractedReopened.updated, '2026-11-18');
+  assert.equal(extractDocCreatedAttr(reopenedHtml), '2026-11-12');
   assert.deepEqual(lintDoc(extractedReopened), []);
   assert.equal(reopenedDoc.querySelector('.lumzel-hero .pill.s-confirmed')?.textContent.trim(), 'confirmed');
+
+  const withIsoCreated = html.replace(
+    'data-doc-date="2026-11-12"',
+    'data-doc-created="2026-11-10T09:30:00Z" data-doc-date="2026-11-12"',
+  );
+  const doneWithIsoCreated = applyDesignStatus(withIsoCreated, 'done', '2026-11-18', { parseHtml });
+  assert.equal(extractDocCreatedAttr(doneWithIsoCreated), '2026-11-10T09:30:00Z');
 });
 
 test('applyTicketDone & syncDesignTicketItem keep ticketStatus and design checklist in sync', () => {
@@ -125,10 +143,29 @@ test('applyTicketDone & syncDesignTicketItem keep ticketStatus and design checkl
     parseHtml,
   });
   const syncedDesignDoc = parseHtml(syncedDesignHtml);
+  const syncedDesignIR = extractDoc(syncedDesignDoc);
   const row = syncedDesignDoc.querySelector(`[data-doc-ticket="${ticketPath}"]`);
   assert.equal(row?.getAttribute('data-doc-status'), 'done');
   assert.equal(row?.querySelector('.pill')?.textContent.trim(), 'done');
-  assert.deepEqual(lintDoc(extractDoc(syncedDesignDoc)), []);
+  assert.equal(syncedDesignIR.updated, '2026-11-16');
+  assert.equal(extractDocCreatedAttr(syncedDesignHtml), '2026-11-12');
+  const createdAfterTicketSync = featureTimeInfo(
+    { id: 'invoice-cache', updated: syncedDesignIR.updated },
+    null,
+    0,
+    { sortBy: 'created', docCreated: extractDocCreatedAttr(syncedDesignHtml) },
+  );
+  assert.equal(createdAfterTicketSync.ms, Date.parse('2026-11-12T00:00:00'));
+  assert.deepEqual(lintDoc(syncedDesignIR), []);
+
+  const withIsoCreated = designHtml.replace(
+    'data-doc-date="2026-11-12"',
+    'data-doc-created="2026-11-10T09:30:00Z" data-doc-date="2026-11-12"',
+  );
+  const syncedWithIsoCreated = syncDesignTicketItem(withIsoCreated, ticketPath, 'done', '2026-11-18', {
+    parseHtml,
+  });
+  assert.equal(extractDocCreatedAttr(syncedWithIsoCreated), '2026-11-10T09:30:00Z');
 
   const revertedTicketHtml = applyTicketDone(doneTicketHtml, false, '2026-11-16', { parseHtml });
   assert.equal(ticketStatus(extractDoc(parseHtml(revertedTicketHtml))), 'planned');

@@ -104,7 +104,12 @@ const state = {
   excalidrawHost: null,
   excalidrawApi: null,
   pendingLoadScene: null,
-  params: { defaultDir: 'diagrams', defaultDiagramType: 'auto', autoSave: true },
+  params: {
+    defaultDir: 'diagrams',
+    defaultDiagramType: 'auto',
+    autoSave: true,
+    externalUrl: 'https://excalidraw.com',
+  },
   agentCatalog: null,
   selectedAgent: { provider: '', model: '', effort: '' },
   agentMenuOpen: false,
@@ -158,6 +163,50 @@ function getDefaultDir() {
     .replace(/\\/g, '/')
     .replace(/^\/+|\/+$/g, '')
     .replace(/\/+/g, '/');
+}
+
+const DEFAULT_EXTERNAL_URL = 'https://excalidraw.com';
+
+function getExternalUrl() {
+  const raw = String(state.params.externalUrl ?? DEFAULT_EXTERNAL_URL).trim();
+  if (!raw) return DEFAULT_EXTERNAL_URL;
+  return /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(raw) ? raw : `https://${raw}`;
+}
+
+function updateExternalButtonTitle() {
+  const btn = $('btn-open-external');
+  if (!btn) return;
+  const label = t('openExternalTitleWithUrl', { url: getExternalUrl() });
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+}
+
+async function openExternalBrowser() {
+  $('export-menu').hidden = true;
+  $('btn-export-menu').setAttribute('aria-expanded', 'false');
+  const url = getExternalUrl();
+  if (state.preview) {
+    toast(t('openExternalPreviewHint', { url }));
+    return;
+  }
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    toast(t('openExternalInvalidUrl', { url }), true);
+    return;
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    toast(t('openExternalInvalidUrl', { url }), true);
+    return;
+  }
+  try {
+    await window.deck.ui?.open?.({ url: parsed.toString() });
+    toast(t('openedExternalMsg', { url: parsed.toString() }));
+  } catch (err) {
+    navigator.clipboard?.writeText?.(parsed.toString()).catch(() => {});
+    toast(t('openExternalFailedMsg', { url: parsed.toString(), err: err?.message || String(err) }), true);
+  }
 }
 
 function normalizeRelPath(raw) {
@@ -1750,12 +1799,8 @@ function wireEvents() {
   $('btn-export-json').addEventListener('click', () => void handleExport('json'));
   $('btn-export-png').addEventListener('click', () => void handleExport('png'));
   $('btn-export-svg').addEventListener('click', () => void handleExport('svg'));
-  $('btn-open-card').addEventListener('click', () => {
-    $('export-menu').hidden = true;
-    if (state.activePath && !state.preview && state.hasProject) {
-      window.deck.ui?.open?.({ path: state.activePath }).catch(err => toast(err.message, true));
-    }
-  });
+  $('btn-open-external').addEventListener('click', () => void openExternalBrowser());
+  $('btn-open-external-menu').addEventListener('click', () => void openExternalBrowser());
 
   $('btn-deck-settings').addEventListener('click', () => {
     if (!state.preview) window.deck.ui?.openSettings?.().catch(() => {});
@@ -1875,11 +1920,7 @@ function wireEvents() {
     closePreviewModal();
     if (p) void openFile(p, { switchToCanvas: true });
   });
-  $('preview-open-card').addEventListener('click', () => {
-    if (state.previewModalPath && !state.preview && state.hasProject) {
-      window.deck.ui?.open?.({ path: state.previewModalPath }).catch(() => {});
-    }
-  });
+  $('preview-open-external').addEventListener('click', () => void openExternalBrowser());
 
   $('rename-cancel').addEventListener('click', () => { $('modal-rename').hidden = true; });
   $('rename-confirm').addEventListener('click', () => void handleConfirmRename());
@@ -1944,6 +1985,7 @@ async function boot() {
 
   initStaticSelects();
   wireEvents();
+  updateExternalButtonTitle();
 
   if (state.preview) {
     void getExcalidraw();
@@ -1975,8 +2017,12 @@ async function boot() {
   if (pState?.values) {
     state.params = { ...state.params, ...pState.values };
   }
+  updateExternalButtonTitle();
   window.deck.params?.onChange?.(next => {
-    if (next?.values) state.params = { ...state.params, ...next.values };
+    if (next?.values) {
+      state.params = { ...state.params, ...next.values };
+      updateExternalButtonTitle();
+    }
   });
 
   if (catalog) {

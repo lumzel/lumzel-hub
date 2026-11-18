@@ -57,6 +57,12 @@
   const css = document.createElement('style');
   css.textContent = `
     /* tokens from DESIGN.md; the prototype does not load lumzel.css */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(9,9,11,.14); border: 3px solid transparent; border-radius: 999px; background-clip: content-box; min-height: 32px; min-width: 32px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(9,9,11,.30); background-clip: content-box; }
+    :root[data-theme="dark"]::-webkit-scrollbar-thumb, :root[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(250,250,250,.14); background-clip: content-box; }
+    :root[data-theme="dark"]::-webkit-scrollbar-thumb:hover, :root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(250,250,250,.30); background-clip: content-box; }
     .lumzel-proto-bar { position: fixed; right: 14px; bottom: 14px; z-index: 2147483647; display: flex; gap: 6px; font: 500 12px/1 "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }
     .lumzel-proto-bar a, .lumzel-proto-bar button { height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid #e4e4e7; background: #fff; color: #09090b; text-decoration: none; cursor: pointer; font: inherit; box-shadow: 0 16px 40px rgba(15,23,42,.14), 0 3px 10px rgba(15,23,42,.08); }
     .lumzel-proto-bar button[aria-pressed="true"] { background: #18181b; border-color: #18181b; color: #fafafa; }

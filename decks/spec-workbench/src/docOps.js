@@ -125,8 +125,17 @@ export function parseTicketChoices(html, options = {}) {
 function updateHeroDate(doc, todayStr) {
   if (!todayStr) return;
   const root = doc.documentElement;
-  if (root) root.setAttribute('data-doc-date', todayStr);
   const pills = Array.from(doc.querySelectorAll('.lumzel-hero .pills .pill'));
+  if (root) {
+    if (!attrOf(root, 'data-doc-created').trim()) {
+      const pillDate = pills.map(textOf).find(txt => /^\d{4}-\d{2}-\d{2}$/.test(txt)) || '';
+      const prevDate = attrOf(root, 'data-doc-date').trim() || pillDate;
+      if (prevDate) {
+        root.setAttribute('data-doc-created', prevDate);
+      }
+    }
+    root.setAttribute('data-doc-date', todayStr);
+  }
   for (const pill of pills) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(textOf(pill))) {
       pill.textContent = todayStr;

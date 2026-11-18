@@ -80,8 +80,6 @@
 }
 * {
   box-sizing: border-box;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--fg) 16%, transparent) transparent;
 }
 ::-webkit-scrollbar {
   width: 10px;

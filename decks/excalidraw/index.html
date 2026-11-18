@@ -63,6 +63,13 @@
 
           <button type="button" class="btn" id="btn-new-diagram" data-i18n="newDiagramBtn">+ New</button>
           <button type="button" class="btn primary" id="btn-ai-generate" data-i18n="aiGenerateBtn">✨ AI Generate</button>
+          <button type="button" class="btn icon-btn" id="btn-open-external" data-i18n-title="openExternalTitle" title="Open in External Browser" aria-label="Open in External Browser">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9.5 2.5h4v4" />
+              <path d="M7 9l6.5-6.5" />
+              <path d="M13.5 9.5v3a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3" />
+            </svg>
+          </button>
           <button type="button" class="btn icon-btn" id="btn-deck-settings" data-i18n-title="deckSettings" title="Deck Settings" aria-label="Deck Settings">⚙</button>
           <button type="button" class="btn icon-btn" id="btn-refresh" data-i18n-title="refresh" title="Refresh" aria-label="Refresh">↻</button>
         </div>
@@ -113,7 +120,7 @@
                   <button type="button" class="dropdown-item" role="menuitem" id="btn-export-png" data-i18n="exportPng">Export PNG</button>
                   <button type="button" class="dropdown-item" role="menuitem" id="btn-export-svg" data-i18n="exportSvg">Export SVG</button>
                   <div class="dropdown-sep"></div>
-                  <button type="button" class="dropdown-item" role="menuitem" id="btn-open-card" data-i18n="openInCard">Open File Card</button>
+                  <button type="button" class="dropdown-item" role="menuitem" id="btn-open-external-menu" data-i18n="openInBrowser">Open in Browser</button>
                 </div>
               </div>
             </div>
@@ -263,7 +270,7 @@
           <div class="preview-modal-foot">
             <span class="hint-sm" id="preview-modal-stats"></span>
             <div class="modal-row">
-              <button type="button" class="btn" id="preview-open-card" data-i18n="openInCard">Open File Card</button>
+              <button type="button" class="btn" id="preview-open-external" data-i18n="openInBrowser">Open in Browser</button>
               <button type="button" class="btn primary" id="preview-edit-btn" data-i18n="editOnCanvas">Edit in Canvas</button>
             </div>
           </div>

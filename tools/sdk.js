@@ -103,6 +103,37 @@
       }
       return;
     }
+    if (msg.event === 'host.edit') {
+      var action = msg.action === 'redo' ? 'redo' : 'undo';
+      var activeEl = window.document && window.document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)
+      ) {
+        try {
+          window.document.execCommand(action);
+        } catch {
+          // Ignore execCommand failures in non-editable contexts.
+        }
+        return;
+      }
+      var target = activeEl || (window.document && window.document.body) || window;
+      if (target && typeof target.dispatchEvent === 'function' && typeof window.KeyboardEvent === 'function') {
+        target.dispatchEvent(
+          new window.KeyboardEvent('keydown', {
+            key: 'z',
+            code: 'KeyZ',
+            keyCode: 90,
+            which: 90,
+            metaKey: true,
+            shiftKey: action === 'redo',
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+      }
+      return;
+    }
     if (msg.event === 'workflow.event') {
       var rid = msg.runId ? String(msg.runId) : '';
       var wfTargets = [];
