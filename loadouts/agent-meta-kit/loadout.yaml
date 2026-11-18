@@ -1,0 +1,27 @@
+id: agent-meta-kit
+name: Agent Meta & Productivity
+icon: ⚡
+category: Workflow
+description: 'Meta-skills and productivity enhancers: autonomous skill optimization (Darwin), ADHD-friendly concise output, macOS native app control, browser CLI, and web-design/KB helpers.'
+i18n:
+  en:
+    name: Agent Meta & Productivity
+    description: 'Meta-skills and productivity enhancers: autonomous skill optimization (Darwin), ADHD-friendly concise output, macOS native app control, browser CLI, and web-design/KB helpers.'
+  zh-CN:
+    name: Agent 进化与效率增强合集
+    description: 'Agent 效率增强合集：涵盖达尔文 Skill 自进化系统、直给结论输出风格、macOS 原生 App 操控、浏览器自动化 CLI 与知识检索。'
+author: Lumzel Curated
+homepage: https://github.com/alchaincyf/darwin-skill
+skills:
+- darwin-skill
+- i-have-adhd
+- huashu-mac-use
+- agent-browser
+- web-design-engineer
+- kb-retriever
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

@@ -1,0 +1,30 @@
+id: ui-design-kit
+name: UI & Design Taste Kit
+icon: 🎨
+category: Design
+description: 'Curated UI/frontend design skills: art direction, UI/UX pro max, motion choreography, design-token extraction, DESIGN.md references, and modern web guidance.'
+i18n:
+  en:
+    name: UI & Design Taste Kit
+    description: 'Curated UI/frontend design skills: art direction, UI/UX pro max, motion choreography, design-token extraction, DESIGN.md references, and modern web guidance.'
+  zh-CN:
+    name: UI 设计品味与前端规范合集
+    description: '前端与 UI 设计聚合包：涵盖设计审美约束、多端 UI/UX 规范、动效编排、网站 Design Token 提取与现代 Web 最佳实践。'
+author: Lumzel Curated
+homepage: https://github.com/Leonxlnx/taste-skill
+skills:
+- taste-skill
+- ui-ux-pro-max
+- design-system
+- motion-design
+- transitions-dev
+- extract-design
+- awesome-design-md
+- dembrandt
+- modern-web-guidance
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

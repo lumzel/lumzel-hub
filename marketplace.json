@@ -281,29 +281,6 @@
       "version": "1.0.0"
     },
     {
-      "id": "visual-docs",
-      "name": "Visual Docs",
-      "icon": "📐",
-      "description": "Editorial diagrams, self-contained HTML docs, wireframes, clickable prototypes, implementation plans, and print-ready PDF/PPT export for feature and architecture documentation.",
-      "i18n": {
-        "en": {
-          "name": "Visual Docs",
-          "description": "Editorial diagrams, self-contained HTML docs, wireframes, clickable prototypes, implementation plans, and print-ready PDF/PPT export for feature and architecture documentation."
-        },
-        "zh-CN": {
-          "name": "可视化文档",
-          "description": "面向功能与架构文档的编辑级图表、自包含 HTML 文档、线框与可点击原型、实现计划，以及可印刷的 PDF/PPT 导出。"
-        }
-      },
-      "category": "Documentation",
-      "author": "Lumzel",
-      "counts": {
-        "skills": 7
-      },
-      "source": "./loadouts/visual-docs",
-      "version": "1.0.0"
-    },
-    {
       "id": "archify",
       "name": "Archify Diagrams",
       "icon": "🗺️",
@@ -375,6 +352,414 @@
         "skills": 21
       },
       "source": "./loadouts/bama",
+      "version": "1.0.0"
+    },
+    {
+      "id": "addyosmani-skills",
+      "name": "Addy Osmani Engineering Skills",
+      "icon": "🛠️",
+      "description": "Production-grade engineering skills for AI coding agents: specs, planning, architecture, testing, code review, CI/CD, and incremental delivery.",
+      "i18n": {
+        "en": {
+          "name": "Addy Osmani Engineering Skills",
+          "description": "Production-grade engineering skills for AI coding agents: specs, planning, architecture, testing, code review, CI/CD, and incremental delivery."
+        },
+        "zh-CN": {
+          "name": "Addy Osmani 工程技能套件",
+          "description": "面向 AI 编程助手的生产级工程技能集：涵盖需求规格、规划、架构设计、测试、代码审查、CI/CD 与渐进式交付。"
+        }
+      },
+      "category": "Engineering",
+      "author": "Addy Osmani",
+      "homepage": "https://github.com/addyosmani/agent-skills",
+      "counts": {
+        "skills": 25
+      },
+      "source": "./loadouts/addyosmani-skills",
+      "version": "1.0.0"
+    },
+    {
+      "id": "stitch-skills",
+      "name": "Google Stitch Skills",
+      "icon": "🧵",
+      "description": "Agent Skills for Google Stitch design-to-code workflows: React, React Native, Vite dashboards, shadcn/ui, Remotion, and DESIGN.md extraction.",
+      "i18n": {
+        "en": {
+          "name": "Google Stitch Skills",
+          "description": "Agent Skills for Google Stitch design-to-code workflows: React, React Native, Vite dashboards, shadcn/ui, Remotion, and DESIGN.md extraction."
+        },
+        "zh-CN": {
+          "name": "Google Stitch 设计转代码套件",
+          "description": "Google Labs 出品的 Stitch 设计转代码技能库：支持 React、React Native、Vite 看板、shadcn/ui、Remotion 与 DESIGN.md 提取。"
+        }
+      },
+      "category": "Design",
+      "author": "Google Labs",
+      "homepage": "https://github.com/google-labs-code/stitch-skills",
+      "counts": {
+        "skills": 16
+      },
+      "source": "./loadouts/stitch-skills",
+      "version": "1.0.0"
+    },
+    {
+      "id": "claude-bughunter",
+      "name": "Claude BugHunter",
+      "icon": "🪲",
+      "description": "Bug hunting and external red-team skill bundle covering vulnerability classes, disclosed-report patterns, and enterprise attack matrices.",
+      "i18n": {
+        "en": {
+          "name": "Claude BugHunter",
+          "description": "Bug hunting and external red-team skill bundle covering vulnerability classes, disclosed-report patterns, and enterprise attack matrices."
+        },
+        "zh-CN": {
+          "name": "Claude BugHunter 安全挖掘套件",
+          "description": "漏洞挖掘与红队安全技能包：覆盖常见漏洞类型、公开漏洞报告模式与企业级攻击矩阵。"
+        }
+      },
+      "category": "Security",
+      "author": "elementalsouls",
+      "homepage": "https://github.com/elementalsouls/Claude-BugHunter",
+      "counts": {
+        "skills": 83
+      },
+      "source": "./loadouts/claude-bughunter",
+      "version": "1.0.0"
+    },
+    {
+      "id": "plannotator",
+      "name": "Plannotator",
+      "icon": "📝",
+      "description": "Interactive plan and code review workspace skills with visual HTML plans, diagrams, wireframes, and clickable prototypes.",
+      "i18n": {
+        "en": {
+          "name": "Plannotator",
+          "description": "Interactive plan and code review workspace skills with visual HTML plans, diagrams, wireframes, and clickable prototypes."
+        },
+        "zh-CN": {
+          "name": "Plannotator 计划与审查批注",
+          "description": "交互式计划与代码审查批注工作区技能集，并集成可视化 HTML 计划、图表、线框与原型输出。"
+        }
+      },
+      "category": "Workflow",
+      "author": "backnotprop",
+      "homepage": "https://github.com/backnotprop/plannotator",
+      "counts": {
+        "skills": 10
+      },
+      "source": "./loadouts/plannotator",
+      "version": "1.0.0"
+    },
+    {
+      "id": "impeccable",
+      "name": "Impeccable Design",
+      "icon": "✨",
+      "description": "Design vocabulary and critique framework for coding agents to polish UIs, audit visual craft, and eliminate generic AI slop.",
+      "i18n": {
+        "en": {
+          "name": "Impeccable Design",
+          "description": "Design vocabulary and critique framework for coding agents to polish UIs, audit visual craft, and eliminate generic AI slop."
+        },
+        "zh-CN": {
+          "name": "Impeccable 设计审美",
+          "description": "为编码 Agent 提供设计词汇与审美审查框架，打磨界面细节并消除千篇一律的 AI 模板味。"
+        }
+      },
+      "category": "Design",
+      "author": "Paul Bakaus",
+      "homepage": "https://github.com/pbakaus/impeccable",
+      "counts": {
+        "skills": 1
+      },
+      "source": "./loadouts/impeccable",
+      "version": "1.0.0"
+    },
+    {
+      "id": "open-montage",
+      "name": "OpenMontage Video Studio",
+      "icon": "🎬",
+      "description": "Agentic video production suite with pipelines and production-knowledge skills for turning coding agents into a video studio.",
+      "i18n": {
+        "en": {
+          "name": "OpenMontage Video Studio",
+          "description": "Agentic video production suite with pipelines and production-knowledge skills for turning coding agents into a video studio."
+        },
+        "zh-CN": {
+          "name": "OpenMontage 视频制作工坊",
+          "description": "开源 Agent 视频制作工作流与知识技能库，涵盖多条视频生产管线与视听工具链。"
+        }
+      },
+      "category": "Media",
+      "author": "OpenMontage",
+      "homepage": "https://github.com/OpenMontageInc/OpenMontage",
+      "counts": {
+        "skills": 92
+      },
+      "source": "./loadouts/open-montage",
+      "version": "1.0.0"
+    },
+    {
+      "id": "chubbyskills",
+      "name": "Chubby Knowledge Skills",
+      "icon": "📚",
+      "description": "14 skills for ingesting Chinese omnichannel content (Douyin, Bilibili, Xiaohongshu, WeChat, X, podcasts) into a personal knowledge base.",
+      "i18n": {
+        "en": {
+          "name": "Chubby Knowledge Skills",
+          "description": "14 skills for ingesting Chinese omnichannel content (Douyin, Bilibili, Xiaohongshu, WeChat, X, podcasts) into a personal knowledge base."
+        },
+        "zh-CN": {
+          "name": "Chubby 全渠道知识库技能",
+          "description": "14 个中文全渠道内容采集技能（抖音、B 站、小红书、公众号、X、播客），支持字幕转写与个人知识库沉淀。"
+        }
+      },
+      "category": "Knowledge",
+      "author": "chubbyguan",
+      "homepage": "https://github.com/chubbyguan/chubbyskills",
+      "counts": {
+        "skills": 14
+      },
+      "source": "./loadouts/chubbyskills",
+      "version": "1.0.0"
+    },
+    {
+      "id": "marketingskills",
+      "name": "Growth & Marketing Skills",
+      "icon": "📈",
+      "description": "Conversion rate optimization, copywriting, SEO, analytics, pricing, and growth engineering skills for AI agents.",
+      "i18n": {
+        "en": {
+          "name": "Growth & Marketing Skills",
+          "description": "Conversion rate optimization, copywriting, SEO, analytics, pricing, and growth engineering skills for AI agents."
+        },
+        "zh-CN": {
+          "name": "增长与营销技能套件",
+          "description": "面向产品增长与营销的技能套件：涵盖转化率优化（CRO）、文案撰写、SEO、数据分析与增长工程。"
+        }
+      },
+      "category": "Marketing",
+      "author": "Corey Haines",
+      "homepage": "https://github.com/coreyhaines31/marketingskills",
+      "counts": {
+        "skills": 53
+      },
+      "source": "./loadouts/marketingskills",
+      "version": "1.0.0"
+    },
+    {
+      "id": "opc-skills",
+      "name": "Solopreneur OPC Skills",
+      "icon": "🧑‍💻",
+      "description": "Agent skills tailored for solopreneurs and indie hackers covering domain hunting, SEO/GEO, banners, and product launches.",
+      "i18n": {
+        "en": {
+          "name": "Solopreneur OPC Skills",
+          "description": "Agent skills tailored for solopreneurs and indie hackers covering domain hunting, SEO/GEO, banners, and product launches."
+        },
+        "zh-CN": {
+          "name": "独立开发者一人公司套件",
+          "description": "专为独立开发者与一人公司打造的技能集，覆盖域名挖掘、SEO/GEO 优化、宣传图与产品发布。"
+        }
+      },
+      "category": "Business",
+      "author": "ReScienceLab",
+      "homepage": "https://github.com/ReScienceLab/opc-skills",
+      "counts": {
+        "skills": 10
+      },
+      "source": "./loadouts/opc-skills",
+      "version": "1.0.0"
+    },
+    {
+      "id": "swiftui-agent",
+      "name": "SwiftUI Agent Skill",
+      "icon": "🍎",
+      "description": "SwiftUI best-practice skill for building modern Apple-platform interfaces with AI coding agents.",
+      "i18n": {
+        "en": {
+          "name": "SwiftUI Agent Skill",
+          "description": "SwiftUI best-practice skill for building modern Apple-platform interfaces with AI coding agents."
+        },
+        "zh-CN": {
+          "name": "SwiftUI 开发规范技能",
+          "description": "Paul Hudson 出品的 SwiftUI 开发最佳实践技能，适合 iOS 与 macOS 原生界面开发。"
+        }
+      },
+      "category": "Engineering",
+      "author": "Paul Hudson",
+      "homepage": "https://github.com/twostraws/SwiftUI-Agent-Skill",
+      "counts": {
+        "skills": 1
+      },
+      "source": "./loadouts/swiftui-agent",
+      "version": "1.0.0"
+    },
+    {
+      "id": "ui-design-kit",
+      "name": "UI & Design Taste Kit",
+      "icon": "🎨",
+      "description": "Curated UI/frontend design skills: art direction, UI/UX pro max, motion choreography, design-token extraction, DESIGN.md references, and modern web guidance.",
+      "i18n": {
+        "en": {
+          "name": "UI & Design Taste Kit",
+          "description": "Curated UI/frontend design skills: art direction, UI/UX pro max, motion choreography, design-token extraction, DESIGN.md references, and modern web guidance."
+        },
+        "zh-CN": {
+          "name": "UI 设计品味与前端规范合集",
+          "description": "前端与 UI 设计聚合包：涵盖设计审美约束、多端 UI/UX 规范、动效编排、网站 Design Token 提取与现代 Web 最佳实践。"
+        }
+      },
+      "category": "Design",
+      "author": "Lumzel Curated",
+      "homepage": "https://github.com/Leonxlnx/taste-skill",
+      "counts": {
+        "skills": 9
+      },
+      "source": "./loadouts/ui-design-kit",
+      "version": "1.0.0"
+    },
+    {
+      "id": "visual-story-kit",
+      "name": "Visual, Slides & Illustration Kit",
+      "icon": "🖼️",
+      "description": "Visual creation skills for slide decks, article illustrations, logos and IP mascots, hand-drawn & editorial styles, App Store screenshots, GPT Image 2 styles, and diagrams.",
+      "i18n": {
+        "en": {
+          "name": "Visual, Slides & Illustration Kit",
+          "description": "Visual creation skills for slide decks, article illustrations, logos and IP mascots, hand-drawn & editorial styles, App Store screenshots, GPT Image 2 styles, and diagrams."
+        },
+        "zh-CN": {
+          "name": "视觉插画、PPT 与截图设计合集",
+          "description": "视觉创作聚合包：涵盖 HTML/原生 PPT 生成、文章配图、Logo 与 IP 形象、手绘与单色印刷风、App Store 截图、GPT Image 2 风格库与编辑级图表。"
+        }
+      },
+      "category": "Design",
+      "author": "Lumzel Curated",
+      "homepage": "https://github.com/op7418/guizang-ppt-skill",
+      "counts": {
+        "skills": 12
+      },
+      "source": "./loadouts/visual-story-kit",
+      "version": "1.0.0"
+    },
+    {
+      "id": "social-media-creator",
+      "name": "Social Media & Content Creator",
+      "icon": "📱",
+      "description": "End-to-end social media creation: WeChat formatting, Xiaohongshu cards & notes, viral trend research, writing DNA distillation, AI-tone removal, and multi-platform upload.",
+      "i18n": {
+        "en": {
+          "name": "Social Media & Content Creator",
+          "description": "End-to-end social media creation: WeChat formatting, Xiaohongshu cards & notes, viral trend research, writing DNA distillation, AI-tone removal, and multi-platform upload."
+        },
+        "zh-CN": {
+          "name": "自媒体创作与多平台发布合集",
+          "description": "自媒体全流程聚合包：涵盖公众号排版与封面对、小红书图文与笔记创作、爆款趋势分析、写作风格蒸馏、中文去 AI 味及多平台自动发布。"
+        }
+      },
+      "category": "Content",
+      "author": "Lumzel Curated",
+      "homepage": "https://github.com/op7418/guizang-social-card-skill",
+      "counts": {
+        "skills": 12
+      },
+      "source": "./loadouts/social-media-creator",
+      "version": "1.0.0"
+    },
+    {
+      "id": "video-motion-kit",
+      "name": "AI Video & Motion Kit",
+      "icon": "🎥",
+      "description": "AI-driven video & motion skills: product launch videos, Vox-style explainers, art motion, narrated scripts, and agentic video editing.",
+      "i18n": {
+        "en": {
+          "name": "AI Video & Motion Kit",
+          "description": "AI-driven video & motion skills: product launch videos, Vox-style explainers, art motion, narrated scripts, and agentic video editing."
+        },
+        "zh-CN": {
+          "name": "AI 视频与动画创作合集",
+          "description": "AI 视频与动效创作聚合包：涵盖产品更新宣传片、Vox 拼贴风解说视频、艺术动画、AI 解说配音与视频剪辑。"
+        }
+      },
+      "category": "Media",
+      "author": "Lumzel Curated",
+      "homepage": "https://github.com/op7418/guizang-product-video-skill",
+      "counts": {
+        "skills": 5
+      },
+      "source": "./loadouts/video-motion-kit",
+      "version": "1.0.0"
+    },
+    {
+      "id": "research-knowledge-kit",
+      "name": "Web Research & Knowledge Kit",
+      "icon": "🔍",
+      "description": "Cross-platform research and knowledge management: Agent-Reach, MediaCrawler, last30days topic synthesis, Horizon news radar, LLM Wiki, and Nuwa mental-model distillation.",
+      "i18n": {
+        "en": {
+          "name": "Web Research & Knowledge Kit",
+          "description": "Cross-platform research and knowledge management: Agent-Reach, MediaCrawler, last30days topic synthesis, Horizon news radar, LLM Wiki, and Nuwa mental-model distillation."
+        },
+        "zh-CN": {
+          "name": "全网调研、爬虫与知识沉淀合集",
+          "description": "全网调研与知识库合集：集成 Agent-Reach、MediaCrawler 多平台爬虫、近 30 天热点总结、Horizon 新闻雷达、LLM Wiki 与女娲思维蒸馏。"
+        }
+      },
+      "category": "Research",
+      "author": "Lumzel Curated",
+      "homepage": "https://github.com/Panniantong/Agent-Reach",
+      "counts": {
+        "skills": 6
+      },
+      "source": "./loadouts/research-knowledge-kit",
+      "version": "1.0.0"
+    },
+    {
+      "id": "security-review-kit",
+      "name": "Security & Code Audit Kit",
+      "icon": "🛡️",
+      "description": "Security auditing, vulnerability scanning, patch-risk assessment, hybrid code review, and structured codebase improvement planning.",
+      "i18n": {
+        "en": {
+          "name": "Security & Code Audit Kit",
+          "description": "Security auditing, vulnerability scanning, patch-risk assessment, hybrid code review, and structured codebase improvement planning."
+        },
+        "zh-CN": {
+          "name": "安全审计与深度审查合集",
+          "description": "安全审计与代码审查合集：涵盖多阶段安全审计、漏洞扫描修复、补丁风险评估、混合架构 Code Review 与代码库改进规划。"
+        }
+      },
+      "category": "Security",
+      "author": "Lumzel Curated",
+      "homepage": "https://github.com/cloudflare/security-audit-skill",
+      "counts": {
+        "skills": 6
+      },
+      "source": "./loadouts/security-review-kit",
+      "version": "1.0.0"
+    },
+    {
+      "id": "agent-meta-kit",
+      "name": "Agent Meta & Productivity",
+      "icon": "⚡",
+      "description": "Meta-skills and productivity enhancers: autonomous skill optimization (Darwin), ADHD-friendly concise output, macOS native app control, browser CLI, and web-design/KB helpers.",
+      "i18n": {
+        "en": {
+          "name": "Agent Meta & Productivity",
+          "description": "Meta-skills and productivity enhancers: autonomous skill optimization (Darwin), ADHD-friendly concise output, macOS native app control, browser CLI, and web-design/KB helpers."
+        },
+        "zh-CN": {
+          "name": "Agent 进化与效率增强合集",
+          "description": "Agent 效率增强合集：涵盖达尔文 Skill 自进化系统、直给结论输出风格、macOS 原生 App 操控、浏览器自动化 CLI 与知识检索。"
+        }
+      },
+      "category": "Workflow",
+      "author": "Lumzel Curated",
+      "homepage": "https://github.com/alchaincyf/darwin-skill",
+      "counts": {
+        "skills": 6
+      },
+      "source": "./loadouts/agent-meta-kit",
       "version": "1.0.0"
     }
   ],

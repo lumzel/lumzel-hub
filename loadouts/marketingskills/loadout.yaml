@@ -1,0 +1,74 @@
+id: marketingskills
+name: Growth & Marketing Skills
+icon: 📈
+category: Marketing
+description: 'Conversion rate optimization, copywriting, SEO, analytics, pricing, and growth engineering skills for AI agents.'
+i18n:
+  en:
+    name: Growth & Marketing Skills
+    description: 'Conversion rate optimization, copywriting, SEO, analytics, pricing, and growth engineering skills for AI agents.'
+  zh-CN:
+    name: 增长与营销技能套件
+    description: '面向产品增长与营销的技能套件：涵盖转化率优化（CRO）、文案撰写、SEO、数据分析与增长工程。'
+author: Corey Haines
+homepage: https://github.com/coreyhaines31/marketingskills
+skills:
+- ab-testing
+- ad-creative
+- ads
+- ai-seo
+- analytics
+- aso
+- attribution
+- churn-prevention
+- co-marketing
+- cold-email
+- community-marketing
+- competitor-profiling
+- competitors
+- content-strategy
+- conversion-tracking
+- copy-editing
+- copywriting
+- cro
+- customer-research
+- directory-submissions
+- emails
+- events
+- free-tools
+- image
+- influencer-marketing
+- launch
+- lead-magnets
+- link-building
+- marketing-council
+- marketing-ideas
+- marketing-loops
+- marketing-plan
+- marketing-psychology
+- offers
+- onboarding
+- paywalls
+- popups
+- pricing
+- product-marketing
+- programmatic-seo
+- prospecting
+- public-relations
+- referrals
+- reverse-engineer-marketing
+- revops
+- sales-enablement
+- schema
+- seo-audit
+- signup
+- site-architecture
+- sms
+- social
+- video
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

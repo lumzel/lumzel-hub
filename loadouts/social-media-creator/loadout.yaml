@@ -1,0 +1,33 @@
+id: social-media-creator
+name: Social Media & Content Creator
+icon: 📱
+category: Content
+description: 'End-to-end social media creation: WeChat formatting, Xiaohongshu cards & notes, viral trend research, writing DNA distillation, AI-tone removal, and multi-platform upload.'
+i18n:
+  en:
+    name: Social Media & Content Creator
+    description: 'End-to-end social media creation: WeChat formatting, Xiaohongshu cards & notes, viral trend research, writing DNA distillation, AI-tone removal, and multi-platform upload.'
+  zh-CN:
+    name: 自媒体创作与多平台发布合集
+    description: '自媒体全流程聚合包：涵盖公众号排版与封面对、小红书图文与笔记创作、爆款趋势分析、写作风格蒸馏、中文去 AI 味及多平台自动发布。'
+author: Lumzel Curated
+homepage: https://github.com/op7418/guizang-social-card-skill
+skills:
+- guizang-social-card
+- xiaohu-wechat-format
+- gzh-design
+- xhs-note-creator
+- creator-buddy
+- writing-dna
+- lieflat-less-ai-tone
+- douyin-upload
+- xiaohongshu-upload
+- bilibili-upload
+- tiktok-upload
+- youtube-upload
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

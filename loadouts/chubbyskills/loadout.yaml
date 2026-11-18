@@ -1,0 +1,35 @@
+id: chubbyskills
+name: Chubby Knowledge Skills
+icon: 📚
+category: Knowledge
+description: '14 skills for ingesting Chinese omnichannel content (Douyin, Bilibili, Xiaohongshu, WeChat, X, podcasts) into a personal knowledge base.'
+i18n:
+  en:
+    name: Chubby Knowledge Skills
+    description: '14 skills for ingesting Chinese omnichannel content (Douyin, Bilibili, Xiaohongshu, WeChat, X, podcasts) into a personal knowledge base.'
+  zh-CN:
+    name: Chubby 全渠道知识库技能
+    description: '14 个中文全渠道内容采集技能（抖音、B 站、小红书、公众号、X、播客），支持字幕转写与个人知识库沉淀。'
+author: chubbyguan
+homepage: https://github.com/chubbyguan/chubbyskills
+skills:
+- bilibili-transcribe
+- content-enrich
+- douyin-transcribe
+- industry-intelligence-radar
+- knowledge-base-management
+- learning-notes-automation
+- podcast-transcribe
+- tiktok-transcribe
+- wechat-article-ingest
+- weibo-transcribe
+- x-ingest
+- xiaohongshu-ingest
+- youtube-transcribe
+- zhihu-transcribe
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

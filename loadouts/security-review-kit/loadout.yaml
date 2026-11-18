@@ -1,0 +1,27 @@
+id: security-review-kit
+name: Security & Code Audit Kit
+icon: 🛡️
+category: Security
+description: 'Security auditing, vulnerability scanning, patch-risk assessment, hybrid code review, and structured codebase improvement planning.'
+i18n:
+  en:
+    name: Security & Code Audit Kit
+    description: 'Security auditing, vulnerability scanning, patch-risk assessment, hybrid code review, and structured codebase improvement planning.'
+  zh-CN:
+    name: 安全审计与深度审查合集
+    description: '安全审计与代码审查合集：涵盖多阶段安全审计、漏洞扫描修复、补丁风险评估、混合架构 Code Review 与代码库改进规划。'
+author: Lumzel Curated
+homepage: https://github.com/cloudflare/security-audit-skill
+skills:
+- security-audit
+- improve
+- security-scan
+- deep-security-scan
+- assess-patch-risk
+- open-code-review
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

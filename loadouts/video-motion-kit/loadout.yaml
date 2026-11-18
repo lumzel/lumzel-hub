@@ -1,0 +1,26 @@
+id: video-motion-kit
+name: AI Video & Motion Kit
+icon: 🎥
+category: Media
+description: 'AI-driven video & motion skills: product launch videos, Vox-style explainers, art motion, narrated scripts, and agentic video editing.'
+i18n:
+  en:
+    name: AI Video & Motion Kit
+    description: 'AI-driven video & motion skills: product launch videos, Vox-style explainers, art motion, narrated scripts, and agentic video editing.'
+  zh-CN:
+    name: AI 视频与动画创作合集
+    description: 'AI 视频与动效创作聚合包：涵盖产品更新宣传片、Vox 拼贴风解说视频、艺术动画、AI 解说配音与视频剪辑。'
+author: Lumzel Curated
+homepage: https://github.com/op7418/guizang-product-video-skill
+skills:
+- guizang-product-video
+- vox-director
+- huashu-art-motion
+- narrator-ai-cli
+- video-use
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

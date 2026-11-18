@@ -1,0 +1,22 @@
+id: impeccable
+name: Impeccable Design
+icon: ✨
+category: Design
+description: 'Design vocabulary and critique framework for coding agents to polish UIs, audit visual craft, and eliminate generic AI slop.'
+i18n:
+  en:
+    name: Impeccable Design
+    description: 'Design vocabulary and critique framework for coding agents to polish UIs, audit visual craft, and eliminate generic AI slop.'
+  zh-CN:
+    name: Impeccable 设计审美
+    description: '为编码 Agent 提供设计词汇与审美审查框架，打磨界面细节并消除千篇一律的 AI 模板味。'
+author: Paul Bakaus
+homepage: https://github.com/pbakaus/impeccable
+skills:
+- impeccable
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

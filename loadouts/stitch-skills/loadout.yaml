@@ -1,0 +1,37 @@
+id: stitch-skills
+name: Google Stitch Skills
+icon: 🧵
+category: Design
+description: 'Agent Skills for Google Stitch design-to-code workflows: React, React Native, Vite dashboards, shadcn/ui, Remotion, and DESIGN.md extraction.'
+i18n:
+  en:
+    name: Google Stitch Skills
+    description: 'Agent Skills for Google Stitch design-to-code workflows: React, React Native, Vite dashboards, shadcn/ui, Remotion, and DESIGN.md extraction.'
+  zh-CN:
+    name: Google Stitch 设计转代码套件
+    description: 'Google Labs 出品的 Stitch 设计转代码技能库：支持 React、React Native、Vite 看板、shadcn/ui、Remotion 与 DESIGN.md 提取。'
+author: Google Labs
+homepage: https://github.com/google-labs-code/stitch-skills
+skills:
+- code-to-design
+- design-md
+- enhance-prompt
+- extract-design-md
+- extract-static-html
+- generate-design
+- manage-design-system
+- react-components
+- react-native
+- react-vite-dashboard
+- remotion
+- shadcn-ui
+- site-md
+- stitch-loop
+- taste-design
+- upload-to-stitch
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

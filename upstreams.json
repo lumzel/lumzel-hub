@@ -669,48 +669,6 @@
       ]
     },
     {
-      "id": "visual-docs",
-      "mode": "curated",
-      "keepSkillOrder": true,
-      "skills": [
-        {
-          "name": "diagram-design",
-          "repo": "cathrynlavery/diagram-design",
-          "path": "skills/diagram-design"
-        },
-        {
-          "name": "html-diagram",
-          "repo": "plannotator/effective-html",
-          "path": "skills/html-diagram"
-        },
-        {
-          "name": "html-wireframe",
-          "repo": "plannotator/effective-html",
-          "path": "skills/html-wireframe"
-        },
-        {
-          "name": "html-prototype",
-          "repo": "plannotator/effective-html",
-          "path": "skills/html-prototype"
-        },
-        {
-          "name": "html-plan",
-          "repo": "plannotator/effective-html",
-          "path": "skills/html-plan"
-        },
-        {
-          "name": "design-artifact",
-          "repo": "plannotator/effective-html",
-          "path": "skills/design-artifact"
-        },
-        {
-          "name": "kami",
-          "repo": "tw93/Kami",
-          "path": "skills/kami"
-        }
-      ]
-    },
-    {
       "id": "archify",
       "mode": "curated",
       "keepSkillOrder": true,
@@ -787,6 +745,567 @@
       },
       "preserve": [
         "AGENTS.md"
+      ]
+    },
+    {
+      "id": "addyosmani-skills",
+      "mode": "suite",
+      "repo": "addyosmani/agent-skills",
+      "skills": {
+        "mode": "dir",
+        "path": "skills"
+      }
+    },
+    {
+      "id": "stitch-skills",
+      "mode": "curated",
+      "skills": [
+        {
+          "name": "react-components",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-build/skills/react-components"
+        },
+        {
+          "name": "react-native",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-build/skills/react-native"
+        },
+        {
+          "name": "react-vite-dashboard",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-build/skills/react-vite-dashboard"
+        },
+        {
+          "name": "remotion",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-build/skills/remotion"
+        },
+        {
+          "name": "shadcn-ui",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-build/skills/shadcn-ui"
+        },
+        {
+          "name": "code-to-design",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-design/skills/code-to-design"
+        },
+        {
+          "name": "extract-design-md",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-design/skills/extract-design-md"
+        },
+        {
+          "name": "extract-static-html",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-design/skills/extract-static-html"
+        },
+        {
+          "name": "generate-design",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-design/skills/generate-design"
+        },
+        {
+          "name": "manage-design-system",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-design/skills/manage-design-system"
+        },
+        {
+          "name": "upload-to-stitch",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-design/skills/upload-to-stitch"
+        },
+        {
+          "name": "design-md",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-utilities/skills/design-md"
+        },
+        {
+          "name": "enhance-prompt",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-utilities/skills/enhance-prompt"
+        },
+        {
+          "name": "site-md",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-utilities/skills/site-md"
+        },
+        {
+          "name": "stitch-loop",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-utilities/skills/stitch-loop"
+        },
+        {
+          "name": "taste-design",
+          "repo": "google-labs-code/stitch-skills",
+          "path": "plugins/stitch-utilities/skills/taste-design"
+        }
+      ]
+    },
+    {
+      "id": "claude-bughunter",
+      "mode": "suite",
+      "repo": "elementalsouls/Claude-BugHunter",
+      "skills": {
+        "mode": "dir",
+        "path": "skills"
+      }
+    },
+    {
+      "id": "plannotator",
+      "mode": "curated",
+      "skills": [
+        {
+          "name": "plannotator",
+          "repo": "backnotprop/plannotator",
+          "path": "apps/skills/core/plannotator"
+        },
+        {
+          "name": "plannotator-annotate",
+          "repo": "backnotprop/plannotator",
+          "path": "apps/skills/core/plannotator-annotate"
+        },
+        {
+          "name": "plannotator-review",
+          "repo": "backnotprop/plannotator",
+          "path": "apps/skills/core/plannotator-review"
+        },
+        {
+          "name": "plannotator-inbox",
+          "repo": "backnotprop/plannotator",
+          "path": "apps/skills/core/plannotator-inbox"
+        },
+        {
+          "name": "plannotator-last",
+          "repo": "backnotprop/plannotator",
+          "path": "apps/skills/core/plannotator-last"
+        },
+        {
+          "name": "html-plan",
+          "repo": "plannotator/effective-html",
+          "path": "skills/html-plan"
+        },
+        {
+          "name": "html-diagram",
+          "repo": "plannotator/effective-html",
+          "path": "skills/html-diagram"
+        },
+        {
+          "name": "html-wireframe",
+          "repo": "plannotator/effective-html",
+          "path": "skills/html-wireframe"
+        },
+        {
+          "name": "html-prototype",
+          "repo": "plannotator/effective-html",
+          "path": "skills/html-prototype"
+        },
+        {
+          "name": "design-artifact",
+          "repo": "plannotator/effective-html",
+          "path": "skills/design-artifact"
+        }
+      ]
+    },
+    {
+      "id": "impeccable",
+      "mode": "curated",
+      "skills": [
+        {
+          "name": "impeccable",
+          "repo": "pbakaus/impeccable",
+          "path": ".claude/skills/impeccable"
+        }
+      ]
+    },
+    {
+      "id": "open-montage",
+      "mode": "suite",
+      "repo": "OpenMontageInc/OpenMontage",
+      "skills": {
+        "mode": "dir",
+        "path": ".agents/skills"
+      }
+    },
+    {
+      "id": "chubbyskills",
+      "mode": "suite",
+      "repo": "chubbyguan/chubbyskills",
+      "skills": {
+        "mode": "dir",
+        "path": "."
+      }
+    },
+    {
+      "id": "marketingskills",
+      "mode": "suite",
+      "repo": "coreyhaines31/marketingskills",
+      "skills": {
+        "mode": "dir",
+        "path": "skills"
+      }
+    },
+    {
+      "id": "opc-skills",
+      "mode": "suite",
+      "repo": "ReScienceLab/opc-skills",
+      "skills": {
+        "mode": "dir",
+        "path": "skills"
+      }
+    },
+    {
+      "id": "swiftui-agent",
+      "mode": "curated",
+      "skills": [
+        {
+          "name": "swiftui-pro",
+          "repo": "twostraws/SwiftUI-Agent-Skill",
+          "path": "swiftui-pro"
+        }
+      ]
+    },
+    {
+      "id": "ui-design-kit",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "preserveLocalSkills": true,
+      "skills": [
+        {
+          "name": "taste-skill",
+          "repo": "Leonxlnx/taste-skill",
+          "skillFile": "skills/taste-skill/SKILL.md",
+          "extraDirs": {
+            "scripts": "skills/taste-skill/scripts",
+            "references": "skills/taste-skill/references",
+            "library": "skills/taste-skill/library"
+          }
+        },
+        {
+          "name": "ui-ux-pro-max",
+          "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+          "path": ".claude/skills/ui-ux-pro-max"
+        },
+        {
+          "name": "design-system",
+          "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+          "path": ".claude/skills/design-system"
+        },
+        {
+          "name": "motion-design",
+          "repo": "LottieFiles/motion-design-skill",
+          "path": "skills/motion-design"
+        },
+        {
+          "name": "transitions-dev",
+          "repo": "Jakubantalik/transitions.dev",
+          "path": "skills/transitions-dev"
+        },
+        {
+          "name": "extract-design",
+          "repo": "Manavarya09/design-extract",
+          "path": "skills/extract-design"
+        }
+      ]
+    },
+    {
+      "id": "visual-story-kit",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "guizang-ppt",
+          "repo": "op7418/guizang-ppt-skill",
+          "skillFile": "SKILL.md",
+          "extraDirs": {
+            "references": "references",
+            "scripts": "scripts"
+          }
+        },
+        {
+          "name": "ppt-master",
+          "repo": "hugohe3/ppt-master",
+          "skillFile": "skills/ppt-master/SKILL.md",
+          "extraDirs": {
+            "references": "skills/ppt-master/references",
+            "workflows": "skills/ppt-master/workflows"
+          }
+        },
+        {
+          "name": "document-illustrator",
+          "repo": "op7418/Document-illustrator-skill",
+          "path": "."
+        },
+        {
+          "name": "logo-generator",
+          "repo": "op7418/logo-generator-skill",
+          "path": "."
+        },
+        {
+          "name": "ip-as-logo",
+          "repo": "s1dashu/ip-as-logo-skill",
+          "path": "."
+        },
+        {
+          "name": "mono-color",
+          "repo": "yanliudesign/mono-color-skill",
+          "path": "."
+        },
+        {
+          "name": "handraw-style",
+          "repo": "yang0/handraw-style",
+          "path": "."
+        },
+        {
+          "name": "anatomy",
+          "repo": "wheresryan22/anatomy",
+          "path": "."
+        },
+        {
+          "name": "app-store-screenshots",
+          "repo": "ParthJadhav/app-store-screenshots",
+          "path": "skills/app-store-screenshots"
+        },
+        {
+          "name": "gpt-image-2-style-library",
+          "repo": "freestylefly/awesome-gpt-image-2",
+          "path": "agents/skills/gpt-image-2-style-library"
+        },
+        {
+          "name": "kami",
+          "repo": "tw93/Kami",
+          "path": "skills/kami"
+        },
+        {
+          "name": "diagram-design",
+          "repo": "cathrynlavery/diagram-design",
+          "skillFile": "skills/diagram-design/SKILL.md",
+          "extraDirs": {
+            "references": "skills/diagram-design/references",
+            "scripts": "skills/diagram-design/scripts"
+          }
+        }
+      ]
+    },
+    {
+      "id": "social-media-creator",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "guizang-social-card",
+          "repo": "op7418/guizang-social-card-skill",
+          "path": "."
+        },
+        {
+          "name": "xiaohu-wechat-format",
+          "repo": "xiaohuailabs/xiaohu-wechat-format",
+          "path": "."
+        },
+        {
+          "name": "gzh-design",
+          "repo": "isjiamu/gzh-design-skill",
+          "path": "."
+        },
+        {
+          "name": "xhs-note-creator",
+          "repo": "comeonzhj/Auto-Redbook-Skills",
+          "path": "."
+        },
+        {
+          "name": "creator-buddy",
+          "repo": "SpaceZephyr/creator-buddy",
+          "path": "."
+        },
+        {
+          "name": "writing-dna",
+          "repo": "larashero3-dotcom/writing-dna-skill",
+          "path": "."
+        },
+        {
+          "name": "lieflat-less-ai-tone",
+          "repo": "larashero3-dotcom/lieflat-less-ai-tone",
+          "path": "."
+        },
+        {
+          "name": "douyin-upload",
+          "repo": "dreammis/social-auto-upload",
+          "path": "skills/douyin-upload"
+        },
+        {
+          "name": "xiaohongshu-upload",
+          "repo": "dreammis/social-auto-upload",
+          "path": "skills/xiaohongshu-upload"
+        },
+        {
+          "name": "bilibili-upload",
+          "repo": "dreammis/social-auto-upload",
+          "path": "skills/bilibili-upload"
+        },
+        {
+          "name": "tiktok-upload",
+          "repo": "dreammis/social-auto-upload",
+          "path": "skills/tiktok-upload"
+        },
+        {
+          "name": "youtube-upload",
+          "repo": "dreammis/social-auto-upload",
+          "path": "skills/youtube-upload"
+        }
+      ]
+    },
+    {
+      "id": "video-motion-kit",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "guizang-product-video",
+          "repo": "op7418/guizang-product-video-skill",
+          "path": "."
+        },
+        {
+          "name": "vox-director",
+          "repo": "Alisa0808/vox-director",
+          "skillFile": "SKILL.md",
+          "extraDirs": {
+            "references": "references",
+            "scripts": "scripts"
+          }
+        },
+        {
+          "name": "huashu-art-motion",
+          "repo": "alchaincyf/huashu-art-motion",
+          "skillFile": "SKILL.md",
+          "extraDirs": {
+            "references": "references"
+          }
+        },
+        {
+          "name": "narrator-ai-cli",
+          "repo": "NarratorAI-Studio/narrator-ai-cli-skill",
+          "path": "."
+        },
+        {
+          "name": "video-use",
+          "repo": "browser-use/video-use",
+          "path": "."
+        }
+      ]
+    },
+    {
+      "id": "research-knowledge-kit",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "preserveLocalSkills": true,
+      "skills": [
+        {
+          "name": "agent-reach",
+          "repo": "Panniantong/Agent-Reach",
+          "path": "agent_reach/skill"
+        },
+        {
+          "name": "last30days",
+          "repo": "mvanhorn/last30days-skill",
+          "skillFile": "skills/last30days/SKILL.md",
+          "extraDirs": {
+            "references": "skills/last30days/references",
+            "scripts": "skills/last30days/scripts"
+          }
+        },
+        {
+          "name": "horizon",
+          "repo": "Thysrael/Horizon",
+          "path": "skills/horizon"
+        },
+        {
+          "name": "nuwa",
+          "repo": "alchaincyf/nuwa-skill",
+          "skillFile": "SKILL.md",
+          "extraDirs": {
+            "references": "references",
+            "scripts": "scripts"
+          }
+        }
+      ]
+    },
+    {
+      "id": "security-review-kit",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "preserveLocalSkills": true,
+      "skills": [
+        {
+          "name": "security-audit",
+          "repo": "cloudflare/security-audit-skill",
+          "path": "skills/security-audit"
+        },
+        {
+          "name": "improve",
+          "repo": "shadcn/improve",
+          "path": "skills/improve"
+        },
+        {
+          "name": "security-scan",
+          "repo": "openai/codex-security",
+          "path": "plugins/codex-security/skills/security-scan"
+        },
+        {
+          "name": "deep-security-scan",
+          "repo": "openai/codex-security",
+          "path": "plugins/codex-security/skills/deep-security-scan"
+        },
+        {
+          "name": "assess-patch-risk",
+          "repo": "openai/codex-security",
+          "path": "plugins/codex-security/skills/assess-patch-risk"
+        }
+      ]
+    },
+    {
+      "id": "agent-meta-kit",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "darwin-skill",
+          "repo": "alchaincyf/darwin-skill",
+          "skillFile": "SKILL.md",
+          "extraDirs": {
+            "references": "references",
+            "scripts": "scripts",
+            "templates": "templates"
+          }
+        },
+        {
+          "name": "i-have-adhd",
+          "repo": "ayghri/i-have-adhd",
+          "path": "skills/i-have-adhd"
+        },
+        {
+          "name": "huashu-mac-use",
+          "repo": "alchaincyf/huashu-mac-use",
+          "skillFile": "SKILL.md",
+          "extraDirs": {
+            "references": "references",
+            "scripts": "scripts"
+          }
+        },
+        {
+          "name": "agent-browser",
+          "repo": "vercel-labs/agent-browser",
+          "path": "skill-data/core"
+        },
+        {
+          "name": "web-design-engineer",
+          "repo": "ConardLi/garden-skills",
+          "path": "skills/web-design-engineer"
+        },
+        {
+          "name": "kb-retriever",
+          "repo": "ConardLi/garden-skills",
+          "path": "skills/kb-retriever"
+        }
       ]
     }
   ],
@@ -882,6 +1401,106 @@
     "daveebbelaar/bama": {
       "branch": "main",
       "sha": "22dc792ea040a35270c219c669f626594267aa1f"
+    },
+    "op7418/guizang-social-card-skill": {
+      "branch": "main",
+      "sha": "64d02d435fb092d3b403455a875e842fc8f29b8b"
+    },
+    "xiaohuailabs/xiaohu-wechat-format": {
+      "branch": "main",
+      "sha": "dbddf0fd9c1189a6f3e0bec1bebb1b0e47e8ddf0"
+    },
+    "isjiamu/gzh-design-skill": {
+      "branch": "main",
+      "sha": "750a50dffdc4abb5e853b98136dad13a57e64ce3"
+    },
+    "comeonzhj/Auto-Redbook-Skills": {
+      "branch": "main",
+      "sha": "da1c73a6624d1df1330e161663c3614753d4220b"
+    },
+    "SpaceZephyr/creator-buddy": {
+      "branch": "main",
+      "sha": "edf46c567ff54b72ee2157d06f3a02dbd67aaa9c"
+    },
+    "larashero3-dotcom/writing-dna-skill": {
+      "branch": "main",
+      "sha": "1335568bfd1141fc8447caaa812e6119e2d2fbbf"
+    },
+    "larashero3-dotcom/lieflat-less-ai-tone": {
+      "branch": "main",
+      "sha": "fe77df00a27cf94428632ad449a4aecdcb83db41"
+    },
+    "dreammis/social-auto-upload": {
+      "branch": "main",
+      "sha": "3847fff01f5434a8a32829833163cd6723cabc59"
+    },
+    "op7418/guizang-product-video-skill": {
+      "branch": "main",
+      "sha": "18842e0f49a9eb2b8c00cc065ec37b314e235aaa"
+    },
+    "Alisa0808/vox-director": {
+      "branch": "main",
+      "sha": "6a85a7c341610442a6a5b1885e6e0217ab82a11f"
+    },
+    "alchaincyf/huashu-art-motion": {
+      "branch": "main",
+      "sha": "a97c45018d46e950d56d61981138e08f4e092909"
+    },
+    "NarratorAI-Studio/narrator-ai-cli-skill": {
+      "branch": "main",
+      "sha": "4b17c6f2175bd532c92db778a847f8fb6bdd3177"
+    },
+    "browser-use/video-use": {
+      "branch": "main",
+      "sha": "43cfc566833548093455c9d4a46bd69913b7e552"
+    },
+    "Panniantong/Agent-Reach": {
+      "branch": "main",
+      "sha": "c70ae6da5d39bc90e09ad2ae0575ccc89f31e284"
+    },
+    "mvanhorn/last30days-skill": {
+      "branch": "main",
+      "sha": "a854f3bcb2c4344d7498426d653378510f8b253a"
+    },
+    "Thysrael/Horizon": {
+      "branch": "main",
+      "sha": "12d5fbde4d9e0776a48618ea65d16fe6d1e1b606"
+    },
+    "alchaincyf/nuwa-skill": {
+      "branch": "main",
+      "sha": "1723347cb54bcfdd63908df141ac9d87a92f3f33"
+    },
+    "cloudflare/security-audit-skill": {
+      "branch": "main",
+      "sha": "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8"
+    },
+    "shadcn/improve": {
+      "branch": "main",
+      "sha": "cac56e1ebd3c279aa9153616cfeac7b174ab90f9"
+    },
+    "openai/codex-security": {
+      "branch": "main",
+      "sha": "ffee55ab54ca4ecebb1c088146177164c1228d91"
+    },
+    "alchaincyf/darwin-skill": {
+      "branch": "master",
+      "sha": "5a8e633a20ea5bb2bf8b9c697c6da04ad85740ba"
+    },
+    "ayghri/i-have-adhd": {
+      "branch": "main",
+      "sha": "1ecea1993b7fce257ffbd686c070948b5e07eda6"
+    },
+    "alchaincyf/huashu-mac-use": {
+      "branch": "master",
+      "sha": "d3d3f4e58457abb589d46fe7f88f3f47636fee3c"
+    },
+    "vercel-labs/agent-browser": {
+      "branch": "main",
+      "sha": "deda8eff5e29bcc3b4a9f10aafd1412dbe91745a"
+    },
+    "ConardLi/garden-skills": {
+      "branch": "main",
+      "sha": "9578a34edf3c359da23d8a632b72790834961d11"
     }
   }
 }

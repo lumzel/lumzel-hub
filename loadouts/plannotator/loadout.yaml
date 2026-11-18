@@ -1,0 +1,31 @@
+id: plannotator
+name: Plannotator
+icon: 📝
+category: Workflow
+description: 'Interactive plan and code review workspace skills with visual HTML plans, diagrams, wireframes, and clickable prototypes.'
+i18n:
+  en:
+    name: Plannotator
+    description: 'Interactive plan and code review workspace skills with visual HTML plans, diagrams, wireframes, and clickable prototypes.'
+  zh-CN:
+    name: Plannotator 计划与审查批注
+    description: '交互式计划与代码审查批注工作区技能集，并集成可视化 HTML 计划、图表、线框与原型输出。'
+author: backnotprop
+homepage: https://github.com/backnotprop/plannotator
+skills:
+- design-artifact
+- html-diagram
+- html-plan
+- html-prototype
+- html-wireframe
+- plannotator
+- plannotator-annotate
+- plannotator-inbox
+- plannotator-last
+- plannotator-review
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

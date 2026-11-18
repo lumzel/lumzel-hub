@@ -1,0 +1,31 @@
+id: opc-skills
+name: Solopreneur OPC Skills
+icon: 🧑‍💻
+category: Business
+description: 'Agent skills tailored for solopreneurs and indie hackers covering domain hunting, SEO/GEO, banners, and product launches.'
+i18n:
+  en:
+    name: Solopreneur OPC Skills
+    description: 'Agent skills tailored for solopreneurs and indie hackers covering domain hunting, SEO/GEO, banners, and product launches.'
+  zh-CN:
+    name: 独立开发者一人公司套件
+    description: '专为独立开发者与一人公司打造的技能集，覆盖域名挖掘、SEO/GEO 优化、宣传图与产品发布。'
+author: ReScienceLab
+homepage: https://github.com/ReScienceLab/opc-skills
+skills:
+- archive
+- banner-creator
+- domain-hunter
+- logo-creator
+- nanobanana
+- producthunt
+- reddit
+- requesthunt
+- seo-geo
+- twitter
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

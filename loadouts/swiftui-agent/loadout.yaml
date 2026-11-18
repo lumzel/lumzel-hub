@@ -1,0 +1,22 @@
+id: swiftui-agent
+name: SwiftUI Agent Skill
+icon: 🍎
+category: Engineering
+description: 'SwiftUI best-practice skill for building modern Apple-platform interfaces with AI coding agents.'
+i18n:
+  en:
+    name: SwiftUI Agent Skill
+    description: 'SwiftUI best-practice skill for building modern Apple-platform interfaces with AI coding agents.'
+  zh-CN:
+    name: SwiftUI 开发规范技能
+    description: 'Paul Hudson 出品的 SwiftUI 开发最佳实践技能，适合 iOS 与 macOS 原生界面开发。'
+author: Paul Hudson
+homepage: https://github.com/twostraws/SwiftUI-Agent-Skill
+skills:
+- swiftui-pro
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

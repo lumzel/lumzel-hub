@@ -1,0 +1,27 @@
+id: research-knowledge-kit
+name: Web Research & Knowledge Kit
+icon: 🔍
+category: Research
+description: 'Cross-platform research and knowledge management: Agent-Reach, MediaCrawler, last30days topic synthesis, Horizon news radar, LLM Wiki, and Nuwa mental-model distillation.'
+i18n:
+  en:
+    name: Web Research & Knowledge Kit
+    description: 'Cross-platform research and knowledge management: Agent-Reach, MediaCrawler, last30days topic synthesis, Horizon news radar, LLM Wiki, and Nuwa mental-model distillation.'
+  zh-CN:
+    name: 全网调研、爬虫与知识沉淀合集
+    description: '全网调研与知识库合集：集成 Agent-Reach、MediaCrawler 多平台爬虫、近 30 天热点总结、Horizon 新闻雷达、LLM Wiki 与女娲思维蒸馏。'
+author: Lumzel Curated
+homepage: https://github.com/Panniantong/Agent-Reach
+skills:
+- agent-reach
+- last30days
+- horizon
+- nuwa
+- llm-wiki-agent
+- media-crawler
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

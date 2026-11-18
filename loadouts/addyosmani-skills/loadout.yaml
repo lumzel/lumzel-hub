@@ -1,0 +1,46 @@
+id: addyosmani-skills
+name: Addy Osmani Engineering Skills
+icon: 🛠️
+category: Engineering
+description: 'Production-grade engineering skills for AI coding agents: specs, planning, architecture, testing, code review, CI/CD, and incremental delivery.'
+i18n:
+  en:
+    name: Addy Osmani Engineering Skills
+    description: 'Production-grade engineering skills for AI coding agents: specs, planning, architecture, testing, code review, CI/CD, and incremental delivery.'
+  zh-CN:
+    name: Addy Osmani 工程技能套件
+    description: '面向 AI 编程助手的生产级工程技能集：涵盖需求规格、规划、架构设计、测试、代码审查、CI/CD 与渐进式交付。'
+author: Addy Osmani
+homepage: https://github.com/addyosmani/agent-skills
+skills:
+- api-and-interface-design
+- browser-testing-with-devtools
+- ci-cd-and-automation
+- code-review-and-quality
+- code-simplification
+- constraint-driven-development
+- context-engineering
+- debugging-and-error-recovery
+- deprecation-and-migration
+- documentation-and-adrs
+- doubt-driven-development
+- frontend-ui-engineering
+- git-workflow-and-versioning
+- idea-refine
+- incremental-implementation
+- interview-me
+- observability-and-instrumentation
+- performance-optimization
+- planning-and-task-breakdown
+- security-and-hardening
+- shipping-and-launch
+- source-driven-development
+- spec-driven-development
+- test-driven-development
+- using-agent-skills
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}

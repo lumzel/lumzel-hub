@@ -1,0 +1,33 @@
+id: visual-story-kit
+name: Visual, Slides & Illustration Kit
+icon: 🖼️
+category: Design
+description: 'Visual creation skills for slide decks, article illustrations, logos and IP mascots, hand-drawn & editorial styles, App Store screenshots, GPT Image 2 styles, and diagrams.'
+i18n:
+  en:
+    name: Visual, Slides & Illustration Kit
+    description: 'Visual creation skills for slide decks, article illustrations, logos and IP mascots, hand-drawn & editorial styles, App Store screenshots, GPT Image 2 styles, and diagrams.'
+  zh-CN:
+    name: 视觉插画、PPT 与截图设计合集
+    description: '视觉创作聚合包：涵盖 HTML/原生 PPT 生成、文章配图、Logo 与 IP 形象、手绘与单色印刷风、App Store 截图、GPT Image 2 风格库与编辑级图表。'
+author: Lumzel Curated
+homepage: https://github.com/op7418/guizang-ppt-skill
+skills:
+- guizang-ppt
+- ppt-master
+- document-illustrator
+- logo-generator
+- ip-as-logo
+- mono-color
+- handraw-style
+- anatomy
+- app-store-screenshots
+- gpt-image-2-style-library
+- kami
+- diagram-design
+agents: {}
+mcp: []
+hooks: []
+rules: []
+plugins: []
+env: {}
