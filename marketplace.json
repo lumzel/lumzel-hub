@@ -761,6 +761,31 @@
       },
       "source": "./loadouts/agent-meta-kit",
       "version": "1.0.0"
+    },
+    {
+      "id": "rea",
+      "name": "REA (Reverse Engineer Anything)",
+      "icon": "🔬",
+      "description": "Reverse engineer native binaries, managed code, Electron/JS apps, APKs, firmware, and browser targets with REA (Reverse Engineer Anything) skill and MCP server.",
+      "i18n": {
+        "en": {
+          "name": "REA (Reverse Engineer Anything)",
+          "description": "Reverse engineer native binaries, managed code, Electron/JS apps, APKs, firmware, and browser targets with REA (Reverse Engineer Anything) skill and MCP server."
+        },
+        "zh-CN": {
+          "name": "REA 全能逆向工程套件",
+          "description": "集成 morluto/rea（Reverse Engineer Anything）官方 Skill 与 MCP 服务：支持原生二进制、Electron/JS、APK、固件及浏览器目标的静态与动态逆向分析。"
+        }
+      },
+      "category": "Security",
+      "author": "morluto",
+      "homepage": "https://github.com/morluto/rea",
+      "counts": {
+        "skills": 1,
+        "mcp": 1
+      },
+      "source": "./loadouts/rea",
+      "version": "1.0.0"
     }
   ],
   "decks": [

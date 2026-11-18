@@ -1307,6 +1307,18 @@
           "path": "skills/kb-retriever"
         }
       ]
+    },
+    {
+      "id": "rea",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "reverse-engineer-anything",
+          "repo": "morluto/rea",
+          "path": ".agents/skills/reverse-engineer-anything"
+        }
+      ]
     }
   ],
   "repos": {
@@ -1501,6 +1513,10 @@
     "ConardLi/garden-skills": {
       "branch": "main",
       "sha": "9578a34edf3c359da23d8a632b72790834961d11"
+    },
+    "morluto/rea": {
+      "branch": "main",
+      "sha": "e2ccd682cb441436c6c13e180fbb315788212364"
     }
   }
 }
