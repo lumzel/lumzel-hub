@@ -1,0 +1,13 @@
+{
+  "command": "npx",
+  "args": [
+    "-y",
+    "-p",
+    "@mnemosyne_os/mcp@2.4.0",
+    "mnemosyne-mcp"
+  ],
+  "env": {
+    "MNEMO_VAULTS": "${env:MNEMO_VAULTS}",
+    "MNEMO_DEFAULT_VAULT": "${env:MNEMO_DEFAULT_VAULT}"
+  }
+}

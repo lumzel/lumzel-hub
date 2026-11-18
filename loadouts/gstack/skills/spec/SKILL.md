@@ -2,7 +2,7 @@
 name: spec
 preamble-tier: 3
 version: 0.1.0
-description: Turn vague intent into a precise, executable spec in five phases. (gstack)
+description: "Turn vague intent into a precise, executable spec in five phases. Use for: spec this out, file an issue, write up a ticket. (gstack)"
 allowed-tools:
   - Bash
   - Read
@@ -22,7 +22,7 @@ triggers:
 
 ## Shared preamble (load first)
 
-This skill follows gstack shared preamble `4e82fa4c839f` (AskUserQuestion format, voice, writing, completeness and completion rules). If your Read of that file, headed by this id, is still in context, do not read it again; otherwise Read `~/.claude/skills/gstack/spec/sections/preamble.md` in full before the command below. A section or subsection here with a shared heading replaces the shared one.
+This skill follows gstack shared preamble `d8804c5ab6bf` (AskUserQuestion format, voice, writing, completeness and completion rules). If your Read of that file, headed by this id, is still in context, do not read it again; otherwise Read `~/.claude/skills/gstack/spec/sections/preamble.md` in full before the command below. A section or subsection here with a shared heading replaces the shared one.
 
 ## Preamble (run first)
 
@@ -622,7 +622,8 @@ Add to the standard template:
   route them to `/office-hours` first. `/spec` is for work that has already
   passed the "is this worth building" bar.
 - **After `/spec`:** if the spec describes architectural or design risk that
-  needs review before implementation starts, suggest `/autoplan`.
+  needs review before implementation starts, suggest `/plan-eng-review` (or
+  `/autoplan` for the full review gauntlet).
 - **For implementation:** the issue itself is the handoff. The implementer can
   open it and execute without re-asking the user.
   **Implementation model:** relay model/source from `"$HOME/.claude/skills/gstack/bin/gstack-models" resolve --role implementation --provider anthropic`. gstack cannot change this session. Recommend only; no spawn or config edits unless asked. On error, relay its repair, not a model. [Policy setup](https://github.com/garrytan/gstack/blob/main/docs/model-policy.md).

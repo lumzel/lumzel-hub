@@ -63,4 +63,3 @@ env_schema:
         label: Hugging Face 镜像地址
         description: 可选配置 Hugging Face 模型下载镜像端点。
         placeholder: https://hf-mirror.com
-

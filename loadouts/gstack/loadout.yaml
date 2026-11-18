@@ -120,4 +120,3 @@ env_schema:
         label: 冻结编辑白名单目录
         description: 可选限制 gstack freeze 护栏仅允许编辑的目录路径（留空不限制）。
         placeholder: src/payments
-

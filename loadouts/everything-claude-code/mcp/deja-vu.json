@@ -1,0 +1,11 @@
+{
+  "command": "npx",
+  "args": [
+    "-y",
+    "@vshulcz/deja-vu@0.24.0",
+    "mcp"
+  ],
+  "env": {
+    "DEJA_OFFLINE": "1"
+  }
+}

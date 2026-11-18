@@ -2,7 +2,7 @@
 name: ship
 preamble-tier: 4
 version: 1.0.0
-description: "Ship it: merge the base, run tests, review the diff, bump VERSION and CHANGELOG, push and create a PR. (gstack)"
+description: "Ship it: merge the base, run tests, review the diff, bump VERSION and CHANGELOG, push and create a PR. Use for: ship it, create a pr, push to main. (gstack)"
 allowed-tools:
   - Bash
   - Read
@@ -17,14 +17,13 @@ triggers:
   - ship it
   - create a pr
   - push to main
-  - deploy this
 ---
 <!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
 <!-- Regenerate: bun run gen:skill-docs -->
 
 ## Shared preamble (load first)
 
-This skill follows gstack shared preamble `4e82fa4c839f` (AskUserQuestion format, voice, writing, completeness and completion rules). If your Read of that file, headed by this id, is still in context, do not read it again; otherwise Read `~/.claude/skills/gstack/ship/sections/preamble.md` in full before the command below. A section or subsection here with a shared heading replaces the shared one.
+This skill follows gstack shared preamble `d8804c5ab6bf` (AskUserQuestion format, voice, writing, completeness and completion rules). If your Read of that file, headed by this id, is still in context, do not read it again; otherwise Read `~/.claude/skills/gstack/ship/sections/preamble.md` in full before the command below. A section or subsection here with a shared heading replaces the shared one.
 
 ## Preamble (run first)
 
@@ -395,7 +394,7 @@ and outside_status; retain partial coverage. These details do not clear Eng Revi
 
 **3. Choose the historical verdict.** CLEARED requires the selected Eng Review
 to be `clean`, within 7 days and fresh under step 2. Otherwise report NOT CLEARED
-and its missing, stale or open-issue reason. With no Eng Review record, say "no saved Eng Review: run the `PERSIST:` line a read-only eng review printed, or rerun /autoplan" (docs/troubleshooting.md#plan-eng-review-not-persisted). If `skip_eng_review` is true, show
+and its missing, stale or open-issue reason. With no Eng Review record, say "no saved Eng Review: run the `PERSIST:` line a read-only /plan-eng-review printed, or rerun it" (docs/troubleshooting.md#plan-eng-review-not-persisted). If `skip_eng_review` is true, show
 "SKIPPED (global)" for Eng Review and CLEARED for this dashboard.
 This verdict never skips Step 9 or its finding, approval and convergence gates. Continue Step 1 even when history is NOT CLEARED.
 
@@ -423,7 +422,7 @@ VERDICT: {CLEARED or NOT CLEARED} — {reason}
 
 An outside review with status `unverified` or `unavailable` is missing coverage, never a pass.
 
-Over 200 lines, `DIFF:` recommends `/autoplan`. `SCOPE: frontend=true` (from
+Over 200 lines, `DIFF:` recommends `/plan-eng-review` or `/autoplan`. `SCOPE: frontend=true` (from
 `gstack-diff-scope <base>`) (Lit or htm templates in .ts/.js count) with no design review: mention "Design Review: static (no preview declared) — Step 9 runs the lite check only; consider /design-review on a served page for a visual audit."
 
 Continue to Step 2 without asking; Step 9 applies the review gates.
@@ -866,16 +865,17 @@ A new PR or an existing draft needs no question: Step 19 creates or keeps the dr
 ~/.claude/skills/gstack/bin/gstack-ship-release push --branch <branch-name>
 ```
 
-It checks the branch, the offer, the gate above (`--gate-open <n>`; `--gate-open-approved` is B)
-`gstack-pregate sealed` and push guards, then `git ls-remote --heads origin refs/heads/<branch-name>` against HEAD: a failed lookup STOPs, a match prints
-`PUSH: ALREADY_PUSHED` (go to Step 18), else it runs `git push -u origin <branch-name>`.
+It checks the branch, the offer, the gate above (`--gate-open <n>`; `--gate-open-approved` is B),
+the sealed and push guards, then `git ls-remote --heads origin refs/heads/<branch-name>` against HEAD: a failed lookup STOPs,
+a match is `already_pushed` (Step 18), else `git push -u`. It ends with
+`PUSH: pushed|already_pushed|failed …`; quote it.
 
 **If the push fails, STOP.** No Step 19 or publication claim. Report the error:
 - **Non-fast-forward push:** fetch and inspect the remote, then merge under Step 3's
   conflict rules. Run Steps 5–16 before returning to Step 17. Never rewrite history.
 - **Authentication, hook or network failure:** repair the cause, then repeat Step 16
   even with unchanged content before returning to Step 17. Never bypass failed guards.
-Never force-push. Only a successful push or verified `ALREADY_PUSHED` proceeds.
+Never force-push. Only a successful push or `already_pushed` proceeds.
 
 After `EVIDENCE: DEFERRED`, run Step 5's `gstack-ship-release accept`; a `STOP:` there
 is a failed lane (stage 4). Continue to Step 18. No documentation writer runs after push.

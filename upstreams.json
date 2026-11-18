@@ -793,7 +793,7 @@
   "repos": {
     "affaan-m/everything-claude-code": {
       "branch": "main",
-      "sha": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b"
+      "sha": "3f14a103a8694e51c1df9a806217a6d0b5f7a6f7"
     },
     "mattpocock/skills": {
       "branch": "main",
@@ -805,15 +805,15 @@
     },
     "github/spec-kit": {
       "branch": "main",
-      "sha": "979b0a3c1277283371c9901ad0eed04b64a99997"
+      "sha": "59d61c59630c3bd5a294f4c23e43a60d8ab98d02"
     },
     "EveryInc/compound-engineering-plugin": {
       "branch": "main",
-      "sha": "d8f8e03237bded06e77bcb3930b43ef841e7eeda"
+      "sha": "8f7614639e7f3792a6f9337d8742a80a232bd596"
     },
     "garrytan/gstack": {
       "branch": "main",
-      "sha": "990315df00f749ae380cc8869c51c8e864dd2f32"
+      "sha": "44170d67916dc80a008803f7b3f7cbf7dbe32ea7"
     },
     "builderio/skills": {
       "branch": "main",
@@ -825,7 +825,7 @@
     },
     "github/awesome-copilot": {
       "branch": "main",
-      "sha": "30a0d7465b14b05e05949d6588b99f7af0c537b4"
+      "sha": "a255a193d1318e5a9ca3e9e575897f9a7845c099"
     },
     "blader/humanizer": {
       "branch": "main",
@@ -840,24 +840,24 @@
       "sha": "a766623b062331fdde53467001379b4ddf3acc2f"
     },
     "safishamsi/graphify": {
-      "branch": "main",
-      "sha": "06aa51be050170675912781ad8a2be2b20439d39"
+      "branch": "v8",
+      "sha": "340268a70a83588d6b3c6de1fffb05326350ef1d"
     },
     "anthropics/skills": {
       "branch": "main",
-      "sha": "2c5958ecac7cee2b583967a2c4981d0f4a75c579"
+      "sha": "e4bb5d960d87126ff3b3a8af1a104b7db67560ba"
     },
     "BuilderIO/agent-native": {
       "branch": "main",
-      "sha": "8656de220a348855f21f4988927ee22efdb8a10c"
+      "sha": "50f71688775fa43e2c21aebdf9c26b8695664617"
     },
     "emilkowalski/skills": {
       "branch": "main",
-      "sha": "0f2e23b32bb1265e84cff8d3e75785fec953fb1b"
+      "sha": "64eb3deb9a5fbfa041faf783e0bc3fd635872e9c"
     },
     "rorkai/app-store-connect-cli-skills": {
       "branch": "main",
-      "sha": "266d7ad357acd3a1c437668b0e77021bb0ff2f02"
+      "sha": "6d1c3c55fe4590fcbc3e3115de18c5721a73c23b"
     },
     "cathrynlavery/diagram-design": {
       "branch": "main",
@@ -873,11 +873,11 @@
     },
     "tt-a1i/archify": {
       "branch": "main",
-      "sha": "e37848822238e3a61b12739185cdadd49843a620"
+      "sha": "44781293f38728baf04dbad33ce1a0cef8c39cca"
     },
     "lemomo-ai/lemo-opuscar": {
       "branch": "main",
-      "sha": "3a7132b996be0241c1ea0ab180d519f06e6f10b6"
+      "sha": "00a7f9ec99c8686265a8ca4ed9a3fdaaf27ea6f4"
     },
     "daveebbelaar/bama": {
       "branch": "main",

@@ -1,6 +1,6 @@
 # graphify reference: extra exports and benchmark
 
-Load this when the user passed one of the export flags (`--wiki`, `--neo4j`, `--neo4j-push`, `--falkordb`, `--falkordb-push`, `--svg`, `--graphml`), or when the corpus is large enough for the token-reduction benchmark. Each step runs only for its own flag.
+Load this when the user passed one of the export flags (`--wiki`, `--neo4j`, `--neo4j-push`, `--falkordb`, `--falkordb-push`, `--svg`, `--graphml`, `--mcp`), or when the corpus is large enough for the token-reduction benchmark. Each step runs only for its own flag.
 
 ### Step 6b - Wiki (only if --wiki flag)
 
@@ -58,6 +58,26 @@ graphify export svg
 
 ```bash
 graphify export graphml
+```
+
+### Step 7d - MCP server (only if --mcp flag)
+
+```bash
+$(cat graphify-out/.graphify_python) -m graphify.serve graphify-out/graph.json
+```
+
+This starts a stdio MCP server that exposes tools: `query_graph`, `get_node`, `get_section`, `get_neighbors`, `get_community`, `god_nodes`, `graph_stats`, `shortest_path`. Add to Claude Desktop or any MCP-compatible agent orchestrator so other agents can query the graph live.
+
+To configure in Claude Desktop, add to `claude_desktop_config.json`. Claude Desktop can't run `$(...)`, and under `uv tool install` the system `python3` can't import graphify — so set `command` to the **absolute interpreter path** printed by `cat graphify-out/.graphify_python`:
+```json
+{
+  "mcpServers": {
+    "graphify": {
+      "command": "<absolute path from: cat graphify-out/.graphify_python>",
+      "args": ["-m", "graphify.serve", "/absolute/path/to/graphify-out/graph.json"]
+    }
+  }
+}
 ```
 
 ### Step 8 - Token reduction benchmark (only if total_words > 5000)

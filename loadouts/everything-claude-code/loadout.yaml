@@ -53,7 +53,6 @@ skills:
 - change-impact
 - cisco-ios-patterns
 - ck
-- claude-devfleet
 - click-path-audit
 - clickhouse-io
 - code-tour
@@ -64,6 +63,7 @@ skills:
 - competitive-report-structure
 - compose-multiplatform-patterns
 - config-gc
+- config-health
 - configure-ecc
 - connections-optimizer
 - content-engine
@@ -98,6 +98,7 @@ skills:
 - deployment-patterns
 - design-system
 - dev-team
+- devfleet
 - django-celery
 - django-patterns
 - django-security
@@ -110,6 +111,7 @@ skills:
 - dotnet-patterns
 - dynamic-workflow-mode
 - e2e-testing
+- ecc-contribution-review
 - ecc-guide
 - ecc-recipes
 - ecc-tools-cost-audit
@@ -137,6 +139,8 @@ skills:
 - generating-python-installer
 - git-workflow
 - github-ops
+- godot-patterns
+- godot-testing
 - golang-patterns
 - golang-testing
 - google-workspace-ops
@@ -184,6 +188,7 @@ skills:
 - laravel-verification
 - latency-critical-systems
 - lead-intelligence
+- leanrea
 - liquid-glass-design
 - living-docs-governance
 - llm-trading-agent-security
@@ -235,6 +240,7 @@ skills:
 - plan-canvas
 - plan-orchestrate
 - plankton-code-quality
+- platform-factory
 - postgres-patterns
 - prediction-market-oracle-research
 - prediction-market-risk-review
@@ -255,6 +261,7 @@ skills:
 - quarkus-tdd
 - quarkus-verification
 - rails-patterns
+- rails-security
 - ralphinho-rfc-pipeline
 - react-native-patterns
 - react-patterns
@@ -268,11 +275,13 @@ skills:
 - repo-scan
 - research-ops
 - returns-reverse-logistics
+- roundhouse-x402
 - rules-distill
 - rust-patterns
 - rust-testing
 - safety-guard
 - santa-method
+- scientific-db-openalex-database
 - scientific-db-pubmed-database
 - scientific-db-uspto-database
 - scientific-pkg-gget
@@ -283,6 +292,7 @@ skills:
 - security-review
 - security-scan
 - seo
+- short-video-distribution
 - skill-comply
 - skill-host-compat
 - skill-scout
@@ -308,6 +318,7 @@ skills:
 - team-builder
 - terminal-opener
 - terminal-ops
+- terraform-patterns
 - test-collaboration
 - tinystruct-patterns
 - token-budget-advisor
@@ -324,9 +335,11 @@ skills:
 - visa-doc-translate
 - vite-patterns
 - vue-patterns
+- web-perimeter-owasp-2025-audit
 - windows-desktop-e2e
 - workspace-surface-audit
 - x-api
+- yoruba-localization-testing
 agents:
   a11y-architect:
     model: balanced
@@ -553,6 +566,13 @@ agents:
     - Write
     - Grep
     - Glob
+  gdscript-reviewer:
+    model: balanced
+    tools:
+    - Read
+    - Grep
+    - Glob
+    - Bash
   go-build-resolver:
     model: balanced
     tools:
@@ -1235,4 +1255,3 @@ env_schema:
       zh-CN:
         label: Jira API 令牌（可选 MCP）
         description: 启用可选 Jira MCP 服务时使用的 API Token。
-

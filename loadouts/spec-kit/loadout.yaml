@@ -71,4 +71,3 @@ env_schema:
       zh-CN:
         label: 禁止持久化当前 Feature 状态
         description: 设为 1 时，不在磁盘上自动记录当前激活的 Feature 状态。
-
