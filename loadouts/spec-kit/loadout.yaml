@@ -65,8 +65,14 @@ env_schema:
     options:
     - value: '0'
       label: Persist State (0)
+      i18n:
+        zh-CN:
+          label: 持久化状态 (0)
     - value: '1'
       label: Do Not Persist (1)
+      i18n:
+        zh-CN:
+          label: 不持久化 (1)
     i18n:
       zh-CN:
         label: 禁止持久化当前 Feature 状态

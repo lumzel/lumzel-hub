@@ -1019,10 +1019,19 @@ env_schema:
     options:
     - value: minimal
       label: Minimal
+      i18n:
+        zh-CN:
+          label: 精简 (minimal)
     - value: standard
       label: Standard
+      i18n:
+        zh-CN:
+          label: 标准 (standard)
     - value: strict
       label: Strict
+      i18n:
+        zh-CN:
+          label: 严格 (strict)
     i18n:
       zh-CN:
         label: Hook 严格档位
@@ -1046,8 +1055,14 @@ env_schema:
     options:
     - value: '0'
       label: Disabled (0)
+      i18n:
+        zh-CN:
+          label: 关闭 (0)
     - value: '1'
       label: Enabled (1)
+      i18n:
+        zh-CN:
+          label: 开启 (1)
     i18n:
       zh-CN:
         label: 治理审计记录
@@ -1071,8 +1086,14 @@ env_schema:
     options:
     - value: 'false'
       label: 'false'
+      i18n:
+        zh-CN:
+          label: 关闭 (false)
     - value: 'true'
       label: 'true'
+      i18n:
+        zh-CN:
+          label: 开启 (true)
     i18n:
       zh-CN:
         label: 详细 Hook 日志

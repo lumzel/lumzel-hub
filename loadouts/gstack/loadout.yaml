@@ -103,8 +103,14 @@ env_schema:
     options:
     - value: '1'
       label: Enabled (1)
+      i18n:
+        zh-CN:
+          label: 开启 (1)
     - value: '0'
       label: Disabled (0)
+      i18n:
+        zh-CN:
+          label: 关闭 (0)
     i18n:
       zh-CN:
         label: 启用 Careful 安全护栏

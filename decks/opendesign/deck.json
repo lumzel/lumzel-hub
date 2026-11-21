@@ -53,10 +53,26 @@
       "description": "Pre-selected artifact surface when creating a new design in this project.",
       "default": "prototype",
       "options": [
-        { "value": "prototype", "label": "Interactive Prototype" },
-        { "value": "dashboard", "label": "Data Dashboard" },
-        { "value": "mobile", "label": "Mobile UI" },
-        { "value": "slide", "label": "Presentation Slide" }
+        {
+          "value": "prototype",
+          "label": "Interactive Prototype",
+          "i18n": { "zh-CN": { "label": "交互原型" } }
+        },
+        {
+          "value": "dashboard",
+          "label": "Data Dashboard",
+          "i18n": { "zh-CN": { "label": "数据看板" } }
+        },
+        {
+          "value": "mobile",
+          "label": "Mobile UI",
+          "i18n": { "zh-CN": { "label": "移动端界面" } }
+        },
+        {
+          "value": "slide",
+          "label": "Presentation Slide",
+          "i18n": { "zh-CN": { "label": "演示文稿" } }
+        }
       ],
       "i18n": {
         "zh-CN": {
@@ -99,5 +115,5 @@
     "extract-design-system",
     "revise-artifact"
   ],
-  "version": "1.3.1"
+  "version": "1.3.2"
 }
