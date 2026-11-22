@@ -1319,6 +1319,50 @@
           "path": ".agents/skills/reverse-engineer-anything"
         }
       ]
+    },
+    {
+      "id": "huashu-design",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "huashu-design",
+          "repo": "alchaincyf/huashu-design",
+          "skillFile": "SKILL.md",
+          "extraDirs": {
+            "LICENSE": "LICENSE",
+            "README.md": "README.md",
+            "README.en.md": "README.en.md",
+            "references": "references",
+            "scripts": "scripts",
+            "assets/appstore": "assets/appstore",
+            "assets/director-notes-samples": "assets/director-notes-samples",
+            "assets/sfx": "assets/sfx",
+            "assets/style-specimens": "assets/style-specimens",
+            "assets/vendor": "assets/vendor",
+            "assets/android_frame.jsx": "assets/android_frame.jsx",
+            "assets/animations.jsx": "assets/animations.jsx",
+            "assets/banner.svg": "assets/banner.svg",
+            "assets/browser_window.jsx": "assets/browser_window.jsx",
+            "assets/cursor.jsx": "assets/cursor.jsx",
+            "assets/deck_index.html": "assets/deck_index.html",
+            "assets/deck_stage.js": "assets/deck_stage.js",
+            "assets/design_canvas.jsx": "assets/design_canvas.jsx",
+            "assets/ios_frame.jsx": "assets/ios_frame.jsx",
+            "assets/macos_window.jsx": "assets/macos_window.jsx",
+            "assets/narration_stage.jsx": "assets/narration_stage.jsx",
+            "assets/personal-asset-index.example.json": "assets/personal-asset-index.example.json",
+            "assets/showboard.jsx": "assets/showboard.jsx",
+            "assets/wechat_frame.jsx": "assets/wechat_frame.jsx"
+          }
+        }
+      ],
+      "license": {
+        "source": "LICENSE"
+      },
+      "preserve": [
+        "AGENTS.md"
+      ]
     }
   ],
   "repos": {
@@ -1517,6 +1561,10 @@
     "morluto/rea": {
       "branch": "main",
       "sha": "e2ccd682cb441436c6c13e180fbb315788212364"
+    },
+    "alchaincyf/huashu-design": {
+      "branch": "master",
+      "sha": "937113133ae446a69ea19d4ceed6cbd2ed3c7735"
     }
   }
 }

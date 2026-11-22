@@ -786,6 +786,30 @@
       },
       "source": "./loadouts/rea",
       "version": "1.0.0"
+    },
+    {
+      "id": "huashu-design",
+      "name": "Huashu Design",
+      "icon": "🎨",
+      "description": "HTML-native design studio skill for high-fidelity prototypes, 1920x1080 slide decks, timeline motion & video export, infographics, App Store screenshots, and 5-dimension design critique.",
+      "i18n": {
+        "en": {
+          "name": "Huashu Design",
+          "description": "HTML-native design studio skill for high-fidelity prototypes, 1920x1080 slide decks, timeline motion & video export, infographics, App Store screenshots, and 5-dimension design critique."
+        },
+        "zh-CN": {
+          "name": "花叔 Design",
+          "description": "HTML 原生设计工作室技能：高保真原型、1920x1080 幻灯片、时间轴动画与 MP4/GIF 导出、信息图、App Store 宣传图及多维专家评审。"
+        }
+      },
+      "category": "Design",
+      "author": "alchaincyf (花叔)",
+      "homepage": "https://github.com/alchaincyf/huashu-design",
+      "counts": {
+        "skills": 1
+      },
+      "source": "./loadouts/huashu-design",
+      "version": "1.0.0"
     }
   ],
   "decks": [
