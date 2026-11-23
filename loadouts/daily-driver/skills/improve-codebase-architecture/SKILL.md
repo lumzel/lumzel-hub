@@ -36,9 +36,9 @@ Apply the **deletion test** to anything you suspect is shallow: would deleting i
 
 ### 2. Present candidates as an HTML report
 
-Write a self-contained HTML file to the OS temp directory so nothing lands in the repo. Resolve the temp dir from `$TMPDIR`, falling back to `/tmp` (or `%TEMP%` on Windows), and write to `<tmpdir>/architecture-review-<timestamp>.html` so each run gets a fresh file. Open it for the user (`xdg-open <path>` on Linux, `open <path>` on macOS, `start <path>` on Windows) and tell them the absolute path.
+Write a self-contained HTML file to the OS temp directory so nothing lands in the repo. Resolve the temp dir from `$TMPDIR`, falling back to `/tmp` (or `%TEMP%` on Windows), and write to `<tmpdir>/architecture-review-<timestamp>.html` so each run gets a fresh file. Show the generated HTML file in Lumzel's built-in file preview (`preview_open`) and tell the user the absolute path — do not open an external browser unless asked.
 
-The report uses **Tailwind via CDN** for layout and styling, and **Mermaid via CDN** for diagrams where a graph/flow/sequence reliably communicates the structure. Mix Mermaid with hand-crafted CSS/SVG visuals: use Mermaid when relationships are graph-shaped (call graphs, dependencies, sequences), and hand-built divs/SVG when you want something more editorial (mass diagrams, cross-sections, collapse animations). Each candidate gets a **before/after visualisation**. Be visual.
+The report follows **Lumzel's native design system and live light/dark theme tokens** (`<meta name="color-scheme" content="light dark" />` + `<meta name="lumzel-theme" content="auto" />` with light/dark CSS variable fallbacks for standalone viewing) and includes the `lumzel:html-reply` bridge so the user can pick a candidate directly from the preview card. Use **Mermaid** (theme-synced to light/dark on load and `lumzel:theme-change`) when relationships are graph-shaped (call graphs, dependencies, sequences), and hand-crafted semantic-token CSS / inline SVG visuals when you want something more editorial (mass diagrams, cross-sections, collapse diagrams). Each candidate gets a **before/after visualisation**. Be visual.
 
 For each candidate, render a card with:
 
@@ -48,6 +48,7 @@ For each candidate, render a card with:
 - **Benefits**: explained in terms of locality and leverage, and how tests would improve
 - **Before / After diagram**: side-by-side, custom-drawn, illustrating the shallowness and the deepening
 - **Recommendation strength**: one of `Strong`, `Worth exploring`, `Speculative`, rendered as a badge
+- **Pick action**: an inline button ("Explore this candidate") that sends the chosen candidate back to the active Lumzel Session via `sendToLumzel(...)` (falling back to clipboard outside Lumzel)
 
 End the report with a **Top recommendation** section: which candidate you'd tackle first and why.
 
@@ -55,9 +56,9 @@ End the report with a **Top recommendation** section: which candidate you'd tack
 
 **ADR conflicts**: if a candidate contradicts an existing ADR, only surface it when the friction is real enough to warrant revisiting the ADR. Mark it clearly in the card (e.g. a warning callout: _"contradicts ADR-0007, but worth reopening because…"_). Don't list every theoretical refactor an ADR forbids.
 
-See [HTML-REPORT.md](HTML-REPORT.md) for the full HTML scaffold, diagram patterns, and styling guidance.
+See [HTML-REPORT.md](HTML-REPORT.md) for the full Lumzel-themed HTML scaffold, live theme/Mermaid sync, `lumzel:html-reply` bridge, and diagram patterns.
 
-Do NOT propose interfaces yet. After the file is written, ask the user: "Which of these would you like to explore?"
+Do NOT propose interfaces yet. After opening the report in file preview, ask the user: "Which of these would you like to explore?"
 
 ### 3. Grilling loop
 

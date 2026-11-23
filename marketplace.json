@@ -34,12 +34,12 @@
       "category": "Workflow",
       "author": "Lumzel",
       "counts": {
-        "skills": 13,
+        "skills": 12,
         "rules": 1,
         "hooks": 2
       },
       "source": "./loadouts/daily-driver",
-      "version": "2.4.0"
+      "version": "3.0.0"
     },
     {
       "id": "everything-claude-code",

@@ -275,7 +275,15 @@ def main():
         else:
             live_report_path = Path(args.report)
         # Open the report immediately so the user can watch
-        live_report_path.write_text("<html><body><h1>Starting optimization loop...</h1><meta http-equiv='refresh' content='5'></body></html>")
+        live_report_path.write_text(
+            "<!doctype html><html><head><meta charset='utf-8'><meta name='color-scheme' content='light dark'>"
+            "<meta name='lumzel-theme' content='auto'><meta http-equiv='refresh' content='5'>"
+            "<style>:root{color-scheme:light dark;--canvas:#fbfbfb;--fg:#09090b}"
+            "@media(prefers-color-scheme:dark){:root:not([data-theme='light']){--canvas:#111114;--fg:#fafafa}}"
+            ":root[data-theme='dark']{--canvas:#111114;--fg:#fafafa}"
+            "body{margin:0;padding:24px;background:var(--canvas);color:var(--fg);font:14px/1.6 -apple-system,BlinkMacSystemFont,sans-serif}</style>"
+            "</head><body><h1>Starting optimization loop...</h1></body></html>"
+        )
         webbrowser.open(str(live_report_path))
     else:
         live_report_path = None

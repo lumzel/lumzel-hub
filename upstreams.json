@@ -8,16 +8,6 @@
       "preserveLocalSkills": true,
       "skills": [
         {
-          "name": "answer-me-with-html",
-          "repo": "qingyuna/answer-me-with-html",
-          "path": "skills/answer-me-with-html"
-        },
-        {
-          "name": "show-me",
-          "repo": "humanlayer/skills",
-          "path": "plugins/show-me/skills/show-me"
-        },
-        {
           "name": "excalidraw-diagram-generator",
           "repo": "github/awesome-copilot",
           "path": "skills/excalidraw-diagram-generator"
@@ -48,22 +38,12 @@
           "path": "skills/engineering/code-review"
         },
         {
-          "name": "improve-codebase-architecture",
-          "repo": "mattpocock/skills",
-          "path": "skills/engineering/improve-codebase-architecture"
-        },
-        {
           "name": "graphify",
           "repo": "safishamsi/graphify",
           "skillFile": "graphify/skill.md",
           "extraDirs": {
             "references": "graphify/skills/claude/references"
           }
-        },
-        {
-          "name": "skill-creator",
-          "repo": "anthropics/skills",
-          "path": "skills/skill-creator"
         }
       ],
       "mcp": {

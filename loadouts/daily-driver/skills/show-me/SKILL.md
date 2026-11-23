@@ -115,11 +115,12 @@ function expandSkill(command: string): string {
 }
 ```
 
-- For a visual UI, layout, state comparison, or concept too dense for Mermaid, write one focused HTML file — a diagram, an infographic, or a short slide deck, whichever fits the point. Match the product's colors, type, spacing, and components; use real labels and data; support desktop and mobile. Then open it for the user:
-
-```
-Bash(open path/to/show-me-{description}.html)
-```
+- For a visual UI, layout, state comparison, or concept too dense for Mermaid, write one self-contained, offline-capable HTML file following Lumzel's visual style and live light/dark theme contract:
+  - Include `<meta name="color-scheme" content="light dark" />` and `<meta name="lumzel-theme" content="auto" />` in `<head>`.
+  - Define light and dark fallbacks (`:root`, `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { ... } }`, and `:root[data-theme="dark"]`) using Lumzel's semantic CSS tokens (`--shell`, `--canvas`, `--surface`, `--surface-hover`, `--surface-selected`, `--border`, `--border-strong`, `--fg`, `--muted`, `--faint`, `--primary`, `--primary-fg`, `--brand`, `--brand-soft`, `--done`, `--gate`, `--changed`, `--drift`). Never hardcode `#fff`, `#000`, or single-theme hex colors on backgrounds, cards, borders, prose, or inline SVGs (`currentColor` / `var(--...)` only); derive soft tints with `color-mix(in srgb, var(--brand) 14%, transparent)`.
+  - Keep typography crisp with Inter / system sans for UI and Geist Mono / monospace for identifiers; avoid external CDN fonts or scripts when pure CSS/inline SVG suffices. If using Mermaid, store raw source in `data-mermaid-src` and re-render on `lumzel:theme-change` and `prefers-color-scheme` changes.
+  - When the visual presents choices or follow-up actions, include a lightweight `lumzel:html-reply` postMessage bridge (`lumzel:preview-ping` → `lumzel:preview-host-ready` → `lumzel:html-reply`, with clipboard fallback outside Lumzel).
+  - Show the file in Lumzel's built-in file preview (`preview_open`) instead of invoking `open` or launching an external browser.
 
 ### guidance
 

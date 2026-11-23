@@ -12,7 +12,6 @@ i18n:
     description: 日常开发与工程工作流：结合可视化解释、代码审查、Graphify CLI 项目知识图谱与项目经验，适合代码理解、设计规划、实现和维护。
 author: Lumzel
 skills:
-- lumzel-html
 - answer-me-with-html
 - show-me
 - excalidraw-diagram-generator

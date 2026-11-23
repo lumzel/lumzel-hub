@@ -73,10 +73,10 @@ Keep the default output; it needs no flag. If the session cannot write to `~/.an
 1. First list 3–8 panels in your head. Each panel answers one sub-question only.
    The draft language follows the language of the user's question: an English question gets an English draft, a Chinese question a Chinese draft, a Japanese question a Japanese draft. The page button labels, `<html lang>` and the STE check rules switch automatically by the draft language (a draft containing kana counts as Japanese); STE applies the English or Chinese rules to each sentence by its language (Japanese sentences get only the sentence-length and paragraph-length checks, with the same character limits as Chinese; any other language gets only those two checks, counted in words). To set the language yourself, write `lang:` in the frontmatter: `en`, `zh` (Simplified Chinese), `zh-Hant` or `zh-TW` (Traditional Chinese), `ja`, or any other language tag such as `fr` or `ko`. Detection reads Chinese (Simplified, or Traditional when the text has characters written in only one form), Japanese, Korean, and Cyrillic, Arabic, Hebrew, Thai and Greek text, and reads all Latin-script text as English. Declare the language when the user writes a Latin-script language other than English, when a Chinese text is too short or too plain to show Traditional characters, or when an exact tag matters (Arabic script also writes Persian, Cyrillic also Ukrainian). A language without its own labels still gets the right `<html lang>`, with English page labels.
 2. Choose components by the shape of the information (see section 4).
-3. Render in one go with a heredoc:
+3. Render in one go with a heredoc (inside Lumzel, pass `--no-open` and open the generated file in Lumzel's built-in file preview via `preview_open`):
 
 ````bash
-node "${CLAUDE_SKILL_DIR}/scripts/am.mjs" render - <<'AM_EOF'
+node "${CLAUDE_SKILL_DIR}/scripts/am.mjs" render --no-open - <<'AM_EOF'
 ---
 title: Title
 ---
@@ -118,14 +118,12 @@ AM_EOF
 ```markdown
 ---
 template: sheet     # sheet board (default, one-screen overview) | doc linear explanation (read step by step; with 3+ sections it gets an outline rail, `outline: left | right`, default right)
-theme: auto         # auto (default): paper for doc or text-only drafts, blueprint with diagrams | blueprint | shadcn | paper | a theme the user made (am list shows it)
+theme: lumzel       # lumzel (default, live Lumzel light/dark + tokens; `auto` also resolves to `lumzel`) | shadcn | paper | blueprint | a theme the user made (am list shows it)
 title: Title
-subtitle: One-line summary     # optional
+subtitle: One-line summary     # optional; keep header to one title + one subtitle (do not also add a separate intro paragraph below frontmatter)
 file: tcp-handshake # when the title has few or no English letters: a short English name for the file
 cols: 3             # most columns in a sheet row (a whole number), default 3
-source: RFC 9293    # any other key is shown in the page header's meta line
 ---
-Lead: one or two sentences with the core conclusion (optional).
 
 ## A Panel title {span=2 meta="small text, top right"}
 Plain Markdown: paragraphs, lists, tables, quotes.
