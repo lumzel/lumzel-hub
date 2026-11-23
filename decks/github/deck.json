@@ -32,10 +32,14 @@
   "capabilities": {
     "exec": [
       "gh",
-      "git"
+      "git",
+      "python3"
     ],
     "open": [
-      "https://github.com/*"
+      "https://github.com/*",
+      "https://user-images.githubusercontent.com/*",
+      "https://private-user-images.githubusercontent.com/*",
+      "https://raw.githubusercontent.com/*"
     ]
   },
   "store": {
@@ -143,5 +147,5 @@
       }
     }
   ],
-  "version": "1.0.0"
+  "version": "2.0.0"
 }

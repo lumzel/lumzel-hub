@@ -73,6 +73,11 @@ const STRINGS = {
     diffLoading: 'Loading diff…',
     diffTruncated: 'Diff output exceeded the 2 MiB CLI limit and was truncated. Inspect specific files locally or open on GitHub.',
     diffBinary: 'Binary or empty diff.',
+    loadingMore: 'Loading more…',
+    loadMoreLines: 'Show {n} more lines',
+    largeFileLines: '{n} lines',
+    backToList: 'List',
+    showListBtn: 'Open list',
     commentsTitle: 'Conversation',
     noComments: 'No comments yet.',
     commentPlaceholder: 'Write a comment (Markdown supported)…',
@@ -83,7 +88,7 @@ const STRINGS = {
     reviewActionApprove: 'Approve',
     reviewActionRequestChanges: 'Request changes',
     // PR & Issue Actions
-    actCheckout: 'Checkout',
+    actCreateWorktree: 'New Worktree',
     actMerge: 'Merge',
     actClose: 'Close',
     actReopen: 'Reopen',
@@ -114,10 +119,14 @@ const STRINGS = {
     modalNewPrTitle: 'Create Pull Request',
     modalNewIssueTitle: 'Create Issue',
     modalMergeTitle: 'Merge Pull Request #{n}',
+    modalWorktreeTitle: 'Create Lumzel Worktree',
     modalConfirmTitle: 'Confirm Action',
     fieldTitle: 'Title',
     fieldBody: 'Description',
     fieldBase: 'Base branch',
+    fieldBranchName: 'Worktree branch name',
+    fieldWorktreeHintPr: 'Creates an isolated Lumzel Worktree and checks out PR #{n} ({head}) without disturbing your current branch.',
+    fieldWorktreeHintIssue: 'Creates an isolated Lumzel Worktree from {base} for Issue #{n}.',
     fieldLabels: 'Labels (comma-separated)',
     fieldDraft: 'Create as draft Pull Request',
     fieldMergeMethod: 'Merge strategy',
@@ -127,6 +136,7 @@ const STRINGS = {
     btnCancel: 'Cancel',
     btnCreatePr: 'Create Pull Request',
     btnCreateIssue: 'Create Issue',
+    btnCreateWorktree: 'Create Worktree',
     btnConfirmMerge: 'Confirm Merge',
     btnConfirm: 'Confirm',
     // Feedback
@@ -136,7 +146,8 @@ const STRINGS = {
     toastCommentPosted: 'Comment posted',
     toastReviewSubmitted: 'Review submitted',
     toastMerged: 'Pull Request #{n} merged',
-    toastCheckoutOk: 'Checked out PR #{n}',
+    toastWorktreeStarted: 'Creating Worktree…',
+    toastWorktreeCreated: 'Worktree created ({branch})',
     toastStateUpdated: 'Status updated',
     toastSessionStarted: 'Agent session started',
     toastComposed: 'Context added to Session Composer',
@@ -149,6 +160,10 @@ const STRINGS = {
     timeHoursAgo: '{n}h ago',
     timeDaysAgo: '{n}d ago',
     // Agent prompts
+    promptCreateWorktreePr:
+      'Use the Lumzel `worktree_create` MCP tool to create a new Worktree on branch `{branch}` for GitHub Pull Request #{n} ("{title}", head branch `{head}` in {repo}). First fetch the PR head (`git fetch origin pull/{n}/head` or `origin/{head}`), then create the Worktree based on that commit so the user can inspect, run, or edit PR #{n} in isolation without touching the current Worktree.',
+    promptCreateWorktreeIssue:
+      'Use the Lumzel `worktree_create` MCP tool to create a new Worktree on branch `{branch}` based on `{base}` for GitHub Issue #{n} ("{title}" in {repo}). Report the created Worktree path once ready.',
     promptPrReview:
       'Review GitHub Pull Request #{n} ("{title}") in repository {repo} ({head} -> {base}). Use the github-pr-review skill to inspect the diff, CI checks, and surrounding code, then provide prioritized findings with file:line references. Do not post to GitHub unless I ask.',
     promptPrFixCi:
@@ -232,6 +247,11 @@ const STRINGS = {
     diffLoading: '正在加载 Diff…',
     diffTruncated: 'Diff 输出超过 2 MiB 上限已截断，请在本地编辑器或 GitHub 网页查看完整变更。',
     diffBinary: '二进制文件或空 Diff。',
+    loadingMore: '正在加载更多…',
+    loadMoreLines: '展开其余 {n} 行',
+    largeFileLines: '{n} 行',
+    backToList: '列表',
+    showListBtn: '打开列表',
     commentsTitle: '讨论记录',
     noComments: '暂无评论。',
     commentPlaceholder: '输入评论内容（支持 Markdown）…',
@@ -242,7 +262,7 @@ const STRINGS = {
     reviewActionApprove: '批准 (Approve)',
     reviewActionRequestChanges: '要求修改',
     // PR & Issue Actions
-    actCheckout: '检出分支',
+    actCreateWorktree: '创建 Worktree',
     actMerge: '合并',
     actClose: '关闭',
     actReopen: '重新打开',
@@ -273,10 +293,14 @@ const STRINGS = {
     modalNewPrTitle: '新建 Pull Request',
     modalNewIssueTitle: '新建 Issue',
     modalMergeTitle: '合并 Pull Request #{n}',
+    modalWorktreeTitle: '创建 Lumzel Worktree',
     modalConfirmTitle: '确认操作',
     fieldTitle: '标题',
     fieldBody: '描述',
     fieldBase: '目标 Base 分支',
+    fieldBranchName: 'Worktree 分支名',
+    fieldWorktreeHintPr: '为 PR #{n}（{head}）创建独立的 Lumzel Worktree，不会影响你当前所在分支。',
+    fieldWorktreeHintIssue: '基于 {base} 为 Issue #{n} 创建独立的 Lumzel Worktree。',
     fieldLabels: '标签（逗号分隔）',
     fieldDraft: '创建为 Draft 草稿 PR',
     fieldMergeMethod: '合并策略',
@@ -286,6 +310,7 @@ const STRINGS = {
     btnCancel: '取消',
     btnCreatePr: '创建 Pull Request',
     btnCreateIssue: '创建 Issue',
+    btnCreateWorktree: '创建 Worktree',
     btnConfirmMerge: '确认合并',
     btnConfirm: '确认',
     // Feedback
@@ -295,7 +320,8 @@ const STRINGS = {
     toastCommentPosted: '评论已发送',
     toastReviewSubmitted: '审查已提交',
     toastMerged: 'Pull Request #{n} 已合并',
-    toastCheckoutOk: '已检出 PR #{n} 分支',
+    toastWorktreeStarted: '正在创建 Worktree…',
+    toastWorktreeCreated: '已创建 Worktree（{branch}）',
     toastStateUpdated: '状态已更新',
     toastSessionStarted: '已启动 Agent 会话',
     toastComposed: '上下文已加入会话输入框',
@@ -308,6 +334,10 @@ const STRINGS = {
     timeHoursAgo: '{n} 小时前',
     timeDaysAgo: '{n} 天前',
     // Agent prompts
+    promptCreateWorktreePr:
+      '请使用 Lumzel 内置的 `worktree_create` MCP 工具，为仓库 {repo} 的 Pull Request #{n}（"{title}"，源分支 `{head}`）创建一个新的隔离 Worktree（分支名 `{branch}`）。请先拉取该 PR 的最新提交（如 `git fetch origin pull/{n}/head` 或 `origin/{head}`），再以该提交为基准创建 Worktree，不要改动当前 Worktree 的分支。',
+    promptCreateWorktreeIssue:
+      '请使用 Lumzel 内置的 `worktree_create` MCP 工具，基于 `{base}` 为仓库 {repo} 的 Issue #{n}（"{title}"）创建一个新的隔离 Worktree（分支名 `{branch}`），创建完成后返回路径。',
     promptPrReview:
       '请审查仓库 {repo} 中的 GitHub Pull Request #{n}（"{title}"，分支 {head} -> {base}）。请使用 github-pr-review 技能检查 Diff、CI 状态及周边代码，按严重程度输出带 file:line 的审查意见。除非我明确要求，否则不要直接提交评论到 GitHub。',
     promptPrFixCi:

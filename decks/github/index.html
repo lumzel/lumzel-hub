@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <title>GitHub</title>
     <link rel="stylesheet" href="styles/app.css" />
@@ -126,6 +127,7 @@
       </div>
 
       <div class="workspace" id="workspace">
+        <div class="rail-scrim" id="rail-scrim" hidden></div>
         <aside class="rail" id="rail" aria-label="Items list">
           <div class="rail-controls">
             <div class="search-row">
@@ -154,6 +156,9 @@
             <p class="empty-desc" data-i18n="selectItemPrompt">
               Select a Pull Request or Issue from the list to inspect details.
             </p>
+            <button type="button" class="btn mobile-list-btn" id="btn-empty-open-list" data-i18n="showListBtn">
+              Open list
+            </button>
           </div>
           <section class="detail-pane" id="detail-pane" hidden></section>
         </main>

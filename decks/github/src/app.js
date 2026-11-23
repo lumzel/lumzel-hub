@@ -5,15 +5,18 @@ import * as gh from './gh.js';
 import {
   esc,
   formatRelTime,
-  initials,
+  renderAvatar,
   summarizeChecks,
   prStatusInfo,
   issueStatusInfo,
   reviewDecisionInfo,
   renderLabelChip,
-  renderMarkdown,
+  renderRichBody,
   parseUnifiedDiff,
   renderDiffFiles,
+  renderDiffFileCard,
+  renderDiffLinesSlice,
+  DIFF_MORE_LINES,
   renderChecksList,
 } from './render.js';
 
@@ -21,6 +24,28 @@ const $ = id => document.getElementById(id);
 
 const CACHE_KEY = 'github-deck:cache:v1';
 const AGENT_KEY = 'github-deck:agent:v1';
+const AVATAR_KEY = 'github-deck:avatars:v1';
+const COMMENTS_BATCH_SIZE = 20;
+const DIFF_FILES_BATCH = 12;
+const MEDIA_CONCURRENCY = 4;
+
+const avatarCache = new Map(); // login -> data:image/... | 'ERROR'
+const avatarInflight = new Set();
+const imageCache = new Map(); // url -> data:image/... | 'TOO_LARGE' | 'ERROR'
+const imageInflight = new Set();
+const signedUrlCache = new Map(); // `${repo}:${number}` -> Map(uuid|url -> signedUrl)
+const htmlBundleCache = new Map(); // `${repo}:${number}` -> { bodyHtml, commentHtmlByKey, reviewHtmlByKey, signedImageMap, commentsHasMore, commentsPage }
+
+const narrowMq = typeof window.matchMedia === 'function' ? window.matchMedia('(max-width: 768px)') : null;
+let listObserver = null;
+let detailScrollObserver = null;
+let mediaObserver = null;
+const mediaTaskQueue = [];
+let mediaActiveCount = 0;
+
+function makeListMeta() {
+  return { loaded: false, endCursor: null, hasMore: false, loadingMore: false, totalCount: null };
+}
 
 const state = {
   preview: false,
@@ -36,10 +61,16 @@ const state = {
   search: '',
   prs: [],
   issues: [],
+  listMeta: {
+    prs: makeListMeta(),
+    issues: makeListMeta(),
+  },
   selectedNumber: null,
   detailCache: new Map(), // `${view}:${number}` -> detail obj
   checksCache: new Map(), // number -> checks[]
-  diffCache: new Map(), // number -> { diff, truncated }
+  diffCache: new Map(), // number -> { diff, parsed, truncated, error? }
+  activeTimeline: null, // { key, repo, number, items, renderedCount, loadingMore, remotePage, remoteHasMore }
+  activeDiffRender: null, // { number, files, renderedCount }
   subtab: 'overview', // 'overview' | 'checks' | 'files'
   loadingList: false,
   loadingDetail: false,
@@ -94,6 +125,23 @@ function detailKey(view, number) {
   return `${view}:${number}`;
 }
 
+function isNarrowScreen() {
+  return Boolean(narrowMq?.matches);
+}
+
+function syncRailScrim() {
+  const scrim = $('rail-scrim');
+  if (!scrim) return;
+  scrim.hidden = !(isNarrowScreen() && !state.railCollapsed);
+}
+
+function setRailCollapsed(collapsed) {
+  state.railCollapsed = Boolean(collapsed);
+  $('workspace')?.classList.toggle('rail-collapsed', state.railCollapsed);
+  $('rail-toggle')?.setAttribute('aria-expanded', String(!state.railCollapsed));
+  syncRailScrim();
+}
+
 // ---------- Boot & Lifecycle
 
 async function boot() {
@@ -120,6 +168,7 @@ async function boot() {
   }
 
   wireStaticEvents();
+  syncRailScrim();
 
   if (state.preview) {
     loadPreviewMode();
@@ -165,23 +214,41 @@ function loadPreviewMode() {
   state.env = sample.env;
   state.prs = sample.prs;
   state.issues = sample.issues;
+  state.listMeta.prs = { loaded: true, endCursor: null, hasMore: false, loadingMore: false, totalCount: sample.prs.length };
+  state.listMeta.issues = { loaded: true, endCursor: null, hasMore: false, loadingMore: false, totalCount: sample.issues.length };
   for (const pr of sample.prs) {
     state.detailCache.set(detailKey('prs', pr.number), pr);
     state.checksCache.set(pr.number, pr.statusCheckRollup || []);
-    state.diffCache.set(pr.number, { diff: pr.diff || '', truncated: false });
+    const diff = pr.diff || '';
+    state.diffCache.set(pr.number, { diff, parsed: parseUnifiedDiff(diff), truncated: false });
   }
   for (const iss of sample.issues) {
     state.detailCache.set(detailKey('issues', iss.number), iss);
   }
   state.selectedNumber = sample.prs[0]?.number ?? null;
   $('preview-banner').hidden = false;
+  if (isNarrowScreen() && state.selectedNumber != null) {
+    setRailCollapsed(true);
+  } else {
+    syncRailScrim();
+  }
   renderAll();
 }
 
 async function hydrateCache() {
   if (!window.deck?.store?.get) return;
   try {
-    const cached = await window.deck.store.get(CACHE_KEY);
+    const [cached, savedAvatars] = await Promise.all([
+      window.deck.store.get(CACHE_KEY).catch(() => null),
+      window.deck.store.get(AVATAR_KEY).catch(() => null),
+    ]);
+    if (savedAvatars && typeof savedAvatars === 'object') {
+      for (const [login, dataUrl] of Object.entries(savedAvatars)) {
+        if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
+          avatarCache.set(login, dataUrl);
+        }
+      }
+    }
     if (cached && typeof cached === 'object') {
       if (cached.env) state.env = cached.env;
       if (Array.isArray(cached.prs)) state.prs = cached.prs;
@@ -197,6 +264,184 @@ async function hydrateCache() {
   } catch {
     // ignore cache miss
   }
+}
+
+let avatarPersistTimer = null;
+function schedulePersistAvatars() {
+  if (state.preview || !window.deck?.store?.put) return;
+  clearTimeout(avatarPersistTimer);
+  avatarPersistTimer = setTimeout(() => {
+    const obj = {};
+    let count = 0;
+    for (const [k, v] of avatarCache.entries()) {
+      if (typeof v === 'string' && v.startsWith('data:image/') && count < 40) {
+        obj[k] = v;
+        count++;
+      }
+    }
+    window.deck.store.put(AVATAR_KEY, obj).catch(() => {});
+  }, 800);
+}
+
+function enqueueMediaTask(task) {
+  mediaTaskQueue.push(task);
+  drainMediaQueue();
+}
+
+function drainMediaQueue() {
+  while (mediaActiveCount < MEDIA_CONCURRENCY && mediaTaskQueue.length > 0) {
+    const task = mediaTaskQueue.shift();
+    mediaActiveCount++;
+    Promise.resolve()
+      .then(task)
+      .catch(() => {})
+      .finally(() => {
+        mediaActiveCount--;
+        drainMediaQueue();
+      });
+  }
+}
+
+function fetchAvatarForLogin(login) {
+  if (!login || login === 'ghost' || avatarCache.has(login) || avatarInflight.has(login)) return;
+  avatarInflight.add(login);
+  enqueueMediaTask(async () => {
+    try {
+      const dataUrl = await gh.fetchImageDataUrl(`https://github.com/${encodeURIComponent(login)}.png?size=64`);
+      if (dataUrl && dataUrl.startsWith('data:image/')) {
+        avatarCache.set(login, dataUrl);
+        schedulePersistAvatars();
+        document.querySelectorAll(`[data-avatar-login="${CSS.escape(login)}"]`).forEach(el => {
+          el.innerHTML = `<img class="avatar-img" src="${dataUrl}" alt="${esc(login)}" />`;
+        });
+      } else {
+        avatarCache.set(login, 'ERROR');
+      }
+    } finally {
+      avatarInflight.delete(login);
+    }
+  });
+}
+
+function replaceImagePlaceholder(node, rawUrl, alt, result) {
+  if (result.startsWith('data:image/')) {
+    node.outerHTML = `<figure class="md-img-wrap"><img class="md-img" src="${result}" alt="${esc(alt)}" data-open-url="${esc(rawUrl)}" /></figure>`;
+  } else {
+    node.outerHTML = `<div class="md-img-fallback"><button type="button" class="md-link" data-open-url="${esc(rawUrl)}">🖼 ${esc(alt)} ↗</button></div>`;
+  }
+}
+
+function fetchInlineImage(rawUrl, alt) {
+  if (!rawUrl || imageInflight.has(rawUrl)) return;
+  const cached = imageCache.get(rawUrl);
+  if (cached) {
+    document.querySelectorAll(`[data-gh-img="${CSS.escape(rawUrl)}"]`).forEach(node => {
+      replaceImagePlaceholder(node, rawUrl, node.getAttribute('data-gh-alt') || alt, cached);
+    });
+    return;
+  }
+  imageInflight.add(rawUrl);
+  const slug = repoSlug();
+  const num = state.selectedNumber;
+  const signedKey = slug && num != null ? `${slug}:${num}` : '';
+
+  enqueueMediaTask(async () => {
+    try {
+      let fetchUrl = rawUrl;
+      if (rawUrl.includes('github.com/user-attachments/assets/') && signedKey) {
+        let signedMap = signedUrlCache.get(signedKey);
+        if (!signedMap) {
+          const bundle = await gh.fetchRenderedHtmlBundle({ repo: slug, number: num, isPr: state.view === 'prs' });
+          htmlBundleCache.set(signedKey, bundle);
+          signedMap = bundle.signedImageMap;
+          signedUrlCache.set(signedKey, signedMap);
+        }
+        const uuidM = rawUrl.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        if (uuidM && signedMap.has(uuidM[0].toLowerCase())) {
+          fetchUrl = signedMap.get(uuidM[0].toLowerCase());
+        }
+      }
+      const dataUrl = await gh.fetchImageDataUrl(fetchUrl);
+      const result = dataUrl || 'ERROR';
+      imageCache.set(rawUrl, result);
+      document.querySelectorAll(`[data-gh-img="${CSS.escape(rawUrl)}"]`).forEach(node => {
+        replaceImagePlaceholder(node, rawUrl, node.getAttribute('data-gh-alt') || alt, result);
+      });
+    } finally {
+      imageInflight.delete(rawUrl);
+    }
+  });
+}
+
+function ensureMediaObserver() {
+  if (mediaObserver || typeof IntersectionObserver === 'undefined') return mediaObserver;
+  mediaObserver = new IntersectionObserver(
+    entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const el = entry.target;
+        mediaObserver.unobserve(el);
+        const login = el.getAttribute('data-avatar-login')?.trim();
+        if (login) {
+          fetchAvatarForLogin(login);
+          continue;
+        }
+        const rawUrl = el.getAttribute('data-gh-img');
+        if (rawUrl) {
+          fetchInlineImage(rawUrl, el.getAttribute('data-gh-alt') || 'Image');
+        }
+      }
+    },
+    { rootMargin: '160px', threshold: 0.01 },
+  );
+  return mediaObserver;
+}
+
+function hydrateMediaInDom(root = document) {
+  if (state.preview || !root) return;
+  const observer = ensureMediaObserver();
+
+  // 1. Hydrate GitHub user avatars lazily as they enter the viewport
+  root.querySelectorAll('[data-avatar-login]').forEach(el => {
+    const login = el.getAttribute('data-avatar-login')?.trim();
+    if (!login || login === 'ghost') return;
+    const cached = avatarCache.get(login);
+    if (cached && cached.startsWith('data:image/')) {
+      if (!el.querySelector('img')) {
+        el.innerHTML = `<img class="avatar-img" src="${cached}" alt="${esc(login)}" />`;
+      }
+      return;
+    }
+    if (cached === 'ERROR') return;
+    if (observer) {
+      if (!el.dataset.mediaObserved) {
+        el.dataset.mediaObserved = '1';
+        observer.observe(el);
+      }
+    } else {
+      fetchAvatarForLogin(login);
+    }
+  });
+
+  // 2. Hydrate Issue/PR body & comment images lazily as they enter the viewport
+  root.querySelectorAll('[data-gh-img]').forEach(el => {
+    const rawUrl = el.getAttribute('data-gh-img') || '';
+    const alt = el.getAttribute('data-gh-alt') || 'Image';
+    if (!rawUrl) return;
+    const cached = imageCache.get(rawUrl);
+    if (cached) {
+      replaceImagePlaceholder(el, rawUrl, alt, cached);
+      return;
+    }
+    if (observer) {
+      if (!el.dataset.mediaObserved) {
+        el.dataset.mediaObserved = '1';
+        observer.observe(el);
+      }
+    } else {
+      fetchInlineImage(rawUrl, alt);
+    }
+  });
 }
 
 async function persistCache() {
@@ -215,6 +460,52 @@ async function persistCache() {
 
 // ---------- Data Loading
 
+async function fetchListPage(view, { reset = false } = {}) {
+  const slug = repoSlug();
+  const meta = state.listMeta[view];
+  const after = reset ? null : meta.endCursor;
+  const page =
+    view === 'prs'
+      ? await gh.listPrsPage({
+          repo: slug,
+          state: state.prState,
+          filter: state.prFilter,
+          search: state.search,
+          limit: pageSize(),
+          after,
+          branch: state.env?.branch || '',
+        })
+      : await gh.listIssuesPage({
+          repo: slug,
+          state: state.issueState,
+          filter: state.issueFilter,
+          search: state.search,
+          limit: pageSize(),
+          after,
+        });
+
+  if (reset) {
+    if (view === 'prs') state.prs = page.items;
+    else state.issues = page.items;
+    meta.loaded = true;
+    meta.endCursor = page.endCursor;
+    meta.hasMore = page.hasMore;
+    meta.totalCount = page.totalCount;
+    return page.items;
+  }
+
+  const existing = view === 'prs' ? state.prs : state.issues;
+  const seen = new Set(existing.map(x => x.number));
+  const added = page.items.filter(x => !seen.has(x.number));
+  if (view === 'prs') state.prs = [...existing, ...added];
+  else state.issues = [...existing, ...added];
+  meta.loaded = true;
+  meta.endCursor = page.endCursor;
+  meta.hasMore = page.hasMore && Boolean(page.endCursor);
+  if (page.totalCount != null) meta.totalCount = page.totalCount;
+  return added;
+}
+
 async function refreshAll() {
   if (state.preview) return;
   state.loadingList = true;
@@ -224,26 +515,10 @@ async function refreshAll() {
 
   try {
     state.env = await gh.probeEnvironment(state.params.repo || '');
-    const slug = repoSlug();
-    const [prs, issues] = await Promise.all([
-      gh.listPrs({
-        repo: slug,
-        state: state.prState,
-        filter: state.prFilter,
-        search: state.view === 'prs' ? state.search : '',
-        limit: pageSize(),
-        branch: state.env.branch,
-      }),
-      gh.listIssues({
-        repo: slug,
-        state: state.issueState,
-        filter: state.issueFilter,
-        search: state.view === 'issues' ? state.search : '',
-        limit: pageSize(),
-      }),
-    ]);
-    state.prs = prs;
-    state.issues = issues;
+    // Reset pagination for both tabs, but only eagerly fetch the active tab
+    state.listMeta.prs = makeListMeta();
+    state.listMeta.issues = makeListMeta();
+    await fetchListPage(state.view, { reset: true });
     await persistCache();
 
     const items = activeItems();
@@ -275,27 +550,12 @@ async function refreshCurrentList() {
   }
   state.loadingList = true;
   setSyncLabel(t('syncing'));
+  const view = state.view;
+  state.listMeta[view] = makeListMeta();
   try {
-    const slug = repoSlug();
-    if (state.view === 'prs') {
-      state.prs = await gh.listPrs({
-        repo: slug,
-        state: state.prState,
-        filter: state.prFilter,
-        search: state.search,
-        limit: pageSize(),
-        branch: state.env.branch,
-      });
-    } else {
-      state.issues = await gh.listIssues({
-        repo: slug,
-        state: state.issueState,
-        filter: state.issueFilter,
-        search: state.search,
-        limit: pageSize(),
-      });
-    }
+    await fetchListPage(view, { reset: true });
     await persistCache();
+    if (state.view !== view) return;
     const items = activeItems();
     if (!items.some(x => x.number === state.selectedNumber)) {
       state.selectedNumber = items[0]?.number ?? null;
@@ -312,6 +572,29 @@ async function refreshCurrentList() {
   }
 }
 
+async function loadMoreCurrentList() {
+  const view = state.view;
+  const meta = state.listMeta[view];
+  if (state.preview || state.loadingList || !state.env || !meta || meta.loadingMore || !meta.hasMore || !meta.endCursor) {
+    return;
+  }
+  meta.loadingMore = true;
+  const sentinel = $('list-sentinel');
+  if (sentinel) sentinel.textContent = t('loadingMore');
+  try {
+    const added = await fetchListPage(view, { reset: false });
+    if (state.view !== view) return;
+    renderTopbar();
+    appendListRows(added);
+  } catch (err) {
+    showToast(err?.message || 'Failed to load more');
+    meta.hasMore = false;
+    $('list-sentinel')?.remove();
+  } finally {
+    meta.loadingMore = false;
+  }
+}
+
 async function loadItemDetail(view, number, { force = false } = {}) {
   if (number == null || state.preview) return;
   const key = detailKey(view, number);
@@ -323,11 +606,22 @@ async function loadItemDetail(view, number, { force = false } = {}) {
   renderDetail();
   try {
     const slug = repoSlug();
+    const htmlKey = slug ? `${slug}:${number}` : '';
+    const htmlPromise =
+      htmlKey && (force || !htmlBundleCache.has(htmlKey))
+        ? gh.fetchRenderedHtmlBundle({ repo: slug, number, isPr: view === 'prs' }).catch(() => null)
+        : Promise.resolve(htmlBundleCache.get(htmlKey) || null);
+
     if (view === 'prs') {
-      const [detail, checks] = await Promise.all([
+      const [detail, checks, bundle] = await Promise.all([
         gh.getPrDetail({ repo: slug, number }),
         gh.getPrChecks({ repo: slug, number }).catch(() => []),
+        htmlPromise,
       ]);
+      if (bundle && htmlKey) {
+        htmlBundleCache.set(htmlKey, bundle);
+        signedUrlCache.set(htmlKey, bundle.signedImageMap);
+      }
       if (detail) state.detailCache.set(key, detail);
       if (checks.length > 0) {
         state.checksCache.set(number, checks);
@@ -335,7 +629,11 @@ async function loadItemDetail(view, number, { force = false } = {}) {
         state.checksCache.set(number, detail.statusCheckRollup);
       }
     } else {
-      const detail = await gh.getIssueDetail({ repo: slug, number });
+      const [detail, bundle] = await Promise.all([gh.getIssueDetail({ repo: slug, number }), htmlPromise]);
+      if (bundle && htmlKey) {
+        htmlBundleCache.set(htmlKey, bundle);
+        signedUrlCache.set(htmlKey, bundle.signedImageMap);
+      }
       if (detail) state.detailCache.set(key, detail);
     }
   } catch (err) {
@@ -352,9 +650,13 @@ async function ensureDiffLoaded(number) {
   renderDetail();
   try {
     const res = await gh.getPrDiff({ repo: repoSlug(), number });
-    state.diffCache.set(number, res);
+    state.diffCache.set(number, {
+      diff: res.diff,
+      parsed: parseUnifiedDiff(res.diff),
+      truncated: res.truncated,
+    });
   } catch (err) {
-    state.diffCache.set(number, { diff: '', truncated: false, error: err?.message });
+    state.diffCache.set(number, { diff: '', parsed: [], truncated: false, error: err?.message });
   } finally {
     state.loadingDiff = false;
     renderDetail();
@@ -370,9 +672,17 @@ function renderAll() {
   renderDetail();
 }
 
+function formatTabCount(view) {
+  const items = view === 'prs' ? state.prs : state.issues;
+  const meta = state.listMeta[view];
+  if (meta?.totalCount != null) return String(meta.totalCount);
+  if (!meta?.loaded && items.length === 0 && !state.preview) return '–';
+  return meta?.hasMore ? `${items.length}+` : String(items.length);
+}
+
 function renderTopbar() {
-  $('pr-count').textContent = String(state.prs.length);
-  $('issue-count').textContent = String(state.issues.length);
+  $('pr-count').textContent = formatTabCount('prs');
+  $('issue-count').textContent = formatTabCount('issues');
 
   document.querySelectorAll('.seg-btn[data-view]').forEach(btn => {
     const active = btn.dataset.view === state.view;
@@ -449,50 +759,107 @@ function filteredPreviewItems(items) {
   });
 }
 
+function renderListRowHtml(item) {
+  const selected = item.number === state.selectedNumber;
+  const stInfo = state.view === 'prs' ? prStatusInfo(item) : issueStatusInfo(item);
+  const author = item.author?.login || 'ghost';
+  const rel = formatRelTime(item.updatedAt || item.createdAt);
+  const checks = state.view === 'prs' ? summarizeChecks(item.statusCheckRollup) : null;
+  const rev = state.view === 'prs' ? reviewDecisionInfo(item.reviewDecision) : null;
+  const commentCount = Array.isArray(item.comments)
+    ? item.comments.length
+    : typeof item.comments?.totalCount === 'number'
+      ? item.comments.totalCount
+      : 0;
+
+  return `
+    <button type="button" class="list-row ${selected ? 'selected' : ''}" data-number="${item.number}">
+      <div class="row-top">
+        <span class="sdot ${stInfo.cls}" title="${esc(stInfo.label)}"></span>
+        <span class="row-title">${esc(item.title)}</span>
+      </div>
+      <div class="row-meta">
+        <span class="row-num mono">#${item.number}</span>
+        <span>${esc(author)}</span>
+        <span>${esc(rel)}</span>
+        <span class="row-badges">
+          ${checks && checks.tone !== 'none' ? `<span class="check-dot ${checks.tone}" title="${esc(checks.tone)}"></span>` : ''}
+          ${rev ? `<span class="mono" style="color:var(--${rev.cls})">${rev.cls === 'done' ? '✓' : rev.cls === 'drift' ? '!' : '•'}</span>` : ''}
+          ${commentCount > 0 ? `<span class="mono">💬${commentCount}</span>` : ''}
+        </span>
+      </div>
+    </button>
+  `;
+}
+
+function updateListSelection(number) {
+  const listEl = $('item-list');
+  if (!listEl) return;
+  listEl.querySelector('.list-row.selected')?.classList.remove('selected');
+  if (number != null) {
+    listEl.querySelector(`.list-row[data-number="${CSS.escape(String(number))}"]`)?.classList.add('selected');
+  }
+}
+
+function observeListSentinel() {
+  if (listObserver) {
+    listObserver.disconnect();
+    listObserver = null;
+  }
+  const sentinel = $('list-sentinel');
+  const root = $('item-list');
+  if (!sentinel || !root || typeof IntersectionObserver === 'undefined') return;
+  listObserver = new IntersectionObserver(
+    entries => {
+      if (entries.some(e => e.isIntersecting)) {
+        loadMoreCurrentList();
+      }
+    },
+    { root, rootMargin: '160px', threshold: 0.01 },
+  );
+  listObserver.observe(sentinel);
+}
+
+function appendListRows(addedItems) {
+  const listEl = $('item-list');
+  const sentinel = $('list-sentinel');
+  if (!listEl) return;
+  if (addedItems.length > 0) {
+    const html = addedItems.map(renderListRowHtml).join('');
+    if (sentinel) sentinel.insertAdjacentHTML('beforebegin', html);
+    else listEl.insertAdjacentHTML('beforeend', html);
+  }
+  const meta = state.listMeta[state.view];
+  if (!meta?.hasMore) {
+    sentinel?.remove();
+    if (listObserver) {
+      listObserver.disconnect();
+      listObserver = null;
+    }
+  } else if (sentinel) {
+    sentinel.textContent = t('loadingMore');
+  }
+}
+
 function renderList() {
   const listEl = $('item-list');
   const items = filteredPreviewItems(activeItems());
+  const meta = state.listMeta[state.view];
   if (items.length === 0) {
+    if (listObserver) {
+      listObserver.disconnect();
+      listObserver = null;
+    }
     listEl.innerHTML = `<p class="empty-inline" style="padding:12px">${esc(
-      state.view === 'prs' ? t('emptyPrList') : t('emptyIssueList'),
+      state.loadingList ? t('syncing') : state.view === 'prs' ? t('emptyPrList') : t('emptyIssueList'),
     )}</p>`;
     return;
   }
 
-  listEl.innerHTML = items
-    .map(item => {
-      const selected = item.number === state.selectedNumber;
-      const stInfo = state.view === 'prs' ? prStatusInfo(item) : issueStatusInfo(item);
-      const author = item.author?.login || 'ghost';
-      const rel = formatRelTime(item.updatedAt || item.createdAt);
-      const checks = state.view === 'prs' ? summarizeChecks(item.statusCheckRollup) : null;
-      const rev = state.view === 'prs' ? reviewDecisionInfo(item.reviewDecision) : null;
-      const commentCount = Array.isArray(item.comments)
-        ? item.comments.length
-        : typeof item.comments?.totalCount === 'number'
-          ? item.comments.totalCount
-          : 0;
-
-      return `
-        <button type="button" class="list-row ${selected ? 'selected' : ''}" data-number="${item.number}">
-          <div class="row-top">
-            <span class="sdot ${stInfo.cls}" title="${esc(stInfo.label)}"></span>
-            <span class="row-title">${esc(item.title)}</span>
-          </div>
-          <div class="row-meta">
-            <span class="row-num mono">#${item.number}</span>
-            <span>${esc(author)}</span>
-            <span>${esc(rel)}</span>
-            <span class="row-badges">
-              ${checks && checks.tone !== 'none' ? `<span class="check-dot ${checks.tone}" title="${esc(checks.tone)}"></span>` : ''}
-              ${rev ? `<span class="mono" style="color:var(--${rev.cls})">${rev.cls === 'done' ? '✓' : rev.cls === 'drift' ? '!' : '•'}</span>` : ''}
-              ${commentCount > 0 ? `<span class="mono">💬${commentCount}</span>` : ''}
-            </span>
-          </div>
-        </button>
-      `;
-    })
-    .join('');
+  const sentinelHtml =
+    !state.preview && meta?.hasMore ? `<div class="lazy-sentinel" id="list-sentinel">${esc(t('loadingMore'))}</div>` : '';
+  listEl.innerHTML = items.map(renderListRowHtml).join('') + sentinelHtml;
+  observeListSentinel();
 }
 
 function renderEnvError() {
@@ -572,7 +939,7 @@ function renderDetail() {
 
   const actionButtons = isPr
     ? `
-      ${isOpen ? `<button type="button" class="btn" data-act="checkout">${esc(t('actCheckout'))}</button>` : ''}
+      ${isOpen ? `<button type="button" class="btn" data-act="worktree">${esc(t('actCreateWorktree'))}</button>` : ''}
       ${isOpen && !item.isDraft ? `<button type="button" class="btn primary" data-act="merge">${esc(t('actMerge'))}</button>` : ''}
       ${isOpen && item.isDraft ? `<button type="button" class="btn primary" data-act="ready">${esc(t('actReady'))}</button>` : ''}
       <div class="menu-wrap">
@@ -592,6 +959,7 @@ function renderDetail() {
       ${item.url ? `<button type="button" class="btn" data-open-url="${esc(item.url)}">${esc(t('actOpenGh'))}</button>` : ''}
     `
     : `
+      <button type="button" class="btn" data-act="worktree">${esc(t('actCreateWorktree'))}</button>
       <button type="button" class="btn soft" data-agent-act="issue-solve">${esc(t('actAiSolveIssue'))}</button>
       <button type="button" class="btn" data-agent-act="compose">${esc(t('actSendToComposer'))}</button>
       ${isOpen ? `<button type="button" class="btn danger" data-act="close">${esc(t('actClose'))}</button>` : `<button type="button" class="btn" data-act="reopen">${esc(t('actReopen'))}</button>`}
@@ -625,6 +993,13 @@ function renderDetail() {
     `
     : '';
 
+  state.activeTimeline = null;
+  state.activeDiffRender = null;
+  if (detailScrollObserver) {
+    detailScrollObserver.disconnect();
+    detailScrollObserver = null;
+  }
+
   let bodyHtml = '';
   if (!isPr || state.subtab === 'overview') {
     bodyHtml = renderOverviewTab(item, isPr, checkSum);
@@ -645,13 +1020,22 @@ function renderDetail() {
     if (state.loadingDiff || !diffEntry) {
       bodyHtml = `<p class="empty-inline">${esc(t('diffLoading'))}</p>`;
     } else {
-      const parsed = parseUnifiedDiff(diffEntry.diff);
-      bodyHtml = renderDiffFiles(parsed, item.files || [], diffEntry.truncated);
+      const parsed = Array.isArray(diffEntry.parsed) ? diffEntry.parsed : parseUnifiedDiff(diffEntry.diff);
+      if (!Array.isArray(diffEntry.parsed)) diffEntry.parsed = parsed;
+      state.activeDiffRender = {
+        number: item.number,
+        files: parsed,
+        renderedCount: Math.min(DIFF_FILES_BATCH, parsed.length),
+      };
+      bodyHtml = renderDiffFiles(parsed, item.files || [], diffEntry.truncated, { limit: DIFF_FILES_BATCH });
     }
   }
 
   paneEl.innerHTML = `
     <header class="detail-head">
+      <div class="dh-mobile-bar">
+        <button type="button" class="btn sm mobile-list-btn" data-act="open-rail">← ${esc(t('backToList'))}</button>
+      </div>
       <div class="dh-top">
         <div class="dh-title-wrap">
           <h2 class="dh-title">${esc(item.title)}<span class="dh-num mono">#${item.number}</span></h2>
@@ -659,7 +1043,7 @@ function renderDetail() {
             <span class="pill ${stInfo.cls === 'open' ? 'done' : stInfo.cls === 'closed' ? 'drift' : stInfo.cls === 'draft' ? 'gate' : 'merged'}">
               <span class="sdot ${stInfo.cls}"></span>${esc(stInfo.label)}
             </span>
-            <span class="avatar">${esc(initials(author))}</span>
+            ${renderAvatar(author, avatarCache)}
             <span>${esc(author)}</span>
             <span>· ${esc(formatRelTime(item.updatedAt || item.createdAt))}</span>
             ${
@@ -679,39 +1063,181 @@ function renderDetail() {
       ${sessionStrip}
       ${subtabsHtml}
     </header>
-    <div class="detail-scroll">${bodyHtml}</div>
+    <div class="detail-scroll" id="detail-scroll">${bodyHtml}</div>
+  `;
+  setupDetailScrollObserver();
+  hydrateMediaInDom(paneEl);
+}
+
+function renderTimelineCardHtml(entry) {
+  const badge =
+    entry.kind === 'review' && entry.state
+      ? `<span class="pill ${entry.state === 'APPROVED' ? 'done' : entry.state === 'CHANGES_REQUESTED' ? 'drift' : ''}">${esc(entry.state)}</span>`
+      : '';
+  return `
+    <div class="comment-card">
+      <div class="comment-head">
+        ${renderAvatar(entry.author, avatarCache)}
+        <span class="comment-author">${esc(entry.author)}</span>
+        ${badge}
+        <span class="comment-time">${esc(formatRelTime(entry.at))}</span>
+      </div>
+      ${renderRichBody(entry.body || '', entry.bodyHtml, imageCache)}
+    </div>
   `;
 }
 
+function setupDetailScrollObserver() {
+  if (detailScrollObserver) {
+    detailScrollObserver.disconnect();
+    detailScrollObserver = null;
+  }
+  const scrollRoot = $('detail-scroll');
+  if (!scrollRoot || typeof IntersectionObserver === 'undefined') return;
+  const commentsSentinel = $('comments-sentinel');
+  const diffSentinel = $('diff-sentinel');
+  if (!commentsSentinel && !diffSentinel) return;
+
+  detailScrollObserver = new IntersectionObserver(
+    entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        if (entry.target.id === 'comments-sentinel') {
+          loadMoreTimelineEntries();
+        } else if (entry.target.id === 'diff-sentinel') {
+          appendMoreDiffFiles();
+        }
+      }
+    },
+    { root: scrollRoot, rootMargin: '260px', threshold: 0.01 },
+  );
+  if (commentsSentinel) detailScrollObserver.observe(commentsSentinel);
+  if (diffSentinel) detailScrollObserver.observe(diffSentinel);
+}
+
+async function loadMoreTimelineEntries() {
+  const tl = state.activeTimeline;
+  const listEl = $('timeline-list');
+  const sentinel = $('comments-sentinel');
+  if (!tl || !listEl || tl.loadingMore) return;
+
+  if (tl.renderedCount < tl.items.length) {
+    const slice = tl.items.slice(tl.renderedCount, tl.renderedCount + COMMENTS_BATCH_SIZE);
+    tl.renderedCount += slice.length;
+    const temp = document.createElement('div');
+    temp.innerHTML = slice.map(renderTimelineCardHtml).join('');
+    while (temp.firstChild) listEl.appendChild(temp.firstChild);
+    hydrateMediaInDom(listEl);
+    if (tl.renderedCount >= tl.items.length && !tl.remoteHasMore) {
+      sentinel?.remove();
+    }
+    return;
+  }
+
+  if (!tl.remoteHasMore || state.preview || !tl.repo) {
+    sentinel?.remove();
+    return;
+  }
+
+  tl.loadingMore = true;
+  if (sentinel) sentinel.textContent = t('loadingMore');
+  try {
+    const nextPage = tl.remotePage + 1;
+    const page = await gh.fetchIssueCommentsPage({ repo: tl.repo, number: tl.number, page: nextPage, perPage: 50 });
+    if (state.activeTimeline !== tl) return;
+    tl.remotePage = nextPage;
+    tl.remoteHasMore = page.hasMore;
+    const signedKey = `${tl.repo}:${tl.number}`;
+    if (page.signedImageMap.size > 0) {
+      const existingMap = signedUrlCache.get(signedKey) || new Map();
+      for (const [k, v] of page.signedImageMap.entries()) existingMap.set(k, v);
+      signedUrlCache.set(signedKey, existingMap);
+    }
+    const existingKeys = new Set(tl.items.map(x => `${x.kind}|${x.author}|${x.at}`));
+    const fresh = page.items.filter(x => !existingKeys.has(`${x.kind}|${x.author}|${x.at}`));
+    if (fresh.length > 0) {
+      tl.items.push(...fresh);
+      const slice = fresh.slice(0, COMMENTS_BATCH_SIZE);
+      tl.renderedCount += slice.length;
+      const temp = document.createElement('div');
+      temp.innerHTML = slice.map(renderTimelineCardHtml).join('');
+      while (temp.firstChild) listEl.appendChild(temp.firstChild);
+      hydrateMediaInDom(listEl);
+      const headEl = $('comments-section-head');
+      if (headEl) headEl.textContent = `${t('commentsTitle')} (${tl.items.length})`;
+    }
+    if (tl.renderedCount >= tl.items.length && !tl.remoteHasMore) {
+      sentinel?.remove();
+    }
+  } catch {
+    tl.remoteHasMore = false;
+    sentinel?.remove();
+  } finally {
+    tl.loadingMore = false;
+  }
+}
+
+function appendMoreDiffFiles() {
+  const dr = state.activeDiffRender;
+  const listEl = $('diff-files-list');
+  const sentinel = $('diff-sentinel');
+  if (!dr || !listEl) return;
+  if (dr.renderedCount >= dr.files.length) {
+    sentinel?.remove();
+    return;
+  }
+  const end = Math.min(dr.files.length, dr.renderedCount + DIFF_FILES_BATCH);
+  let html = '';
+  for (let i = dr.renderedCount; i < end; i++) {
+    html += renderDiffFileCard(dr.files[i], i);
+  }
+  dr.renderedCount = end;
+  listEl.insertAdjacentHTML('beforeend', html);
+  if (dr.renderedCount >= dr.files.length) {
+    sentinel?.remove();
+  }
+}
+
 function renderOverviewTab(item, isPr, checkSum) {
+  const slug = repoSlug();
+  const bundle = slug && item?.number != null ? htmlBundleCache.get(`${slug}:${item.number}`) : null;
   const comments = Array.isArray(item.comments) ? item.comments : [];
   const reviews = isPr && Array.isArray(item.reviews) ? item.reviews.filter(r => r.body || r.state !== 'COMMENTED') : [];
   const timeline = [
-    ...comments.map(c => ({ kind: 'comment', author: c.author?.login || 'ghost', at: c.createdAt, body: c.body, state: '' })),
-    ...reviews.map(r => ({ kind: 'review', author: r.author?.login || 'ghost', at: r.submittedAt, body: r.body, state: r.state })),
+    ...comments.map(c => {
+      const author = c.author?.login || 'ghost';
+      const bodyHtml =
+        bundle?.commentHtmlByKey.get(`${author}|${c.createdAt || ''}`) ||
+        (c.url ? bundle?.commentHtmlByKey.get(c.url) : '') ||
+        '';
+      return { kind: 'comment', author, at: c.createdAt, body: c.body, bodyHtml, state: '' };
+    }),
+    ...reviews.map(r => {
+      const author = r.author?.login || 'ghost';
+      const bodyHtml = bundle?.reviewHtmlByKey.get(`${author}|${r.submittedAt || ''}`) || '';
+      return { kind: 'review', author, at: r.submittedAt, body: r.body, bodyHtml, state: r.state };
+    }),
   ].sort((a, b) => Date.parse(a.at || 0) - Date.parse(b.at || 0));
 
+  const initialSlice = timeline.slice(0, COMMENTS_BATCH_SIZE);
+  const remoteHasMore = Boolean(!state.preview && bundle?.commentsHasMore);
+  state.activeTimeline = {
+    key: detailKey(state.view, item.number),
+    repo: slug,
+    number: item.number,
+    items: timeline,
+    renderedCount: initialSlice.length,
+    loadingMore: false,
+    remotePage: bundle?.commentsPage || 1,
+    remoteHasMore,
+  };
+
+  const hasMoreTimeline = timeline.length > initialSlice.length || remoteHasMore;
   const timelineHtml =
     timeline.length > 0
-      ? timeline
-          .map(entry => {
-            const badge =
-              entry.kind === 'review' && entry.state
-                ? `<span class="pill ${entry.state === 'APPROVED' ? 'done' : entry.state === 'CHANGES_REQUESTED' ? 'drift' : ''}">${esc(entry.state)}</span>`
-                : '';
-            return `
-              <div class="comment-card">
-                <div class="comment-head">
-                  <span class="avatar">${esc(initials(entry.author))}</span>
-                  <span class="comment-author">${esc(entry.author)}</span>
-                  ${badge}
-                  <span class="comment-time">${esc(formatRelTime(entry.at))}</span>
-                </div>
-                ${renderMarkdown(entry.body || '')}
-              </div>
-            `;
-          })
-          .join('')
+      ? `<div id="timeline-list">${initialSlice.map(renderTimelineCardHtml).join('')}</div>${
+          hasMoreTimeline ? `<div class="lazy-sentinel" id="comments-sentinel">${esc(t('loadingMore'))}</div>` : ''
+        }`
       : `<p class="empty-inline">${esc(t('noComments'))}</p>`;
 
   const composerHtml = isPr
@@ -774,8 +1300,8 @@ function renderOverviewTab(item, isPr, checkSum) {
   return `
     <div class="overview-grid">
       <div>
-        <div class="card">${renderMarkdown(item.body)}</div>
-        <div class="section-head">${esc(t('commentsTitle'))} (${timeline.length})</div>
+        <div class="card">${renderRichBody(item.body, bundle?.bodyHtml || '', imageCache)}</div>
+        <div class="section-head" id="comments-section-head">${esc(t('commentsTitle'))} (${timeline.length}${remoteHasMore ? '+' : ''})</div>
         ${timelineHtml}
         ${composerHtml}
       </div>
@@ -1085,6 +1611,85 @@ function openMergeModal(pr) {
   });
 }
 
+function openCreateWorktreeModal(item, isPr) {
+  if (guardPreview()) return;
+  const defaultBranch = isPr ? `pr-${item.number}` : `issue-${item.number}`;
+  const base = state.env?.defaultBranch || 'main';
+  const hint = isPr
+    ? t('fieldWorktreeHintPr', { n: item.number, head: item.headRefName || '' })
+    : t('fieldWorktreeHintIssue', { n: item.number, base });
+
+  openModal(`
+    <div class="modal-head">
+      <h3>${esc(t('modalWorktreeTitle'))}</h3>
+      <button type="button" class="ico" data-close-modal>✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin:0;color:var(--muted);font-size:12px">${esc(hint)}</p>
+      <div class="field">
+        <span class="field-label">${esc(t('fieldBranchName'))}</span>
+        <input type="text" class="input mono" id="wt-branch-input" value="${esc(defaultBranch)}" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-close-modal>${esc(t('btnCancel'))}</button>
+      <button type="button" class="btn primary" id="btn-confirm-worktree">${esc(t('btnCreateWorktree'))}</button>
+    </div>
+  `);
+
+  $('btn-confirm-worktree')?.addEventListener('click', async () => {
+    const branch = $('wt-branch-input').value.trim();
+    if (!branch) return;
+    const btn = $('btn-confirm-worktree');
+    btn.disabled = true;
+    try {
+      // Use native deck.worktree.create if exposed by host, otherwise invoke Lumzel's built-in worktree_create MCP via Agent.
+      if (typeof window.deck?.worktree?.create === 'function') {
+        await window.deck.worktree.create({ branch, base: isPr ? item.headRefName || base : base });
+        closeModal();
+        showToast(t('toastWorktreeCreated', { branch }));
+        return;
+      }
+      const prompt = isPr
+        ? t('promptCreateWorktreePr', {
+            repo: repoSlug(),
+            n: item.number,
+            title: item.title,
+            head: item.headRefName || '',
+            branch,
+          })
+        : t('promptCreateWorktreeIssue', {
+            repo: repoSlug(),
+            n: item.number,
+            title: item.title,
+            base,
+            branch,
+          });
+      closeModal();
+      showToast(t('toastWorktreeStarted'));
+      const key = detailKey(state.view, item.number);
+      const label = `${t('actCreateWorktree')} (${branch})`;
+      state.sessions[key] = { sessionId: '', status: 'running', label };
+      renderDetail();
+      const res = await window.deck.agent.run({
+        prompt,
+        focus: false,
+        wait: false,
+        dedupe: 'running',
+        dedupeKey: `${key}:worktree:${branch}`,
+        ...agentOverridesPayload(),
+      });
+      if (res?.sessionId) {
+        state.sessions[key] = { sessionId: res.sessionId, status: res.status || 'running', label };
+        renderDetail();
+      }
+    } catch (err) {
+      showToast(err?.message || 'Failed to create worktree');
+      btn.disabled = false;
+    }
+  });
+}
+
 function openConfirmModal(message, onConfirm) {
   openModal(`
     <div class="modal-head">
@@ -1299,9 +1904,19 @@ async function runAgentAction(kind) {
 
 function wireStaticEvents() {
   $('rail-toggle').addEventListener('click', () => {
-    state.railCollapsed = !state.railCollapsed;
-    $('workspace').classList.toggle('rail-collapsed', state.railCollapsed);
-    $('rail-toggle').setAttribute('aria-expanded', String(!state.railCollapsed));
+    setRailCollapsed(!state.railCollapsed);
+  });
+
+  $('rail-scrim')?.addEventListener('click', () => {
+    setRailCollapsed(true);
+  });
+
+  $('btn-empty-open-list')?.addEventListener('click', () => {
+    setRailCollapsed(false);
+  });
+
+  narrowMq?.addEventListener?.('change', () => {
+    syncRailScrim();
   });
 
   document.querySelectorAll('.seg-btn[data-view]').forEach(btn => {
@@ -1314,7 +1929,9 @@ function wireStaticEvents() {
       const items = activeItems();
       state.selectedNumber = items[0]?.number ?? null;
       renderAll();
-      if (state.selectedNumber != null) {
+      if (!state.preview && !state.listMeta[next]?.loaded) {
+        refreshCurrentList();
+      } else if (state.selectedNumber != null) {
         loadItemDetail(state.view, state.selectedNumber, { force: false });
       }
     });
@@ -1326,6 +1943,7 @@ function wireStaticEvents() {
     state.view = 'prs';
     state.selectedNumber = num;
     state.subtab = 'overview';
+    if (isNarrowScreen()) setRailCollapsed(true);
     renderAll();
     loadItemDetail('prs', num, { force: false });
   });
@@ -1377,11 +1995,15 @@ function wireStaticEvents() {
     const row = e.target.closest('[data-number]');
     if (!row) return;
     const num = Number(row.dataset.number);
-    if (num === state.selectedNumber) return;
+    if (num === state.selectedNumber) {
+      if (isNarrowScreen()) setRailCollapsed(true);
+      return;
+    }
     state.selectedNumber = num;
     state.subtab = 'overview';
     state.activeMenuOpen = false;
-    renderList();
+    updateListSelection(num);
+    if (isNarrowScreen()) setRailCollapsed(true);
     renderDetail();
     loadItemDetail(state.view, num, { force: false });
   });
@@ -1392,6 +2014,28 @@ function wireStaticEvents() {
     if (openUrlEl) {
       e.preventDefault();
       openExternalUrl(openUrlEl.dataset.openUrl);
+      return;
+    }
+    const diffMoreBtn = e.target.closest('[data-diff-more]');
+    if (diffMoreBtn) {
+      const fileIdx = Number(diffMoreBtn.dataset.diffMore);
+      const offset = Number(diffMoreBtn.dataset.diffOffset) || 0;
+      const file = state.activeDiffRender?.files?.[fileIdx];
+      if (file) {
+        const chunkHtml = renderDiffLinesSlice(file.lines, offset, DIFF_MORE_LINES);
+        const wrap = diffMoreBtn.closest('.diff-more-wrap');
+        if (wrap) {
+          wrap.insertAdjacentHTML('beforebegin', chunkHtml);
+          const nextOffset = offset + DIFF_MORE_LINES;
+          const remaining = file.lines.length - nextOffset;
+          if (remaining > 0) {
+            diffMoreBtn.dataset.diffOffset = String(nextOffset);
+            diffMoreBtn.textContent = t('loadMoreLines', { n: remaining });
+          } else {
+            wrap.remove();
+          }
+        }
+      }
       return;
     }
     const openSessEl = e.target.closest('[data-open-session]');
@@ -1422,6 +2066,10 @@ function wireStaticEvents() {
     const actEl = e.target.closest('[data-act]');
     if (!actEl) return;
     const act = actEl.dataset.act;
+    if (act === 'open-rail') {
+      setRailCollapsed(false);
+      return;
+    }
     if (act === 'toggle-agent-menu') {
       state.activeMenuOpen = !state.activeMenuOpen;
       const menu = $('agent-action-menu');
@@ -1436,15 +2084,8 @@ function wireStaticEvents() {
 
     if (act === 'merge') {
       openMergeModal(item);
-    } else if (act === 'checkout') {
-      if (guardPreview()) return;
-      try {
-        await gh.checkoutPr({ repo: repoSlug(), number: item.number });
-        showToast(t('toastCheckoutOk', { n: item.number }));
-        await refreshAll();
-      } catch (err) {
-        showToast(err?.message || 'Checkout failed');
-      }
+    } else if (act === 'worktree') {
+      openCreateWorktreeModal(item, state.view === 'prs');
     } else if (act === 'close') {
       if (guardPreview()) return;
       const msg = state.view === 'prs' ? t('confirmClosePr', { n: item.number }) : t('confirmCloseIssue', { n: item.number });
@@ -1513,6 +2154,9 @@ function wireStaticEvents() {
         state.activeMenuOpen = false;
         const menu = $('agent-action-menu');
         if (menu) menu.hidden = true;
+      }
+      if (isNarrowScreen() && !state.railCollapsed) {
+        setRailCollapsed(true);
       }
     }
   });
