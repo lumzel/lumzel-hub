@@ -1,0 +1,147 @@
+{
+  "id": "github",
+  "title": "GitHub",
+  "icon": "branch",
+  "category": "Workflow",
+  "author": "Lumzel",
+  "homepage": "https://cli.github.com",
+  "description": "Local-first GitHub Pull Request and Issue workbench powered by the gh CLI: inspect diffs and CI checks, review, comment, merge, draft PRs from your branch with AI, and launch Agent sessions to review PRs, fix CI, or solve issues.",
+  "i18n": {
+    "en": {
+      "title": "GitHub",
+      "description": "Local-first GitHub Pull Request and Issue workbench powered by the gh CLI: inspect diffs and CI checks, review, comment, merge, draft PRs from your branch with AI, and launch Agent sessions to review PRs, fix CI, or solve issues."
+    },
+    "zh-CN": {
+      "title": "GitHub 工作台",
+      "description": "基于本机 gh CLI 的本地优先 GitHub PR 与 Issue 工作台：查看 Diff 与 CI 检查、评审评论与合并、AI 一键从当前分支生成 PR，并联动 Lumzel Agent 执行代码审查、修复 CI 或实现 Issue。"
+    }
+  },
+  "entry": "index.html",
+  "uses": {
+    "skills": [
+      "github-pr-review",
+      "github-issue-solve"
+    ]
+  },
+  "permissions": [
+    "exec",
+    "agent",
+    "db",
+    "open"
+  ],
+  "capabilities": {
+    "exec": [
+      "gh",
+      "git"
+    ],
+    "open": [
+      "https://github.com/*"
+    ]
+  },
+  "store": {
+    "scope": "project"
+  },
+  "params": [
+    {
+      "key": "repo",
+      "type": "string",
+      "label": "Repository Override (owner/repo)",
+      "description": "Optional GitHub repository slug (e.g. octocat/hello-world). Leave blank to auto-detect from the current Worktree.",
+      "placeholder": "owner/repo (auto-detect when empty)",
+      "default": "",
+      "i18n": {
+        "zh-CN": {
+          "label": "指定仓库（owner/repo）",
+          "description": "可选覆盖目标 GitHub 仓库（如 octocat/hello-world）。留空则自动识别当前 Worktree 对应的远程仓库。",
+          "placeholder": "owner/repo（留空自动识别）"
+        }
+      }
+    },
+    {
+      "key": "defaultTab",
+      "type": "select",
+      "label": "Default View",
+      "description": "Which list opens first when launching the GitHub Deck.",
+      "default": "prs",
+      "options": [
+        {
+          "value": "prs",
+          "label": "Pull Requests",
+          "i18n": { "zh-CN": { "label": "Pull Requests" } }
+        },
+        {
+          "value": "issues",
+          "label": "Issues",
+          "i18n": { "zh-CN": { "label": "Issues" } }
+        }
+      ],
+      "i18n": {
+        "zh-CN": {
+          "label": "默认视图",
+          "description": "打开 GitHub 工作台时默认显示的标签页。"
+        }
+      }
+    },
+    {
+      "key": "pageSize",
+      "type": "select",
+      "label": "Items Per Fetch",
+      "description": "Maximum number of PRs or Issues loaded per gh CLI query.",
+      "default": "30",
+      "options": [
+        {
+          "value": "20",
+          "label": "20 items",
+          "i18n": { "zh-CN": { "label": "20 条" } }
+        },
+        {
+          "value": "30",
+          "label": "30 items (default)",
+          "i18n": { "zh-CN": { "label": "30 条（默认）" } }
+        },
+        {
+          "value": "50",
+          "label": "50 items",
+          "i18n": { "zh-CN": { "label": "50 条" } }
+        }
+      ],
+      "i18n": {
+        "zh-CN": {
+          "label": "单次拉取条数",
+          "description": "每次通过 gh CLI 查询 PR 或 Issue 列表的最大条数。"
+        }
+      }
+    },
+    {
+      "key": "mergeMethod",
+      "type": "select",
+      "label": "Default Merge Strategy",
+      "description": "Pre-selected merge strategy in the PR merge confirmation dialog.",
+      "default": "squash",
+      "options": [
+        {
+          "value": "squash",
+          "label": "Squash and merge",
+          "i18n": { "zh-CN": { "label": "Squash 合并（默认）" } }
+        },
+        {
+          "value": "merge",
+          "label": "Create a merge commit",
+          "i18n": { "zh-CN": { "label": "创建 Merge 提交" } }
+        },
+        {
+          "value": "rebase",
+          "label": "Rebase and merge",
+          "i18n": { "zh-CN": { "label": "Rebase 合并" } }
+        }
+      ],
+      "i18n": {
+        "zh-CN": {
+          "label": "默认合并方式",
+          "description": "合并 Pull Request 时默认选中的合并策略。"
+        }
+      }
+    }
+  ],
+  "version": "1.0.0"
+}

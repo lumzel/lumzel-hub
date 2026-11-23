@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
+    <title>GitHub</title>
+    <link rel="stylesheet" href="styles/app.css" />
+  </head>
+  <body>
+    <div class="app" id="app">
+      <header class="topbar">
+        <button
+          type="button"
+          class="ico"
+          id="rail-toggle"
+          aria-expanded="true"
+          data-i18n-title="collapseRail"
+          data-i18n-aria="collapseRail"
+          title="Toggle list sidebar"
+          aria-label="Toggle list sidebar"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <rect x="1.8" y="2.5" width="12.4" height="11" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.35" />
+            <path d="M5.8 2.5v11" stroke="currentColor" stroke-width="1.35" />
+          </svg>
+        </button>
+
+        <div class="segmented" role="tablist" aria-label="GitHub Views">
+          <button type="button" class="seg-btn active" role="tab" data-view="prs" aria-selected="true">
+            <span data-i18n="tabPrs">Pull Requests</span>
+            <span class="seg-count" id="pr-count">0</span>
+          </button>
+          <button type="button" class="seg-btn" role="tab" data-view="issues" aria-selected="false">
+            <span data-i18n="tabIssues">Issues</span>
+            <span class="seg-count" id="issue-count">0</span>
+          </button>
+        </div>
+
+        <div class="ctx-pill" id="ctx-pill" hidden>
+          <span class="ctx-repo mono" id="ctx-repo"></span>
+          <span class="ctx-sep" id="ctx-sep">·</span>
+          <span class="ctx-branch mono" id="ctx-branch"></span>
+          <button type="button" class="ctx-pr-link mono" id="ctx-branch-pr" hidden></button>
+        </div>
+
+        <span class="sync-label" id="sync-label" hidden></span>
+        <span class="sp"></span>
+
+        <button type="button" class="btn primary" id="btn-create" data-i18n="newPr">+ New PR</button>
+
+        <button
+          type="button"
+          class="ico"
+          id="btn-refresh"
+          data-i18n-title="refresh"
+          data-i18n-aria="refresh"
+          title="Refresh"
+          aria-label="Refresh"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path
+              d="M13.2 8a5.2 5.2 0 1 1-1.4-3.5M13.2 2.8v2.7h-2.7"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+
+        <div class="agent-wrap" id="agent-wrap" hidden>
+          <button type="button" class="agent-btn" id="agent-btn" aria-expanded="false" aria-haspopup="dialog">
+            <span class="agent-dot" aria-hidden="true"></span>
+            <span id="agent-label">Agent</span>
+            <span aria-hidden="true">▾</span>
+          </button>
+          <div class="popover" id="agent-pop" role="dialog" hidden>
+            <div class="popover-head">
+              <strong data-i18n="agentTitle">Session Agent & Model</strong>
+              <button type="button" class="link-btn" id="agent-reset" data-i18n="agentReset" hidden>Reset</button>
+            </div>
+            <label class="popover-field">
+              <span data-i18n="agentFieldAgent">Agent</span>
+              <select id="agent-select"></select>
+            </label>
+            <label class="popover-field">
+              <span data-i18n="agentFieldModel">Model</span>
+              <select id="agent-model-select"></select>
+            </label>
+            <label class="popover-field" id="agent-effort-row">
+              <span data-i18n="agentFieldEffort">Thinking</span>
+              <select id="agent-effort-select"></select>
+            </label>
+            <div class="popover-foot">
+              <button type="button" class="btn sm" id="agent-save-default" data-i18n="agentSaveDefault" hidden>
+                Save as Deck Default
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="ico"
+          id="btn-settings"
+          data-i18n-title="deckSettings"
+          data-i18n-aria="deckSettings"
+          title="Deck Settings"
+          aria-label="Deck Settings"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.35" />
+            <path
+              d="M8 1.8v1.5M8 12.7v1.5M1.8 8h1.5M12.7 8h1.5M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M12.4 3.6l-1.1 1.1M4.7 11.3l-1.1 1.1"
+              stroke="currentColor"
+              stroke-width="1.35"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+      </header>
+
+      <div class="preview-banner" id="preview-banner" data-i18n="previewBanner" hidden>
+        Market Preview — showing sample GitHub data (gh CLI is disabled in preview).
+      </div>
+
+      <div class="workspace" id="workspace">
+        <aside class="rail" id="rail" aria-label="Items list">
+          <div class="rail-controls">
+            <div class="search-row">
+              <input
+                type="search"
+                class="input"
+                id="search-input"
+                data-i18n-placeholder="searchPlaceholderPr"
+                placeholder="Search pull requests…"
+              />
+              <select class="state-select" id="state-select" aria-label="State filter">
+                <option value="open" data-i18n="stateOpen">Open</option>
+                <option value="closed" data-i18n="stateClosed">Closed</option>
+                <option value="merged" data-i18n="stateMerged">Merged</option>
+                <option value="all" data-i18n="stateAll">All</option>
+              </select>
+            </div>
+            <div class="filter-chips" id="filter-chips"></div>
+          </div>
+          <div class="list-scroll" id="item-list"></div>
+        </aside>
+
+        <main class="canvas" id="canvas">
+          <div class="empty-center" id="env-error" hidden></div>
+          <div class="empty-center" id="empty-detail" hidden>
+            <p class="empty-desc" data-i18n="selectItemPrompt">
+              Select a Pull Request or Issue from the list to inspect details.
+            </p>
+          </div>
+          <section class="detail-pane" id="detail-pane" hidden></section>
+        </main>
+      </div>
+    </div>
+
+    <!-- Modal Host -->
+    <div class="modal-backdrop" id="modal-backdrop" hidden>
+      <div class="modal" id="modal-dialog" role="dialog" aria-modal="true"></div>
+    </div>
+
+    <div class="toast" id="toast" role="status" hidden></div>
+
+    <script src="/sdk.js"></script>
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>
