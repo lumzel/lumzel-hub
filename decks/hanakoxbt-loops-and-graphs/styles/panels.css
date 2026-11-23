@@ -588,3 +588,50 @@
   font-size: var(--fs-12);
   text-align: center;
 }
+
+.lazy-sentinel {
+  display: flex;
+  justify-content: center;
+  padding: var(--s3) 0;
+}
+
+.lazy-sentinel button {
+  height: 24px;
+  padding: 0 10px;
+  font-family: var(--mono);
+  font-size: var(--fs-11);
+}
+
+@media (max-width: 640px) {
+  .gate-metrics {
+    grid-template-columns: 1fr;
+  }
+  .kv-grid {
+    grid-template-columns: 1fr;
+  }
+  .tl-bar {
+    padding: 0 var(--s3);
+    gap: var(--s2);
+  }
+  .tl-body {
+    padding: var(--s3);
+  }
+  .tl-axis {
+    grid-template-columns: 88px 1fr;
+  }
+  .tl-row {
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 3px;
+    padding: 4px 0;
+  }
+  .tl-name {
+    padding-right: 0;
+  }
+  .vault-add {
+    flex-wrap: wrap;
+  }
+  .vault-add input {
+    flex: 1 1 100%;
+  }
+}

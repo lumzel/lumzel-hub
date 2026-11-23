@@ -36,6 +36,20 @@ Every Deck in `decks/<id>/` **must** adapt automatically to both Lumzel `'light'
 3. **Runtime Sync**: Call `window.deck.context()` at startup (which `/sdk.js` uses to mirror `theme` onto `<html data-theme>` and update on live `theme.changed` pushes). Use `window.deck.ui.onThemeChange(theme => ...)` if Canvas/charts/subframes hold JS theme state.
 4. **Cover Previews**: Verify both `preview/cover-light.webp` and `preview/cover-dark.webp` render legibly with distinct light/dark palettes via `node tools/render-previews.mjs <deck-id>`.
 
+## Deck Responsive & Narrow-Screen Requirements (`decks/<id>/`)
+
+Every Deck in `decks/<id>/` **must** adapt cleanly to mobile and narrow split-pane viewports (`<= 900px` and `<= 640px`):
+
+1. **Collapsible Menu / Sidebar**: Any Deck with a sidebar, navigation rail, or menu bar must provide a collapse/expand toggle button. On narrow viewports (`<= 900px`), the sidebar/menu must collapse by default and open as a slide-over drawer with a backdrop scrim (closing on backdrop click, item selection, or `Escape`).
+2. **No Horizontal Overflow**: Use `min-width: 0` on flex/grid children, wrap or compact header toolbars cleanly, clamp popovers/dialogs to `calc(100vw - 16px)`, and switch multi-column list/detail or inspector layouts into single-column or toggleable views on narrow viewports.
+
+## Deck Performance & List Lazy-Loading Requirements (`decks/<id>/`)
+
+Every Deck in `decks/<id>/` **must** keep interaction fast and avoid full-list eager loading:
+
+1. **Scroll Lazy Loading (No Full-List Dumps)**: Any scrollable list (issues, PRs, runs, files, docs, history, comments, logs, cards) must render incrementally in small batches (e.g. 20–40 items) and load/append more on scroll down via an `IntersectionObserver` sentinel or passive scroll-near-bottom handler (or viewport windowing). For paginated backends/CLI/DB queries, fetch page by page rather than pulling unbounded lists up front.
+2. **Bounded DOM Updates**: Avoid rebuilding whole list/graph/timeline DOM trees on periodic timers or single-item interactions; patch changed text/attributes in place and keep scroll/resize work `rAF`-throttled.
+
 ## Deck Multi-Language Requirements (`decks/<id>/`)
 
 Every Deck in `decks/<id>/` **must** support multiple languages (English default + localized translations such as `zh-CN`):

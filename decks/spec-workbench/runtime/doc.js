@@ -98,10 +98,22 @@
     setTimeout(() => el.classList.remove('lumzel-flash'), 1600);
   };
 
+  const applyTokens = (theme, tokens) => {
+    if (theme === 'dark' || theme === 'light') root.dataset.theme = theme;
+    if (tokens && typeof tokens === 'object') {
+      for (const [k, v] of Object.entries(tokens)) {
+        if (typeof k === 'string' && k.startsWith('--') && typeof v === 'string') {
+          root.style.setProperty(k, v);
+        }
+      }
+    }
+  };
+
   window.addEventListener('message', e => {
     const data = e.data;
     if (!data || typeof data !== 'object') return;
-    if (data.type === 'doc:theme') root.dataset.theme = data.theme;
+    if (data.type === 'doc:theme' || data.type === 'lumzel:theme') root.dataset.theme = data.theme;
+    if (data.type === 'doc:tokens' || data.type === 'lumzel:tokens') applyTokens(data.theme, data.tokens);
     if (data.type === 'doc:locale') {
       const next = parseLocale(data.locale);
       if (next !== locale) {

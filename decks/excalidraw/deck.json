@@ -7,8 +7,14 @@
   "homepage": "https://github.com/excalidraw/excalidraw",
   "icon": "spark",
   "entry": "index.html",
-  "version": "1.1.0",
-  "permissions": ["agent", "db", "files", "upload", "open"],
+  "version": "1.2.0",
+  "permissions": [
+    "agent",
+    "db",
+    "files",
+    "upload",
+    "open"
+  ],
   "capabilities": {
     "files": [
       "**/*.excalidraw",
@@ -21,7 +27,9 @@
     "scope": "project"
   },
   "uses": {
-    "skills": ["excalidraw-diagram-generator"]
+    "skills": [
+      "excalidraw-diagram-generator"
+    ]
   },
   "params": [
     {
@@ -49,32 +57,56 @@
         {
           "value": "auto",
           "label": "Auto-detect from prompt",
-          "i18n": { "zh-CN": { "label": "按描述自动识别" } }
+          "i18n": {
+            "zh-CN": {
+              "label": "按描述自动识别"
+            }
+          }
         },
         {
           "value": "architecture",
           "label": "System Architecture",
-          "i18n": { "zh-CN": { "label": "系统架构图" } }
+          "i18n": {
+            "zh-CN": {
+              "label": "系统架构图"
+            }
+          }
         },
         {
           "value": "flowchart",
           "label": "Flowchart",
-          "i18n": { "zh-CN": { "label": "流程图" } }
+          "i18n": {
+            "zh-CN": {
+              "label": "流程图"
+            }
+          }
         },
         {
           "value": "sequence",
           "label": "Sequence Diagram",
-          "i18n": { "zh-CN": { "label": "时序图" } }
+          "i18n": {
+            "zh-CN": {
+              "label": "时序图"
+            }
+          }
         },
         {
           "value": "er",
           "label": "ER Diagram",
-          "i18n": { "zh-CN": { "label": "实体关系图 (ER)" } }
+          "i18n": {
+            "zh-CN": {
+              "label": "实体关系图 (ER)"
+            }
+          }
         },
         {
           "value": "mindmap",
           "label": "Mind Map",
-          "i18n": { "zh-CN": { "label": "思维导图" } }
+          "i18n": {
+            "zh-CN": {
+              "label": "思维导图"
+            }
+          }
         }
       ],
       "i18n": {

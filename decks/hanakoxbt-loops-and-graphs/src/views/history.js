@@ -2,13 +2,20 @@ import { h, clear } from '../lib/dom.js';
 import { fmtDuration, fmtRelative } from '../lib/format.js';
 import { t } from '../i18n.js';
 
-const ROW_H = 52;
-const WINDOW_THRESHOLD = 100;
+const PAGE_SIZE = 25;
 
 export function createHistoryRenderer(store, host) {
-  let scrollTop = 0;
+  let cleanup = null;
+
+  function teardown() {
+    if (cleanup) {
+      cleanup();
+      cleanup = null;
+    }
+  }
 
   return function renderHistory(container) {
+    teardown();
     clear(container);
     const st = store.get();
     const list = st.history || [];
@@ -80,43 +87,90 @@ export function createHistoryRenderer(store, host) {
       );
     }
 
-    if (list.length <= WINDOW_THRESHOLD) {
-      const wrap = h('div', { class: 'hist-list' });
-      for (const item of list) wrap.appendChild(makeRow(item));
-      container.appendChild(wrap);
-      return;
+    const wrap = h('div', { class: 'hist-list' });
+    container.appendChild(wrap);
+
+    let rendered = 0;
+    let sentinel = null;
+    let observer = null;
+    let scrollRaf = 0;
+
+    function detachListeners() {
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+      if (scrollRaf) {
+        cancelAnimationFrame(scrollRaf);
+        scrollRaf = 0;
+      }
+      container.removeEventListener('scroll', onScroll);
     }
 
-    // Windowed rendering for > 100 history rows (§8.6)
-    const viewport = h('div', {
-      style: {
-        position: 'relative',
-        height: '100%',
-        overflowY: 'auto',
-      },
-      onScroll: e => {
-        scrollTop = e.target.scrollTop;
-        drawSlice();
-      },
-    });
-    const spacer = h('div', { style: { height: `${list.length * ROW_H}px`, position: 'relative' } });
-    const slice = h('div', { style: { position: 'absolute', left: 0, right: 0, top: 0 } });
-    spacer.appendChild(slice);
-    viewport.appendChild(spacer);
-    container.appendChild(viewport);
-    viewport.scrollTop = scrollTop;
+    function appendNextBatch() {
+      if (rendered >= list.length) {
+        if (sentinel && sentinel.parentNode) sentinel.remove();
+        detachListeners();
+        return;
+      }
+      const nextEnd = Math.min(list.length, rendered + PAGE_SIZE);
+      const frag = document.createDocumentFragment();
+      for (let i = rendered; i < nextEnd; i++) {
+        frag.appendChild(makeRow(list[i]));
+      }
+      if (sentinel && sentinel.parentNode === wrap) {
+        wrap.insertBefore(frag, sentinel);
+      } else {
+        wrap.appendChild(frag);
+      }
+      rendered = nextEnd;
 
-    function drawSlice() {
-      const viewH = container.clientHeight || 480;
-      const start = Math.max(0, Math.floor(scrollTop / ROW_H) - 3);
-      const count = Math.ceil(viewH / ROW_H) + 6;
-      const end = Math.min(list.length, start + count);
-      slice.style.top = `${start * ROW_H}px`;
-      clear(slice);
-      for (let i = start; i < end; i++) {
-        slice.appendChild(makeRow(list[i]));
+      const remaining = list.length - rendered;
+      if (remaining <= 0) {
+        if (sentinel && sentinel.parentNode) sentinel.remove();
+        detachListeners();
+      } else if (sentinel) {
+        const btn = sentinel.querySelector('button');
+        if (btn) btn.textContent = t('loadMore', { n: remaining });
       }
     }
-    drawSlice();
+
+    function onScroll() {
+      if (scrollRaf || rendered >= list.length) return;
+      scrollRaf = requestAnimationFrame(() => {
+        scrollRaf = 0;
+        if (rendered >= list.length) return;
+        const distToBottom = container.scrollHeight - (container.scrollTop + container.clientHeight);
+        if (distToBottom < 180) {
+          appendNextBatch();
+        }
+      });
+    }
+
+    appendNextBatch();
+
+    if (rendered < list.length) {
+      const moreBtn = h(
+        'button',
+        { type: 'button', class: 'ghost', onClick: appendNextBatch },
+        t('loadMore', { n: list.length - rendered }),
+      );
+      sentinel = h('div', { class: 'lazy-sentinel' }, moreBtn);
+      wrap.appendChild(sentinel);
+
+      if (typeof IntersectionObserver !== 'undefined') {
+        observer = new IntersectionObserver(
+          entries => {
+            if (entries.some(e => e.isIntersecting)) {
+              appendNextBatch();
+            }
+          },
+          { root: container, rootMargin: '160px' },
+        );
+        observer.observe(sentinel);
+      }
+      container.addEventListener('scroll', onScroll, { passive: true });
+      cleanup = detachListeners;
+    }
   };
 }

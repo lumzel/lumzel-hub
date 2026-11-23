@@ -34,12 +34,12 @@
       "category": "Workflow",
       "author": "Lumzel",
       "counts": {
-        "skills": 12,
+        "skills": 13,
         "rules": 1,
         "hooks": 2
       },
       "source": "./loadouts/daily-driver",
-      "version": "2.3.0"
+      "version": "2.4.0"
     },
     {
       "id": "everything-claude-code",
@@ -843,7 +843,7 @@
         1200,
         750
       ],
-      "version": "2.2.2"
+      "version": "2.3.0"
     },
     {
       "id": "opendesign",
@@ -876,7 +876,7 @@
         1200,
         750
       ],
-      "version": "1.3.2"
+      "version": "1.4.0"
     },
     {
       "id": "hanakoxbt-loops-and-graphs",
@@ -908,7 +908,7 @@
         1200,
         750
       ],
-      "version": "1.5.0"
+      "version": "1.6.0"
     },
     {
       "id": "excalidraw",
@@ -940,7 +940,7 @@
         1200,
         750
       ],
-      "version": "1.1.0"
+      "version": "1.2.0"
     },
     {
       "id": "github",
@@ -972,7 +972,7 @@
         1200,
         750
       ],
-      "version": "2.0.0"
+      "version": "3.0.0"
     }
   ]
 }

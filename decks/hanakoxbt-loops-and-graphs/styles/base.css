@@ -58,11 +58,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 
 button.primary {
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--primary, var(--ink));
+  color: var(--primary-fg, var(--bg));
 }
 button.primary:hover:not(:disabled) {
-  opacity: 0.9;
+  background: var(--primary-hover, var(--primary, var(--ink)));
+  opacity: 0.92;
 }
 
 button.secondary {
@@ -106,7 +107,7 @@ button.danger-outline:hover:not(:disabled) {
 
 button.gate-primary {
   background: var(--gate);
-  color: #ffffff;
+  color: var(--primary-fg, var(--bg));
   border-color: var(--gate);
 }
 button.gate-primary:hover:not(:disabled) {
@@ -202,6 +203,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 .dot.ok { background: var(--ok); }
 .dot.fail { background: var(--fail); }
 .dot.ink { background: var(--ink); }
+.dot.run { background: var(--accent, var(--worker)); }
 
 .seg {
   display: inline-flex;

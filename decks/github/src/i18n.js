@@ -41,6 +41,17 @@ const STRINGS = {
     envPermDesc: 'Grant exec permission for gh and git in Lumzel to load live Pull Requests and Issues.',
     retryBtn: 'Retry',
     openSettingsBtn: 'Open Deck Settings',
+    btnInstallGhInTerminal: 'Install gh in Terminal',
+    btnAuthGhInTerminal: 'Run gh auth login in Terminal',
+    btnOpenInstallGuide: 'Install Guide ↗',
+    envMissingPkgManager:
+      'No supported package manager (such as Homebrew) was detected. Install Homebrew first or download gh from cli.github.com.',
+    envUnsupportedPlatform:
+      'Automatic terminal installation is not supported on this platform. Please install gh manually from cli.github.com.',
+    errTerminalUnsupported:
+      'This Lumzel version does not support opening the built-in terminal from a Deck. Please run the command manually.',
+    errTerminalDeclined: 'Terminal launch was cancelled. You can retry anytime or run the command manually.',
+    errTerminalFailed: 'Failed to open built-in terminal: {detail}',
     // Detail tabs & metadata
     subOverview: 'Overview',
     subChecks: 'Checks',
@@ -215,6 +226,15 @@ const STRINGS = {
     envPermDesc: '请在 Lumzel 授权弹窗中允许执行 gh 与 git 命令以拉取实时数据。',
     retryBtn: '重新检测',
     openSettingsBtn: '打开 Deck 设置',
+    btnInstallGhInTerminal: '在内置终端安装 gh',
+    btnAuthGhInTerminal: '在内置终端登录 gh',
+    btnOpenInstallGuide: '查看官方安装文档 ↗',
+    envMissingPkgManager:
+      '未检测到可用的包管理器（如 Homebrew）。请先安装 Homebrew，或前往 cli.github.com 手动下载安装。',
+    envUnsupportedPlatform: '当前平台暂不支持一键终端安装，请前往 cli.github.com 查看安装方式。',
+    errTerminalUnsupported: '当前 Lumzel 宿主版本暂不支持从 Deck 打开内置终端，请复制上方命令手动执行。',
+    errTerminalDeclined: '已取消在内置终端执行命令，你可以随时重试或手动运行。',
+    errTerminalFailed: '无法打开内置终端：{detail}',
     // Detail tabs & metadata
     subOverview: '概览与讨论',
     subChecks: 'CI 检查',

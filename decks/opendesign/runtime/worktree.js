@@ -6,6 +6,29 @@
   var mode = 'preview';
   var hoverEl = null;
   var selectedOid = '';
+  var selectColor = '#0070e3';
+  var hoverColor = '#d97706';
+  var badgeFgColor = '#ffffff';
+
+  function softTint(color, pct) {
+    return 'color-mix(in srgb, ' + color + ' ' + pct + '%, transparent)';
+  }
+
+  function styleOverlay(box, borderColor, pct) {
+    if (!box) return;
+    box.style.borderColor = borderColor;
+    box.style.background = softTint(borderColor, pct);
+    var badge = box.firstChild;
+    if (badge) {
+      badge.style.background = borderColor;
+      badge.style.color = badgeFgColor;
+    }
+  }
+
+  function applyOverlayTheme() {
+    styleOverlay(document.getElementById('__od-select-box'), selectColor, 10);
+    styleOverlay(document.getElementById('__od-hover-box'), hoverColor, 8);
+  }
 
   function ensureStyle(id) {
     var el = document.getElementById(id);
@@ -44,7 +67,9 @@
     tag.style.cssText =
       'position:absolute;top:-20px;left:-2px;padding:1px 6px;border-radius:3px;font:600 10px/16px ui-monospace,SFMono-Regular,Menlo,monospace;background:' +
       borderColor +
-      ';color:#fff;white-space:nowrap;letter-spacing:0.01em;';
+      ';color:' +
+      badgeFgColor +
+      ';white-space:nowrap;letter-spacing:0.01em;';
     box.appendChild(tag);
     (document.body || document.documentElement).appendChild(box);
     return box;
@@ -114,7 +139,8 @@
   }
 
   function syncSelectedOutline() {
-    var selBox = createOverlay('__od-select-box', '#0070e3', 'rgba(0,112,227,0.08)', 2147483645);
+    var selBox = createOverlay('__od-select-box', selectColor, softTint(selectColor, 10), 2147483645);
+    styleOverlay(selBox, selectColor, 10);
     if (!selectedOid) {
       selBox.style.display = 'none';
       return;
@@ -130,7 +156,8 @@
   function setMode(nextMode) {
     mode = nextMode === 'inspect' ? 'inspect' : 'preview';
     document.documentElement.style.cursor = mode === 'inspect' ? 'crosshair' : '';
-    var hoverBox = createOverlay('__od-hover-box', '#d97706', 'rgba(217,119,6,0.08)', 2147483646);
+    var hoverBox = createOverlay('__od-hover-box', hoverColor, softTint(hoverColor, 8), 2147483646);
+    styleOverlay(hoverBox, hoverColor, 8);
     if (mode !== 'inspect') {
       hoverEl = null;
       hoverBox.style.display = 'none';
@@ -144,7 +171,7 @@
     function (e) {
       if (mode !== 'inspect') return;
       var target = resolveTarget(e.target);
-      var hoverBox = createOverlay('__od-hover-box', '#d97706', 'rgba(217,119,6,0.08)', 2147483646);
+      var hoverBox = createOverlay('__od-hover-box', hoverColor, softTint(hoverColor, 8), 2147483646);
       if (!target) {
         hoverEl = null;
         hoverBox.style.display = 'none';
@@ -177,7 +204,8 @@
 
       var oid = target.getAttribute('data-od-id') || '';
       selectedOid = oid;
-      var selBox = createOverlay('__od-select-box', '#0070e3', 'rgba(0,112,227,0.10)', 2147483645);
+      var selBox = createOverlay('__od-select-box', selectColor, softTint(selectColor, 10), 2147483645);
+      styleOverlay(selBox, selectColor, 10);
       placeBox(selBox, target, oid || cssSelectorFor(target));
 
       var cs = window.getComputedStyle ? window.getComputedStyle(target) : null;
@@ -238,6 +266,11 @@
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       syncSelectedOutline();
+    } else if (msg.type === 'od:theme') {
+      if (typeof msg.brand === 'string' && msg.brand.trim()) selectColor = msg.brand.trim();
+      if (typeof msg.gate === 'string' && msg.gate.trim()) hoverColor = msg.gate.trim();
+      if (typeof msg.fg === 'string' && msg.fg.trim()) badgeFgColor = msg.fg.trim();
+      applyOverlayTheme();
     }
   });
 

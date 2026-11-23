@@ -772,3 +772,82 @@ export async function fetchImageDataUrl(url) {
     return null;
   }
 }
+
+const DETECT_INSTALL_PY = [
+  'import json, platform, shutil',
+  'sysname = platform.system().lower()',
+  'bins = {k: bool(shutil.which(k)) for k in ("brew","port","apt-get","dnf","pacman","winget","scoop","choco")}',
+  'print(json.dumps({"system": sysname, "bins": bins}))',
+].join('\n');
+
+// Detect the current platform and available package manager so the user gets an accurate gh install command.
+export async function detectGhInstallPlan() {
+  const docUrl = 'https://cli.github.com';
+  let system = '';
+  let bins = {};
+  try {
+    const res = await execCli('python3', ['-c', DETECT_INSTALL_PY], { timeoutMs: 5000, allowNonZero: true });
+    if (res.exitCode === 0) {
+      const parsed = parseJson(res.stdout, null);
+      if (parsed && typeof parsed === 'object') {
+        system = String(parsed.system || '').toLowerCase();
+        bins = parsed.bins && typeof parsed.bins === 'object' ? parsed.bins : {};
+      }
+    }
+  } catch {
+    // Fall back to navigator.platform below when python3 is unavailable or not yet granted.
+  }
+
+  if (!system && typeof navigator !== 'undefined') {
+    const plat = `${navigator.platform || ''} ${navigator.userAgent || ''}`.toLowerCase();
+    if (plat.includes('mac')) system = 'darwin';
+    else if (plat.includes('win')) system = 'windows';
+    else if (plat.includes('linux')) system = 'linux';
+  }
+
+  if (system === 'darwin') {
+    if (bins.brew) {
+      return { supported: true, platform: 'macos', manager: 'brew', command: 'brew install gh', docUrl, reason: '' };
+    }
+    if (bins.port) {
+      return { supported: true, platform: 'macos', manager: 'port', command: 'sudo port install gh', docUrl, reason: '' };
+    }
+    // If python3 probe returned bins without brew/port, report missing package manager rather than failing blindly.
+    if (Object.keys(bins).length > 0) {
+      return { supported: false, platform: 'macos', manager: '', command: '', docUrl, reason: 'missing_pkg_manager' };
+    }
+    return { supported: true, platform: 'macos', manager: 'brew', command: 'brew install gh', docUrl, reason: '' };
+  }
+  if (system === 'windows') {
+    if (bins.winget) {
+      return { supported: true, platform: 'windows', manager: 'winget', command: 'winget install --id GitHub.cli', docUrl, reason: '' };
+    }
+    if (bins.scoop) {
+      return { supported: true, platform: 'windows', manager: 'scoop', command: 'scoop install gh', docUrl, reason: '' };
+    }
+    if (bins.choco) {
+      return { supported: true, platform: 'windows', manager: 'choco', command: 'choco install gh', docUrl, reason: '' };
+    }
+    return { supported: false, platform: 'windows', manager: '', command: '', docUrl, reason: 'missing_pkg_manager' };
+  }
+  if (system === 'linux') {
+    if (bins['apt-get']) {
+      return {
+        supported: true,
+        platform: 'linux',
+        manager: 'apt-get',
+        command: 'sudo apt-get update && sudo apt-get install -y gh',
+        docUrl,
+        reason: '',
+      };
+    }
+    if (bins.dnf) {
+      return { supported: true, platform: 'linux', manager: 'dnf', command: 'sudo dnf install -y gh', docUrl, reason: '' };
+    }
+    if (bins.pacman) {
+      return { supported: true, platform: 'linux', manager: 'pacman', command: 'sudo pacman -S --needed github-cli', docUrl, reason: '' };
+    }
+    return { supported: false, platform: 'linux', manager: '', command: '', docUrl, reason: 'missing_pkg_manager' };
+  }
+  return { supported: false, platform: system || 'unknown', manager: '', command: '', docUrl, reason: 'unsupported_platform' };
+}

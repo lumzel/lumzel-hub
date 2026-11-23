@@ -53,6 +53,8 @@ const state = {
   params: { repo: '', defaultTab: 'prs', pageSize: '30', mergeMethod: 'squash' },
   env: null, // { viewer, repo, defaultBranch, repoUrl, branch, dirtyCount }
   envError: null,
+  installPlan: null, // { supported, platform, manager, command, docUrl, reason }
+  envActionError: '',
   view: 'prs', // 'prs' | 'issues'
   prState: 'open',
   issueState: 'open',
@@ -531,6 +533,12 @@ async function refreshAll() {
     }
   } catch (err) {
     state.envError = err;
+    state.envActionError = '';
+    if (err?.code === 'GH_NOT_FOUND') {
+      state.installPlan = await gh.detectGhInstallPlan().catch(() => null);
+    } else {
+      state.installPlan = null;
+    }
     renderAll();
   } finally {
     state.loadingList = false;
@@ -862,21 +870,68 @@ function renderList() {
   observeListSentinel();
 }
 
+async function launchBuiltInTerminalCommand(command, label) {
+  state.envActionError = '';
+  const run = window.deck?.terminal?.run;
+  if (typeof run !== 'function') {
+    state.envActionError = t('errTerminalUnsupported');
+    renderEnvError();
+    return;
+  }
+  const btn = $('env-terminal-run');
+  if (btn) btn.disabled = true;
+  try {
+    await run(command, { label, appendEnter: true, closeDeck: true });
+  } catch (err) {
+    const msg = String(err?.message || err || '');
+    const lower = msg.toLowerCase();
+    if (lower.includes('declined') || lower.includes('cancelled') || lower.includes('permissiondenied')) {
+      state.envActionError = t('errTerminalDeclined');
+    } else if (lower.includes('notimplemented') || lower.includes('unsupported')) {
+      state.envActionError = t('errTerminalUnsupported');
+    } else {
+      state.envActionError = t('errTerminalFailed', { detail: msg || 'unknown error' });
+    }
+    renderEnvError();
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 function renderEnvError() {
   const err = state.envError;
   const code = err?.code || 'CLI_ERROR';
   let title = t('envNotRepoTitle');
   let desc = err?.message || t('envNotRepoDesc');
   let cmd = '';
+  let terminalLabel = '';
+  let terminalBtnText = '';
+  let docUrl = '';
 
   if (code === 'GH_NOT_FOUND') {
     title = t('envGhMissingTitle');
-    desc = t('envGhMissingDesc');
-    cmd = 'brew install gh && gh auth login';
+    const plan = state.installPlan;
+    if (plan && plan.supported && plan.command) {
+      desc = t('envGhMissingDesc');
+      cmd = plan.command;
+      terminalLabel = 'Install gh';
+      terminalBtnText = t('btnInstallGhInTerminal');
+    } else if (plan && !plan.supported) {
+      desc = plan.reason === 'missing_pkg_manager' ? t('envMissingPkgManager') : t('envUnsupportedPlatform');
+      docUrl = plan.docUrl || 'https://cli.github.com';
+    } else {
+      desc = t('envGhMissingDesc');
+      cmd = 'brew install gh';
+      terminalLabel = 'Install gh';
+      terminalBtnText = t('btnInstallGhInTerminal');
+      docUrl = 'https://cli.github.com';
+    }
   } else if (code === 'GH_NOT_AUTHED') {
     title = t('envGhAuthTitle');
     desc = t('envGhAuthDesc');
     cmd = 'gh auth login';
+    terminalLabel = 'gh auth login';
+    terminalBtnText = t('btnAuthGhInTerminal');
   } else if (code === 'NOT_GITHUB_REPO') {
     title = t('envNotRepoTitle');
     desc = t('envNotRepoDesc');
@@ -889,11 +944,16 @@ function renderEnvError() {
     <h3 class="empty-title">${esc(title)}</h3>
     <p class="empty-desc">${esc(desc)}</p>
     ${cmd ? `<code class="empty-cmd mono">${esc(cmd)}</code>` : ''}
+    ${state.envActionError ? `<div class="inote err" role="alert" style="max-width:440px;margin:4px 0">${esc(state.envActionError)}</div>` : ''}
     <div class="empty-actions">
-      <button type="button" class="btn primary" id="env-retry">${esc(t('retryBtn'))}</button>
+      ${terminalBtnText && cmd ? `<button type="button" class="btn primary" id="env-terminal-run">${esc(terminalBtnText)}</button>` : ''}
+      ${docUrl ? `<button type="button" class="btn ${terminalBtnText && cmd ? '' : 'primary'}" id="env-install-guide">${esc(t('btnOpenInstallGuide'))}</button>` : ''}
+      <button type="button" class="btn ${terminalBtnText && cmd ? '' : docUrl ? '' : 'primary'}" id="env-retry">${esc(t('retryBtn'))}</button>
       <button type="button" class="btn" id="env-settings">${esc(t('openSettingsBtn'))}</button>
     </div>
   `;
+  $('env-terminal-run')?.addEventListener('click', () => launchBuiltInTerminalCommand(cmd, terminalLabel));
+  $('env-install-guide')?.addEventListener('click', () => openExternalUrl(docUrl));
   $('env-retry')?.addEventListener('click', () => refreshAll());
   $('env-settings')?.addEventListener('click', () => window.deck?.ui?.openSettings?.());
 }

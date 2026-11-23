@@ -27,6 +27,9 @@ import {
 
 const $ = id => document.getElementById(id);
 
+const LIST_BATCH_SIZE = 24;
+const RUNS_PAGE_SIZE = 18;
+
 const WORKFLOW_TOPOLOGIES = {
   'design-artifact': [
     { id: 'load_context', label: 'Load Context', x: 16, y: 46, next: ['propose_directions'] },
@@ -107,6 +110,9 @@ const state = {
   selectedEl: null, // { oid, tag, selector, text, styles }
   tweaks: {}, // --od-* overrides
   runs: [],
+  runIdsQueue: [],
+  runsNextCursor: 0,
+  runsLoadingMore: false,
   selectedRunId: '',
   selectedNodeId: '',
   selectedNodeRunId: '',
@@ -116,6 +122,10 @@ const state = {
   selectedAgent: { provider: '', model: '', effort: '' },
   agentMenuOpen: false,
   narrowDrawer: '', // '' | 'rail' | 'inspector'
+  railCollapsed: false,
+  inspectorCollapsed: false,
+  sysRailCollapsed: true,
+  wfRailCollapsed: true,
   draftAutoId: '',
   draftSystemSlug: '',
   params: { defaultSurface: 'prototype', skipDirectionGate: false, designNotes: '' },
@@ -126,6 +136,9 @@ let unsubAgentDefaults = null;
 let unsubParams = null;
 let unsubTheme = null;
 let toastTimer = 0;
+let renderAllRaf = 0;
+const listObservers = new WeakMap();
+const artifactHtmlPromises = new Map();
 
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -201,6 +214,193 @@ function generateSystemSlug(name = '', avoid = '') {
 
 function isNarrowViewport() {
   return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 980px)').matches;
+}
+
+function isCompactRailViewport() {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 820px)').matches;
+}
+
+function resolveCanvasThemeColors() {
+  const cs = window.getComputedStyle(document.documentElement);
+  const brand = cs.getPropertyValue('--brand').trim() || '#0070e3';
+  const gate = cs.getPropertyValue('--gate').trim() || cs.getPropertyValue('--warn').trim() || '#d97706';
+  const fg = cs.getPropertyValue('--primary-fg').trim() || cs.getPropertyValue('--brand-fg').trim() || '#ffffff';
+  return { brand, gate, fg };
+}
+
+function postCanvasTheme() {
+  postToCanvas({ type: 'od:theme', ...resolveCanvasThemeColors() });
+}
+
+function scheduleRenderAll() {
+  if (renderAllRaf) return;
+  renderAllRaf = window.requestAnimationFrame(() => {
+    renderAllRaf = 0;
+    renderAll();
+  });
+}
+
+function renderIncrementalList(container, items, renderItem, options = {}) {
+  if (!container) return;
+  const prevObs = listObservers.get(container);
+  if (prevObs) {
+    prevObs.disconnect();
+    listObservers.delete(container);
+  }
+
+  const batchSize = options.batchSize || LIST_BATCH_SIZE;
+  const hasMoreAsync = typeof options.hasMore === 'function' ? options.hasMore : () => false;
+  const onLoadMore = typeof options.onLoadMore === 'function' ? options.onLoadMore : null;
+  const getItems = typeof options.getItems === 'function' ? options.getItems : () => items;
+  const scrollRoot = options.scrollRoot ?? null;
+
+  if (!items.length && !hasMoreAsync()) {
+    if (options.emptyNode) container.replaceChildren(options.emptyNode);
+    else container.replaceChildren();
+    return;
+  }
+
+  let rendered = 0;
+  const sentinel = el('div', { class: 'list-sentinel', 'aria-hidden': 'true' });
+
+  const appendBatch = (sourceItems = getItems()) => {
+    const nextEnd = Math.min(sourceItems.length, rendered + batchSize);
+    if (nextEnd <= rendered) return 0;
+    const frag = document.createDocumentFragment();
+    for (let i = rendered; i < nextEnd; i += 1) {
+      const node = renderItem(sourceItems[i], i);
+      if (node) frag.append(node);
+    }
+    rendered = nextEnd;
+    if (sentinel.parentNode === container) container.insertBefore(frag, sentinel);
+    else container.append(frag);
+    return nextEnd;
+  };
+
+  container.replaceChildren();
+  appendBatch(items);
+
+  const needsObserver = () => rendered < getItems().length || hasMoreAsync();
+  if (!needsObserver()) return;
+
+  container.append(sentinel);
+  if (typeof IntersectionObserver !== 'function') {
+    while (rendered < getItems().length) appendBatch();
+    sentinel.remove();
+    return;
+  }
+
+  let loadingAsync = false;
+  const observer = new IntersectionObserver(
+    async entries => {
+      if (!entries.some(e => e.isIntersecting)) return;
+      const curItems = getItems();
+      if (rendered < curItems.length) {
+        appendBatch(curItems);
+        if (!needsObserver()) {
+          observer.disconnect();
+          listObservers.delete(container);
+          sentinel.remove();
+        }
+        return;
+      }
+      if (onLoadMore && hasMoreAsync() && !loadingAsync) {
+        loadingAsync = true;
+        sentinel.classList.add('loading');
+        try {
+          await onLoadMore();
+          const latestItems = getItems();
+          if (latestItems.length > rendered) {
+            appendBatch(latestItems);
+          }
+        } finally {
+          loadingAsync = false;
+          sentinel.classList.remove('loading');
+        }
+        if (!needsObserver()) {
+          observer.disconnect();
+          listObservers.delete(container);
+          sentinel.remove();
+        }
+      }
+    },
+    { root: scrollRoot, rootMargin: '120px' },
+  );
+  observer.observe(sentinel);
+  listObservers.set(container, observer);
+}
+
+async function ensureArtifactHtml(art) {
+  if (!art) return '';
+  if (typeof art.html === 'string') return art.html;
+  if (state.preview) return art.html || '';
+  if (artifactHtmlPromises.has(art.id)) return artifactHtmlPromises.get(art.id);
+  const p = window.deck.files
+    .read(art.path)
+    .then(file => {
+      if (file?.content) {
+        art.html = file.content;
+        art.fromDisk = true;
+      } else {
+        art.html = buildStarterHtml(art);
+        art.fromDisk = false;
+      }
+      return art.html;
+    })
+    .catch(() => {
+      art.html = buildStarterHtml(art);
+      art.fromDisk = false;
+      return art.html;
+    })
+    .finally(() => {
+      artifactHtmlPromises.delete(art.id);
+    });
+  artifactHtmlPromises.set(art.id, p);
+  return p;
+}
+
+function selectArtifact(id) {
+  state.artifactId = id;
+  state.activeVersion = null;
+  state.selectedEl = null;
+  state.lastRenderedKey = '';
+  if (isNarrowViewport()) state.narrowDrawer = '';
+  const art = currentArtifact();
+  renderAll();
+  if (art && typeof art.html !== 'string') {
+    void ensureArtifactHtml(art).then(() => {
+      if (state.artifactId === art.id) {
+        state.lastRenderedKey = '';
+        syncCanvasFrame(false);
+      }
+    });
+  }
+}
+
+async function loadNextRunsPage() {
+  if (state.preview || state.runsLoadingMore) return false;
+  if (state.runsNextCursor >= state.runIdsQueue.length) return false;
+  state.runsLoadingMore = true;
+  try {
+    const pageKeys = state.runIdsQueue.slice(state.runsNextCursor, state.runsNextCursor + RUNS_PAGE_SIZE);
+    state.runsNextCursor += pageKeys.length;
+    const fetched = await Promise.all(
+      pageKeys.map(key => window.deck.workflow.getRun(key).catch(() => null)),
+    );
+    const existingIds = new Set(state.runs.map(r => r.runId));
+    let added = 0;
+    for (const run of fetched) {
+      if (run?.runId && !existingIds.has(run.runId)) {
+        existingIds.add(run.runId);
+        state.runs.push(run);
+        added += 1;
+      }
+    }
+    if ($('run-count')) $('run-count').textContent = String(Math.max(state.runs.length, state.runIdsQueue.length));
+    return added > 0;
+  } finally {
+    state.runsLoadingMore = false;
+  }
 }
 
 function currentArtifact() {
@@ -341,7 +541,16 @@ function syncCanvasFrame(forceReload = false) {
     wrap.hidden = true;
     codePane.hidden = false;
     $('code-path').textContent = art.path;
-    $('code-editor').value = displayedHtml;
+    if (state.activeVersion == null && typeof art.html !== 'string') {
+      $('code-editor').value = '';
+      void ensureArtifactHtml(art).then(html => {
+        if (state.artifactId === art.id && state.mode === 'code' && state.activeVersion == null) {
+          $('code-editor').value = html;
+        }
+      });
+    } else {
+      $('code-editor').value = displayedHtml;
+    }
     return;
   }
 
@@ -377,6 +586,15 @@ function syncCanvasFrame(forceReload = false) {
     : `sd:${art.id}:${state.activeVersion ?? 'latest'}:${displayedHtml.length}:${art.updatedAt || ''}`;
 
   if (forceReload || state.lastRenderedKey !== renderKey) {
+    if (!canUseWorktreeRoute && state.activeVersion == null && typeof art.html !== 'string') {
+      void ensureArtifactHtml(art).then(() => {
+        if (state.artifactId === art.id) {
+          state.lastRenderedKey = '';
+          syncCanvasFrame(false);
+        }
+      });
+      return;
+    }
     state.lastRenderedKey = renderKey;
     if (canUseWorktreeRoute) {
       frame.removeAttribute('srcdoc');
@@ -395,6 +613,7 @@ function syncCanvasFrame(forceReload = false) {
       type: 'od:mode',
       mode: state.mode === 'inspect' ? 'inspect' : 'preview',
     });
+    postCanvasTheme();
   }
 }
 
@@ -543,19 +762,44 @@ function renderStaticSelects() {
 }
 
 function syncNarrowDrawers() {
-  if (!isNarrowViewport() && state.narrowDrawer) {
+  const narrow = isNarrowViewport();
+  if (!narrow && state.narrowDrawer) {
     state.narrowDrawer = '';
   }
   const canvasPane = $('view-canvas');
-  const railOpen = state.narrowDrawer === 'rail';
-  const insOpen = state.narrowDrawer === 'inspector';
+  const railOpen = narrow ? state.narrowDrawer === 'rail' : !state.railCollapsed;
+  const insOpen = narrow ? state.narrowDrawer === 'inspector' : !state.inspectorCollapsed;
   if (canvasPane) {
-    canvasPane.dataset.drawer = state.narrowDrawer || '';
+    canvasPane.dataset.drawer = narrow ? state.narrowDrawer || '' : '';
+    canvasPane.dataset.railCollapsed = !narrow && state.railCollapsed ? 'true' : 'false';
+    canvasPane.dataset.inspectorCollapsed = !narrow && state.inspectorCollapsed ? 'true' : 'false';
   }
   const scrim = $('drawer-scrim');
-  if (scrim) scrim.hidden = !railOpen && !insOpen;
-  $('btn-toggle-rail')?.setAttribute('aria-expanded', railOpen ? 'true' : 'false');
-  $('btn-toggle-inspector')?.setAttribute('aria-expanded', insOpen ? 'true' : 'false');
+  if (scrim) scrim.hidden = !narrow || (!railOpen && !insOpen);
+  const railBtn = $('btn-toggle-rail');
+  if (railBtn) {
+    railBtn.setAttribute('aria-expanded', railOpen ? 'true' : 'false');
+    railBtn.classList.toggle('on', railOpen);
+  }
+  const insBtn = $('btn-toggle-inspector');
+  if (insBtn) {
+    insBtn.setAttribute('aria-expanded', insOpen ? 'true' : 'false');
+    insBtn.classList.toggle('on', insOpen);
+  }
+
+  const compact = isCompactRailViewport();
+  const sysRail = $('sys-rail');
+  if (sysRail) {
+    const sysCollapsed = compact && state.sysRailCollapsed;
+    sysRail.dataset.collapsed = sysCollapsed ? 'true' : 'false';
+    $('btn-toggle-sys-rail')?.setAttribute('aria-expanded', sysCollapsed ? 'false' : 'true');
+  }
+  const wfRail = $('wf-rail');
+  if (wfRail) {
+    const wfCollapsed = compact && state.wfRailCollapsed;
+    wfRail.dataset.collapsed = wfCollapsed ? 'true' : 'false';
+    $('btn-toggle-wf-rail')?.setAttribute('aria-expanded', wfCollapsed ? 'false' : 'true');
+  }
 }
 
 function renderAgentControls() {
@@ -683,25 +927,16 @@ function renderArtifactRail() {
   $('artifact-count').textContent = countText;
   if ($('toolbar-artifact-count')) $('toolbar-artifact-count').textContent = countText;
   const list = $('artifact-list');
-  if (!state.artifacts.length) {
-    list.replaceChildren(el('p', { class: 'hint-sm', style: 'padding:8px 4px;' }, t('emptyArtifacts')));
-    return;
-  }
-  list.replaceChildren(
-    ...state.artifacts.map(art =>
+  renderIncrementalList(
+    list,
+    state.artifacts,
+    art =>
       el(
         'button',
         {
           type: 'button',
           class: `rail-item${art.id === state.artifactId ? ' on' : ''}`,
-          onclick: () => {
-            state.artifactId = art.id;
-            state.activeVersion = null;
-            state.selectedEl = null;
-            state.lastRenderedKey = '';
-            if (isNarrowViewport()) state.narrowDrawer = '';
-            renderAll();
-          },
+          onclick: () => selectArtifact(art.id),
         },
         el('b', {}, art.title || art.id),
         el(
@@ -715,7 +950,10 @@ function renderArtifactRail() {
           ),
         ),
       ),
-    ),
+    {
+      scrollRoot: $('canvas-rail'),
+      emptyNode: el('p', { class: 'hint-sm', style: 'padding:8px 4px;' }, t('emptyArtifacts')),
+    },
   );
 }
 
@@ -733,23 +971,22 @@ function renderInspector() {
   $('comment-count').textContent = commentCountText;
   if ($('toolbar-comment-count')) $('toolbar-comment-count').textContent = commentCountText;
 
-  const selVal = $('selected-val');
-  if (state.selectedEl) {
-    selVal.replaceChildren(
-      state.selectedEl.oid ? el('span', { class: 'oid-chip' }, state.selectedEl.oid) : null,
-      el('span', { class: 'mono' }, `<${state.selectedEl.tag}>`),
-      state.selectedEl.text ? ` — ${state.selectedEl.text.slice(0, 64)}` : '',
-    );
-  } else {
-    selVal.textContent = t('noSelection');
-  }
+  if (state.insTab === 'comments') {
+    const selVal = $('selected-val');
+    if (state.selectedEl) {
+      selVal.replaceChildren(
+        state.selectedEl.oid ? el('span', { class: 'oid-chip' }, state.selectedEl.oid) : null,
+        el('span', { class: 'mono' }, `<${state.selectedEl.tag}>`),
+        state.selectedEl.text ? ` — ${state.selectedEl.text.slice(0, 64)}` : '',
+      );
+    } else {
+      selVal.textContent = t('noSelection');
+    }
 
-  const cList = $('comment-list');
-  if (!comments.length) {
-    cList.replaceChildren(el('p', { class: 'hint-sm' }, t('noComments')));
-  } else {
-    cList.replaceChildren(
-      ...comments.map(c =>
+    renderIncrementalList(
+      $('comment-list'),
+      comments,
+      c =>
         el(
           'div',
           {
@@ -777,45 +1014,49 @@ function renderInspector() {
           ),
           el('p', {}, c.note),
         ),
-      ),
+      {
+        scrollRoot: $('ins-comments'),
+        emptyNode: el('p', { class: 'hint-sm' }, t('noComments')),
+      },
     );
-  }
 
-  const critCard = $('critique-card');
-  if (art?.critique) {
-    critCard.hidden = false;
-    const axes = art.critique.axes || {};
-    critCard.replaceChildren(
-      el(
-        'div',
-        { class: 'row-between' },
-        el('strong', { style: 'font-size:11.5px;' }, t('critiqueCardTitle')),
-        el('span', { class: `pill ${art.critique.score >= 78 ? 'ok' : 'warn'}` }, `${art.critique.score}/100`),
-      ),
-      art.critique.summary ? el('div', { class: 'hint-sm' }, art.critique.summary) : null,
-      Object.keys(axes).length
-        ? el(
-            'div',
-            { class: 'axes-grid' },
-            ...Object.entries(axes).map(([k, v]) =>
-              el('div', { class: 'axis-row' }, el('span', {}, k), el('b', {}, String(v))),
-            ),
-          )
-        : null,
-      art.lint
-        ? el(
-            'div',
-            { class: `pill ${art.lint.ok ? 'ok' : 'warn'}`, style: 'align-self:flex-start;' },
-            art.lint.ok ? t('lintOk') : t('lintIssues', { n: (art.lint.issues || []).length }),
-          )
-        : null,
-    );
-  } else {
-    critCard.hidden = true;
+    const critCard = $('critique-card');
+    if (art?.critique) {
+      critCard.hidden = false;
+      const axes = art.critique.axes || {};
+      critCard.replaceChildren(
+        el(
+          'div',
+          { class: 'row-between' },
+          el('strong', { style: 'font-size:11.5px;' }, t('critiqueCardTitle')),
+          el('span', { class: `pill ${art.critique.score >= 78 ? 'ok' : 'warn'}` }, `${art.critique.score}/100`),
+        ),
+        art.critique.summary ? el('div', { class: 'hint-sm' }, art.critique.summary) : null,
+        Object.keys(axes).length
+          ? el(
+              'div',
+              { class: 'axes-grid' },
+              ...Object.entries(axes).map(([k, v]) =>
+                el('div', { class: 'axis-row' }, el('span', {}, k), el('b', {}, String(v))),
+              ),
+            )
+          : null,
+        art.lint
+          ? el(
+              'div',
+              { class: `pill ${art.lint.ok ? 'ok' : 'warn'}`, style: 'align-self:flex-start;' },
+              art.lint.ok ? t('lintOk') : t('lintIssues', { n: (art.lint.issues || []).length }),
+            )
+          : null,
+      );
+    } else {
+      critCard.hidden = true;
+    }
+  } else if (state.insTab === 'tweaks') {
+    renderTweaksTab();
+  } else if (state.insTab === 'versions') {
+    renderVersionsTab(art);
   }
-
-  renderTweaksTab();
-  renderVersionsTab(art);
 }
 
 function renderTweaksTab() {
@@ -837,12 +1078,14 @@ function renderTweaksTab() {
       const colorInp = el('input', {
         type: 'color',
         value: hex,
-        oninput: e => updateTweak(prop, e.target.value),
+        dataset: { tweakColor: prop },
+        oninput: e => updateTweak(prop, e.target.value, 'color'),
       });
       const textInp = el('input', {
         type: 'text',
         value: eff[prop] || hex,
-        onchange: e => updateTweak(prop, e.target.value),
+        dataset: { tweakText: prop },
+        onchange: e => updateTweak(prop, e.target.value, 'text'),
       });
       return el(
         'div',
@@ -861,60 +1104,81 @@ function renderTweaksTab() {
     el(
       'div',
       { class: 'tweak-row' },
-      el('div', { class: 'tweak-top' }, el('span', {}, t('tweakRadius')), el('span', { class: 'mono' }, `${radiusNum}px`)),
+      el('div', { class: 'tweak-top' }, el('span', {}, t('tweakRadius')), el('span', { class: 'mono', dataset: { tweakVal: '--od-radius' } }, `${radiusNum}px`)),
       el('input', {
         type: 'range',
         min: 0,
         max: 20,
         step: 1,
         value: radiusNum,
-        oninput: e => updateTweak('--od-radius', `${e.target.value}px`),
+        dataset: { tweakRange: '--od-radius' },
+        oninput: e => updateTweak('--od-radius', `${e.target.value}px`, 'range'),
       }),
     ),
     el(
       'div',
       { class: 'tweak-row' },
-      el('div', { class: 'tweak-top' }, el('span', {}, t('tweakSpace')), el('span', { class: 'mono' }, `${spaceNum}px`)),
+      el('div', { class: 'tweak-top' }, el('span', {}, t('tweakSpace')), el('span', { class: 'mono', dataset: { tweakVal: '--od-space' } }, `${spaceNum}px`)),
       el('input', {
         type: 'range',
         min: 10,
         max: 24,
         step: 1,
         value: spaceNum,
-        oninput: e => updateTweak('--od-space', `${e.target.value}px`),
+        dataset: { tweakRange: '--od-space' },
+        oninput: e => updateTweak('--od-space', `${e.target.value}px`, 'range'),
       }),
     ),
     el(
       'div',
       { class: 'tweak-row' },
-      el('div', { class: 'tweak-top' }, el('span', {}, t('tweakFontScale')), el('span', { class: 'mono' }, `${scaleNum.toFixed(2)}x`)),
+      el('div', { class: 'tweak-top' }, el('span', {}, t('tweakFontScale')), el('span', { class: 'mono', dataset: { tweakVal: '--od-font-scale' } }, `${scaleNum.toFixed(2)}x`)),
       el('input', {
         type: 'range',
         min: 0.85,
         max: 1.25,
         step: 0.05,
         value: scaleNum,
-        oninput: e => updateTweak('--od-font-scale', String(e.target.value)),
+        dataset: { tweakRange: '--od-font-scale' },
+        oninput: e => updateTweak('--od-font-scale', String(e.target.value), 'range'),
       }),
     ),
   );
 }
 
-function updateTweak(prop, value) {
+function updateTweak(prop, value, source = '') {
   state.tweaks = { ...state.tweaks, [prop]: value };
   postToCanvas({ type: 'od:tweak', tweaks: state.tweaks });
-  renderTweaksTab();
+  const escaped = CSS.escape(prop);
+  const valSpan = document.querySelector(`[data-tweak-val="${escaped}"]`);
+  if (valSpan) {
+    if (prop === '--od-font-scale') {
+      const num = parseFloat(value);
+      valSpan.textContent = `${(Number.isFinite(num) ? num : 1).toFixed(2)}x`;
+    } else {
+      valSpan.textContent = value;
+    }
+  }
+  if (source !== 'text') {
+    const textInp = document.querySelector(`[data-tweak-text="${escaped}"]`);
+    if (textInp && textInp.value !== value) textInp.value = value;
+  }
+  if (source !== 'color') {
+    const colorInp = document.querySelector(`[data-tweak-color="${escaped}"]`);
+    if (colorInp) {
+      const hex = normalizeHex(value, '');
+      if (hex && colorInp.value !== hex) colorInp.value = hex;
+    }
+  }
 }
 
 function renderVersionsTab(art) {
   const list = $('version-list');
   const vers = art ? state.versions[art.id] || [] : [];
-  if (!vers.length) {
-    list.replaceChildren(el('p', { class: 'hint-sm' }, t('versionsEmpty')));
-    return;
-  }
-  list.replaceChildren(
-    ...vers.map(v => {
+  renderIncrementalList(
+    list,
+    vers,
+    v => {
       const isCurrent = state.activeVersion == null ? v.version === vers[0].version : state.activeVersion === v.version;
       return el(
         'div',
@@ -939,14 +1203,21 @@ function renderVersionsTab(art) {
           t('restoreVersion'),
         ),
       );
-    }),
+    },
+    {
+      scrollRoot: $('ins-versions'),
+      emptyNode: el('p', { class: 'hint-sm' }, t('versionsEmpty')),
+    },
   );
 }
 
 function renderSystemsView() {
+  if ($('sys-count')) $('sys-count').textContent = String(state.systems.length);
   const sysList = $('system-list');
-  sysList.replaceChildren(
-    ...state.systems.map(sys =>
+  renderIncrementalList(
+    sysList,
+    state.systems,
+    sys =>
       el(
         'button',
         {
@@ -954,6 +1225,8 @@ function renderSystemsView() {
           class: `rail-item${sys.slug === state.selectedSystemSlug ? ' on' : ''}`,
           onclick: () => {
             state.selectedSystemSlug = sys.slug;
+            if (isCompactRailViewport()) state.sysRailCollapsed = true;
+            syncNarrowDrawers();
             renderSystemsView();
           },
         },
@@ -974,7 +1247,7 @@ function renderSystemsView() {
           el('span', { class: 'mono' }, sys.slug),
         ),
       ),
-    ),
+    { scrollRoot: isCompactRailViewport() ? sysList : $('sys-rail') },
   );
 
   const sys = selectedSystem();
@@ -1102,15 +1375,19 @@ function resolveActiveNodeId(run, topo) {
 
 function renderWorkflowsView() {
   const runList = $('run-list');
-  if (!state.runs.length) {
+  const totalRuns = Math.max(state.runs.length, state.runIdsQueue.length);
+  if ($('run-count')) $('run-count').textContent = String(totalRuns);
+  if (!state.runs.length && (state.preview || state.runsNextCursor >= state.runIdsQueue.length)) {
     runList.replaceChildren(el('p', { class: 'hint-sm', style: 'padding:6px 4px;' }, t('noRunsYet')));
     $('wf-empty').hidden = false;
     $('wf-detail').hidden = true;
     return;
   }
 
-  runList.replaceChildren(
-    ...state.runs.map(r =>
+  renderIncrementalList(
+    runList,
+    state.runs,
+    r =>
       el(
         'button',
         {
@@ -1120,6 +1397,8 @@ function renderWorkflowsView() {
             state.selectedRunId = r.runId;
             state.selectedNodeId = '';
             state.selectedNodeRunId = r.runId;
+            if (isCompactRailViewport()) state.wfRailCollapsed = true;
+            syncNarrowDrawers();
             renderWorkflowsView();
           },
         },
@@ -1131,8 +1410,20 @@ function renderWorkflowsView() {
           el('span', { class: `pill ${statusPillClass(r.state)}` }, statusLabel(r.state)),
         ),
       ),
-    ),
+    {
+      scrollRoot: isCompactRailViewport() ? runList : $('wf-rail'),
+      getItems: () => state.runs,
+      hasMore: () => !state.preview && state.runsNextCursor < state.runIdsQueue.length,
+      onLoadMore: loadNextRunsPage,
+      emptyNode: el('p', { class: 'hint-sm', style: 'padding:6px 4px;' }, t('noRunsYet')),
+    },
   );
+
+  if (!state.runs.length) {
+    $('wf-empty').hidden = false;
+    $('wf-detail').hidden = true;
+    return;
+  }
 
   const run = state.runs.find(r => r.runId === state.selectedRunId) || state.runs[0];
   if (state.selectedNodeRunId !== run.runId) {
@@ -1520,9 +1811,8 @@ function renderNodeStructuredView(run, nodeId, out) {
               type: 'button',
               class: 'btn primary sm',
               onclick: () => {
-                state.artifactId = artId;
                 state.view = 'canvas';
-                renderAll();
+                selectArtifact(artId);
               },
             },
             t('openArtifactInCanvas'),
@@ -1709,8 +1999,9 @@ async function applyRevisions() {
   }
   const sys = systemBySlug(art.systemSlug || state.activeSystemSlug);
   await ensureSystemFiles(sys);
+  const currentHtml = await ensureArtifactHtml(art);
   const snapshotPath = `.lumzel/opendesign/versions/${art.id}/v${art.version || 1}.html`;
-  await window.deck.files.write(snapshotPath, art.html || '');
+  await window.deck.files.write(snapshotPath, currentHtml || '');
 
   const notes = typeof state.params?.designNotes === 'string' ? state.params.designNotes.trim() : '';
   const combinedInstruction = notes
@@ -1757,7 +2048,8 @@ async function bakeTweaksIntoArtifact() {
   const art = currentArtifact();
   if (!art) return;
   const sys = systemBySlug(art.systemSlug || state.activeSystemSlug);
-  const baked = buildStandaloneHtml(art.html, sys.tokensCss, state.tweaks);
+  const rawHtml = await ensureArtifactHtml(art);
+  const baked = buildStandaloneHtml(rawHtml, sys.tokensCss, state.tweaks);
   art.html = baked;
   art.version = (art.version || 1) + 1;
   art.updatedAt = new Date().toISOString();
@@ -1781,7 +2073,8 @@ async function exportCurrentArtifact() {
   const art = currentArtifact();
   if (!art) return;
   const sys = systemBySlug(art.systemSlug || state.activeSystemSlug);
-  const standalone = buildStandaloneHtml(art.html, sys.tokensCss, state.tweaks);
+  const rawHtml = await ensureArtifactHtml(art);
+  const standalone = buildStandaloneHtml(rawHtml, sys.tokensCss, state.tweaks);
   if (!state.preview) {
     const exportPath = `.lumzel/opendesign/exports/${art.id}.html`;
     await window.deck.files.write(exportPath, standalone);
@@ -2063,19 +2356,43 @@ function bindEvents() {
     });
   }
   $('btn-toggle-rail')?.addEventListener('click', () => {
-    state.narrowDrawer = state.narrowDrawer === 'rail' ? '' : 'rail';
+    if (isNarrowViewport()) {
+      state.narrowDrawer = state.narrowDrawer === 'rail' ? '' : 'rail';
+    } else {
+      state.railCollapsed = !state.railCollapsed;
+    }
     syncNarrowDrawers();
+    fitStageViewport();
   });
   $('btn-toggle-inspector')?.addEventListener('click', () => {
-    state.narrowDrawer = state.narrowDrawer === 'inspector' ? '' : 'inspector';
+    if (isNarrowViewport()) {
+      state.narrowDrawer = state.narrowDrawer === 'inspector' ? '' : 'inspector';
+    } else {
+      state.inspectorCollapsed = !state.inspectorCollapsed;
+    }
     syncNarrowDrawers();
+    fitStageViewport();
   });
   $('btn-close-rail')?.addEventListener('click', () => {
-    state.narrowDrawer = '';
+    if (isNarrowViewport()) state.narrowDrawer = '';
+    else state.railCollapsed = true;
     syncNarrowDrawers();
+    fitStageViewport();
   });
   $('btn-close-inspector')?.addEventListener('click', () => {
-    state.narrowDrawer = '';
+    if (isNarrowViewport()) state.narrowDrawer = '';
+    else state.inspectorCollapsed = true;
+    syncNarrowDrawers();
+    fitStageViewport();
+  });
+  $('btn-toggle-sys-rail')?.addEventListener('click', () => {
+    if (!isCompactRailViewport()) return;
+    state.sysRailCollapsed = !state.sysRailCollapsed;
+    syncNarrowDrawers();
+  });
+  $('btn-toggle-wf-rail')?.addEventListener('click', () => {
+    if (!isCompactRailViewport()) return;
+    state.wfRailCollapsed = !state.wfRailCollapsed;
     syncNarrowDrawers();
   });
   $('drawer-scrim')?.addEventListener('click', () => {
@@ -2087,17 +2404,28 @@ function bindEvents() {
     const onBpChange = () => {
       if (!narrowMql.matches && state.narrowDrawer) {
         state.narrowDrawer = '';
-        syncNarrowDrawers();
       }
+      syncNarrowDrawers();
+      fitStageViewport();
     };
     if (typeof narrowMql.addEventListener === 'function') narrowMql.addEventListener('change', onBpChange);
     else narrowMql.addListener?.(onBpChange);
   }
+  const compactMql = typeof window.matchMedia === 'function' ? window.matchMedia('(max-width: 820px)') : null;
+  if (compactMql) {
+    const onCompactChange = () => {
+      syncNarrowDrawers();
+      if (state.view === 'systems') renderSystemsView();
+      if (state.view === 'workflows') renderWorkflowsView();
+    };
+    if (typeof compactMql.addEventListener === 'function') compactMql.addEventListener('change', onCompactChange);
+    else compactMql.addListener?.(onCompactChange);
+  }
   window.addEventListener('resize', () => {
     if (!isNarrowViewport() && state.narrowDrawer) {
       state.narrowDrawer = '';
-      syncNarrowDrawers();
     }
+    syncNarrowDrawers();
     fitStageViewport();
   });
   if (typeof ResizeObserver === 'function' && $('canvas-stage')) {
@@ -2406,12 +2734,15 @@ function bindEvents() {
       const sys = systemBySlug(art.systemSlug || state.activeSystemSlug);
       postToCanvas({ type: 'od:tokens', tokensCss: sys.tokensCss, tweaks: state.tweaks });
       postToCanvas({ type: 'od:mode', mode: state.mode === 'inspect' ? 'inspect' : 'preview' });
+      postCanvasTheme();
     } else if (msg.type === 'od:select') {
       state.selectedEl = msg;
       state.insTab = 'comments';
       if (isNarrowViewport()) state.narrowDrawer = 'inspector';
+      else if (state.inspectorCollapsed) state.inspectorCollapsed = false;
       renderInspector();
       syncNarrowDrawers();
+      fitStageViewport();
       $('comment-input').focus();
     }
   });
@@ -2432,6 +2763,7 @@ async function loadWorkspace() {
     unsubTheme = window.deck.ui.onThemeChange(nextTheme => {
       state.theme = nextTheme === 'dark' ? 'dark' : 'light';
       document.documentElement.dataset.theme = state.theme;
+      window.requestAnimationFrame(() => postCanvasTheme());
     });
   }
   setLocale(ctx.locale || 'en');
@@ -2449,6 +2781,8 @@ async function loadWorkspace() {
     state.comments = structuredClone(SAMPLE_COMMENTS);
     state.versions = structuredClone(SAMPLE_VERSIONS);
     state.runs = structuredClone(SAMPLE_RUNS);
+    state.runIdsQueue = [];
+    state.runsNextCursor = 0;
     state.selectedRunId = state.runs[0].runId;
     state.agentCatalog = SAMPLE_AGENT_CATALOG;
     state.selectedAgent = { provider: '', model: '', effort: '' };
@@ -2457,18 +2791,34 @@ async function loadWorkspace() {
   }
 
   $('banner').hidden = true;
-  const [activeSys, catalogRes, savedAgentOverride, paramsRes] = await Promise.all([
+  const [
+    activeSys,
+    catalogRes,
+    savedAgentOverride,
+    paramsRes,
+    customSystems,
+    storedArts,
+    diskFiles,
+    commentEntries,
+    versionEntries,
+    runEntries,
+  ] = await Promise.all([
     window.deck.store.get('meta', 'activeSystem').catch(() => null),
     window.deck.agent?.catalog?.().catch(() => null),
     window.deck.store.get('meta', 'agentOverride').catch(() => null),
     window.deck.params?.get?.().catch(() => null),
+    window.deck.store.list({ collection: 'systems' }).catch(() => []),
+    window.deck.store.list({ collection: 'artifacts' }).catch(() => []),
+    window.deck.files.list('docs/opendesign').catch(() => []),
+    window.deck.store.list({ collection: 'comments' }).catch(() => []),
+    window.deck.store.list({ collection: 'versions' }).catch(() => []),
+    window.deck.store.list({ collection: 'runs' }).catch(() => []),
   ]);
   state.agentCatalog = catalogRes || null;
   state.selectedAgent = sanitizeSelectedAgent(savedAgentOverride, state.agentCatalog);
   if (paramsRes?.values && typeof paramsRes.values === 'object') {
     state.params = { ...state.params, ...paramsRes.values };
   }
-  const customSystems = await window.deck.store.list({ collection: 'systems' }).catch(() => []);
   const customMap = new Map(customSystems.map(e => [e.key, e.value]));
   state.systems = [
     ...PRESET_SYSTEMS.map(s => ({ ...s })),
@@ -2477,34 +2827,32 @@ async function loadWorkspace() {
   state.activeSystemSlug = typeof activeSys === 'string' && activeSys ? activeSys : 'editorial-slate';
   state.selectedSystemSlug = state.activeSystemSlug;
 
-  const storedArts = await window.deck.store.list({ collection: 'artifacts' }).catch(() => []);
+  const diskHtmlSet = new Set(
+    (diskFiles || []).filter(f => f?.name?.endsWith('.html')).map(f => `docs/opendesign/${f.name}`),
+  );
   const artifacts = [];
   for (const entry of storedArts) {
     const meta = entry.value;
     if (!meta?.id || !meta?.path) continue;
-    const file = await window.deck.files.read(meta.path).catch(() => null);
     artifacts.push({
       ...meta,
-      html: file?.content || buildStarterHtml(meta),
-      fromDisk: Boolean(file?.content),
+      html: undefined,
+      fromDisk: diskHtmlSet.has(meta.path) ? true : meta.fromDisk,
     });
   }
 
-  const diskFiles = await window.deck.files.list('docs/opendesign').catch(() => []);
   for (const f of diskFiles) {
     if (!f?.name?.endsWith('.html')) continue;
     const id = f.name.replace(/\.html$/i, '');
     if (artifacts.some(a => a.id === id)) continue;
     const path = `docs/opendesign/${f.name}`;
-    const file = await window.deck.files.read(path).catch(() => null);
-    if (!file?.content) continue;
     artifacts.push({
       id,
       title: id,
       surface: 'prototype',
       systemSlug: state.activeSystemSlug,
       path,
-      html: file.content,
+      html: undefined,
       version: 1,
       fromDisk: true,
     });
@@ -2515,20 +2863,20 @@ async function loadWorkspace() {
     state.artifactId = artifacts[0]?.id || '';
   }
 
-  const commentEntries = await window.deck.store.list({ collection: 'comments' }).catch(() => []);
   state.comments = Object.fromEntries(commentEntries.map(e => [e.key, Array.isArray(e.value) ? e.value : []]));
-
-  const versionEntries = await window.deck.store.list({ collection: 'versions' }).catch(() => []);
   state.versions = Object.fromEntries(versionEntries.map(e => [e.key, Array.isArray(e.value) ? e.value : []]));
 
-  const runEntries = await window.deck.store.list({ collection: 'runs' }).catch(() => []);
-  const loadedRuns = [];
-  for (const e of runEntries.slice(0, 12)) {
-    const run = await window.deck.workflow.getRun(e.key).catch(() => null);
-    if (run) loadedRuns.push(run);
-  }
-  state.runs = loadedRuns;
-  if (!state.selectedRunId && loadedRuns[0]) state.selectedRunId = loadedRuns[0].runId;
+  state.runs = [];
+  state.runIdsQueue = runEntries.map(e => e.key).filter(Boolean);
+  state.runsNextCursor = 0;
+  state.runsLoadingMore = false;
+
+  const activeArt = currentArtifact();
+  await Promise.all([
+    activeArt ? ensureArtifactHtml(activeArt) : Promise.resolve(),
+    loadNextRunsPage(),
+  ]);
+  if (!state.selectedRunId && state.runs[0]) state.selectedRunId = state.runs[0].runId;
 
   if (!unsubWorkflow) {
     unsubWorkflow = window.deck.workflow.subscribe('*', async evt => {
@@ -2539,7 +2887,7 @@ async function loadWorkspace() {
       if (prev?.state !== 'completed' && run.state === 'completed') {
         await handleWorkflowCompleted(run);
       }
-      renderAll();
+      scheduleRenderAll();
     });
   }
 

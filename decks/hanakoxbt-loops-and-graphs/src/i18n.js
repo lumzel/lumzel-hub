@@ -147,6 +147,9 @@ export const DICT = {
     agentHintHost: '当前跟随本项目/全局默认设置；可随时覆盖单次运行配置。',
     agentHintCustom: '将应用于 Feature Ship 与 Parallel Code Review 工作流。',
     deckSettings: 'Deck 设置',
+    menu: '更多控制',
+    close: '关闭',
+    loadMore: '加载更多（剩余 {n}）',
   },
   en: {
     title: 'Loops & Graphs · @hanakoxbt',
@@ -296,6 +299,9 @@ export const DICT = {
     agentHintHost: 'Following project/global defaults. Override anytime.',
     agentHintCustom: 'Applied to Feature Ship and Parallel Code Review workflows.',
     deckSettings: 'Deck Settings',
+    menu: 'More controls',
+    close: 'Close',
+    loadMore: 'Load more ({n} remaining)',
   },
 };
 

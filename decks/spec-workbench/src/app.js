@@ -42,6 +42,8 @@ applyI18n();
 const ACTIVE_STATES = new Set(['running', 'needs_input']);
 const TERMINAL_STATES = new Set(['done', 'idle', 'error', 'stopped', 'closed']);
 const inFlightSlots = new Set();
+const narrowMq = typeof window.matchMedia === 'function' ? window.matchMedia('(max-width: 860px)') : null;
+const isNarrowViewport = () => Boolean(narrowMq?.matches);
 
 const state = {
   index: { features: [], docs: [] },
@@ -54,13 +56,17 @@ const state = {
   sortBy: 'created', // 'created' | 'updated'
   sessions: {}, // slotKey -> { slotKey, featureId, kind, ticketPath, sessionId, status, updatedAt }
   liveSessionStatus: {}, // featureId -> { designReusable, designSessionId, designStatus, ticketsReusable, ticketsSessionId, ticketsStatus }
-  qaData: {}, // featureId -> { design: { open, settled, hasTicketsBlock }, ticketChoices: [...], nodeLabels: {...}, loadedKey }
+  qaData: {}, // featureId -> { design: { open, settled, hasTicketsBlock }, ticketChoices: [...], nodeLabels: {...}, designLoadedKey, ticketsLoadedKey }
   designDrafts: {}, // featureId -> { answers: { [id]: val }, note: '' }
   ticketDrafts: {}, // featureId -> { answers: { [key]: val }, note: '' }
   qaCollapsed: {}, // `${featureId}:design` | `${featureId}:tickets` -> boolean
-  railCollapsed: false,
+  railCollapsed: isNarrowViewport(),
   archivedRailOpen: false,
-  theme: 'light',
+  theme:
+    typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light',
+  themeTokens: {},
   preview: false,
   featureId: '',
   tab: 'design',
@@ -238,11 +244,96 @@ function note(text, isError = false) {
   box.hidden = !text;
 }
 
+const listObservers = new WeakMap();
+const LIST_BATCH_SIZE = 30;
+
+function disconnectListObserver(container) {
+  if (!container) return;
+  const prev = listObservers.get(container);
+  if (prev) {
+    prev.disconnect();
+    listObservers.delete(container);
+  }
+}
+
+function mountIncrementalList(container, items, renderItem, { batchSize = LIST_BATCH_SIZE, root = null } = {}) {
+  if (!container) return;
+  disconnectListObserver(container);
+  if (!Array.isArray(items) || items.length === 0) {
+    container.replaceChildren();
+    return;
+  }
+
+  let rendered = 0;
+  const appendSlice = (target, beforeNode = null) => {
+    const end = Math.min(rendered + batchSize, items.length);
+    const frag = document.createDocumentFragment();
+    for (; rendered < end; rendered += 1) {
+      const node = renderItem(items[rendered], rendered);
+      if (node != null && node !== false) frag.append(node);
+    }
+    if (beforeNode) target.insertBefore(frag, beforeNode);
+    else target.append(frag);
+  };
+
+  if (typeof IntersectionObserver !== 'function' || items.length <= batchSize) {
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < items.length; i += 1) {
+      const node = renderItem(items[i], i);
+      if (node != null && node !== false) frag.append(node);
+    }
+    container.replaceChildren(frag);
+    return;
+  }
+
+  container.replaceChildren();
+  appendSlice(container);
+
+  if (rendered >= items.length) return;
+
+  const sentinel = el('div', { class: 'list-sentinel', 'aria-hidden': 'true' });
+  container.append(sentinel);
+
+  const observer = new IntersectionObserver(
+    entries => {
+      if (!entries.some(e => e.isIntersecting)) return;
+      appendSlice(container, sentinel);
+      if (rendered >= items.length) {
+        observer.disconnect();
+        listObservers.delete(container);
+        sentinel.remove();
+      }
+    },
+    { root: root || null, rootMargin: '200px 0px' },
+  );
+  observer.observe(sentinel);
+  listObservers.set(container, observer);
+}
+
+async function mapWithConcurrency(items, limit, worker) {
+  if (!Array.isArray(items) || items.length === 0) return [];
+  const results = new Array(items.length);
+  const concurrency = Math.max(1, Math.min(limit, items.length));
+  let cursor = 0;
+  const runners = Array.from({ length: concurrency }, async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await worker(items[index], index);
+    }
+  });
+  await Promise.all(runners);
+  return results;
+}
+
 const frames = new Map();
 function frameIn(slot, container, src, title) {
   let frame = frames.get(slot);
   if (!frame || !frame.isConnected) {
     frame = el('iframe', { class: 'frame', title });
+    frame.addEventListener('load', () => {
+      forwardTokensToFrame(frame.contentWindow);
+    });
     frames.set(slot, frame);
   }
   if (frame.parentNode !== container) container.replaceChildren(frame);
@@ -461,6 +552,8 @@ async function clearQaDraft(kind, featureId, { removeKey = false } = {}) {
 function syncRailToggle() {
   const collapsed = Boolean(state.railCollapsed);
   app.classList.toggle('rail-collapsed', collapsed);
+  const scrim = $('rail-scrim');
+  if (scrim) scrim.hidden = collapsed || !isNarrowViewport();
   const btn = $('rail-toggle');
   if (!btn) return;
   btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
@@ -472,7 +565,7 @@ function syncRailToggle() {
 async function setRailCollapsed(collapsed) {
   state.railCollapsed = Boolean(collapsed);
   syncRailToggle();
-  if (canUseStore()) {
+  if (canUseStore() && !isNarrowViewport()) {
     await window.deck.store.put('ui', 'railCollapsed', { collapsed: state.railCollapsed }).catch(() => {});
   }
 }
@@ -642,33 +735,68 @@ async function readDocText(path) {
   return res?.content || '';
 }
 
-async function refreshFeatureQaData(f) {
+async function refreshFeatureQaData(f, { includeTickets = false } = {}) {
   if (!f || f.pending || !f.design) return;
   const ticketSig = (f.tickets || []).map(x => `${x.path}:${x.status}`).join('|');
   const mtime = state.fileMtimeMap[f.id] || 0;
-  const loadedKey = `${getLocale()}:${f.updated}:${mtime}:${f.status}:${ticketSig}`;
-  if (state.qaData[f.id]?.loadedKey === loadedKey) return;
+  const designLoadedKey = `${getLocale()}:${f.updated}:${mtime}:${f.status}`;
+  const ticketsLoadedKey = `${designLoadedKey}:${ticketSig}`;
+  const prev = state.qaData[f.id] || {
+    design: { open: [], settled: [] },
+    ticketChoices: [],
+    nodeLabels: {},
+    designLoadedKey: '',
+    ticketsLoadedKey: '',
+  };
+
+  const needDesign = prev.designLoadedKey !== designLoadedKey;
+  const wantTickets = includeTickets || state.tab === 'tickets';
+  const needTickets = wantTickets && prev.ticketsLoadedKey !== ticketsLoadedKey;
+  if (!needDesign && !needTickets) return;
 
   try {
-    const designHtml = await readDocText(f.design);
-    const design = parseDesignDocQuestions(designHtml);
-    const nodeLabels = extractDesignNodeLabels(designHtml);
-    const ticketChoices = [];
-    for (const tk of f.tickets || []) {
-      try {
-        const thtml = await readDocText(tk.path);
-        const parsed = parseTicketChoices(thtml);
-        for (const item of parsed.open) {
-          ticketChoices.push({ ...item, ticketPath: tk.path, ticketTitle: tk.title, ticketN: tk.n });
-        }
-      } catch {
-        // ignore single unreadable ticket
-      }
+    let design = prev.design;
+    let nodeLabels = prev.nodeLabels;
+    let nextDesignKey = prev.designLoadedKey;
+    if (needDesign) {
+      const designHtml = await readDocText(f.design);
+      design = parseDesignDocQuestions(designHtml);
+      nodeLabels = extractDesignNodeLabels(designHtml);
+      nextDesignKey = designLoadedKey;
     }
-    state.qaData[f.id] = { design, ticketChoices, nodeLabels, loadedKey };
+
+    let ticketChoices = prev.ticketChoices;
+    let nextTicketsKey = prev.ticketsLoadedKey;
+    if (needTickets) {
+      const tickets = f.tickets || [];
+      const perTicket = await mapWithConcurrency(tickets, 4, async tk => {
+        try {
+          const thtml = await readDocText(tk.path);
+          const parsed = parseTicketChoices(thtml);
+          return parsed.open.map(item => ({
+            ...item,
+            ticketPath: tk.path,
+            ticketTitle: tk.title,
+            ticketN: tk.n,
+          }));
+        } catch {
+          return [];
+        }
+      });
+      ticketChoices = perTicket.flat();
+      nextTicketsKey = ticketsLoadedKey;
+    }
+
+    state.qaData[f.id] = {
+      design,
+      ticketChoices,
+      nodeLabels,
+      designLoadedKey: nextDesignKey,
+      ticketsLoadedKey: nextTicketsKey,
+    };
     if (f.id === state.featureId) {
-      if (state.tab === 'design') renderDesignQa(f);
-      if (state.tab === 'tickets') renderTicketsQa(f);
+      if (state.tab === 'design' && needDesign) renderDesignQa(f);
+      if (state.tab === 'tickets' && needTickets) renderTicketsQa(f);
     }
   } catch {
     // non-fatal if doc cannot be read yet
@@ -815,10 +943,10 @@ function syncActiveWatcher() {
 
 // ---------- rendering: rail & topbar
 
-function buildFeatureRailItem(f, archived = false) {
+function buildFeatureRailItem(f, archived = false, activeRuns = null) {
   const p = progress(f);
-  const activeRuns = activeSessionsForFeature(f.id);
-  const hasWait = activeRuns.some(r => r.status === 'needs_input');
+  const runs = activeRuns ?? activeSessionsForFeature(f.id);
+  const hasWait = runs.some(r => r.status === 'needs_input');
   const timeInfo = featureTimeInfo(f, state.featureMeta[f.id], state.fileMtimeMap[f.id] || 0, {
     sortBy: state.sortBy,
     docCreated: state.docCreatedMap[f.id] || '',
@@ -842,7 +970,7 @@ function buildFeatureRailItem(f, archived = false) {
     el(
       'div',
       { class: 'feat-top' },
-      activeRuns.length
+      runs.length
         ? el('span', { class: `run-dot${hasWait ? ' warn' : ''}`, 'aria-hidden': 'true' })
         : null,
       el('b', {}, f.title || f.id),
@@ -872,6 +1000,17 @@ function buildFeatureRailItem(f, archived = false) {
 
 function renderRail() {
   syncSortToggle();
+  const activeSessionsByFeature = new Map();
+  for (const s of Object.values(state.sessions)) {
+    if (!s || !s.featureId || !s.sessionId || !ACTIVE_STATES.has(s.status)) continue;
+    let list = activeSessionsByFeature.get(s.featureId);
+    if (!list) {
+      list = [];
+      activeSessionsByFeature.set(s.featureId, list);
+    }
+    list.push(s);
+  }
+
   const active = [];
   const archived = [];
   for (const f of state.features) {
@@ -879,7 +1018,13 @@ function renderRail() {
     else active.push(f);
   }
 
-  $('feats').replaceChildren(...active.map(f => buildFeatureRailItem(f, false)));
+  const railEl = $('rail');
+  mountIncrementalList(
+    $('feats'),
+    active,
+    f => buildFeatureRailItem(f, false, activeSessionsByFeature.get(f.id) || []),
+    { batchSize: LIST_BATCH_SIZE, root: railEl },
+  );
 
   const archivedRail = $('archived-rail');
   if (!archivedRail) return;
@@ -907,9 +1052,13 @@ function renderRail() {
     archivedRail.replaceChildren(toggleBtn);
     return;
   }
-  archivedRail.replaceChildren(
-    toggleBtn,
-    el('div', { class: 'archived-list' }, ...archived.map(f => buildFeatureRailItem(f, true))),
+  const archivedListEl = el('div', { class: 'archived-list' });
+  archivedRail.replaceChildren(toggleBtn, archivedListEl);
+  mountIncrementalList(
+    archivedListEl,
+    archived,
+    f => buildFeatureRailItem(f, true, activeSessionsByFeature.get(f.id) || []),
+    { batchSize: LIST_BATCH_SIZE, root: railEl },
   );
 }
 
@@ -1237,7 +1386,7 @@ function renderDesignQa(f) {
     return;
   }
 
-  const questionCards = openQuestions.map(item => {
+  const buildQuestionCard = item => {
     const currentVal = draft.answers[item.id] ?? '';
     let itemEl = null;
     const inputEl = el('input', {
@@ -1304,7 +1453,7 @@ function renderDesignQa(f) {
       inputEl,
     );
     return itemEl;
-  });
+  };
 
   const noteArea = el('textarea', {
     class: 'qa-note',
@@ -1323,10 +1472,11 @@ function renderDesignQa(f) {
   });
   noteArea.value = draft.note || '';
 
+  const qaListEl = openQuestions.length ? el('div', { class: 'qa-list' }) : null;
   const body = el(
     'div',
     { class: 'qa-body' },
-    openQuestions.length ? el('div', { class: 'qa-list' }, ...questionCards) : null,
+    qaListEl,
     noteArea,
     el(
       'div',
@@ -1337,6 +1487,9 @@ function renderDesignQa(f) {
   );
 
   box.replaceChildren(head, body);
+  if (qaListEl) {
+    mountIncrementalList(qaListEl, openQuestions, buildQuestionCard, { batchSize: LIST_BATCH_SIZE, root: body });
+  }
   restoreContainerScrollTop(box, f.id, prevScrollTop, body);
   restoreQaFocus(box, prevFocus);
 }
@@ -1387,7 +1540,7 @@ function renderTicketsQa(f) {
     idleTitle: t('qaSubmitTickets'),
   });
 
-  const choiceCards = choices.map(item => {
+  const buildChoiceCard = item => {
     const key = `${item.ticketPath}::${item.id}`;
     const currentVal = draft.answers[key] ?? '';
     let itemEl = null;
@@ -1455,7 +1608,7 @@ function renderTicketsQa(f) {
       inputEl,
     );
     return itemEl;
-  });
+  };
 
   const noteArea = el('textarea', {
     class: 'qa-note',
@@ -1474,6 +1627,7 @@ function renderTicketsQa(f) {
   });
   noteArea.value = draft.note || '';
 
+  const qaListEl = choices.length ? el('div', { class: 'qa-list' }) : null;
   box.replaceChildren(
     el(
       'div',
@@ -1499,7 +1653,7 @@ function renderTicketsQa(f) {
     el(
       'div',
       { class: 'qa-body' },
-      choices.length ? el('div', { class: 'qa-list' }, ...choiceCards) : null,
+      qaListEl,
       noteArea,
       el(
         'div',
@@ -1509,40 +1663,44 @@ function renderTicketsQa(f) {
       ),
     ),
   );
+  if (qaListEl) {
+    mountIncrementalList(qaListEl, choices, buildChoiceCard, { batchSize: LIST_BATCH_SIZE, root: ticketsEl });
+  }
   restoreContainerScrollTop(ticketsEl, f.id, prevScrollTop);
   restoreQaFocus(box, prevFocus);
 }
 
 // ---------- rendering: tickets tab
 
-function ticketState(ticket, f) {
+function ticketState(ticket, f, ticketByPath = null) {
   if (ticket.status === 'done') return ['done', t('done')];
   if (ticket.status === 'in-progress') return ['in-progress', t('inProgress')];
   if (ticket.ready) return ['ready', t('ready')];
-  const byPath = new Map(f.tickets.map(x => [x.path, x.n]));
-  const waiting = (ticket.blockedBy || []).filter(path => f.tickets.find(x => x.path === path)?.status !== 'done');
+  const map = ticketByPath || new Map((f.tickets || []).map(x => [x.path, x]));
+  const waiting = (ticket.blockedBy || []).filter(path => map.get(path)?.status !== 'done');
   return [
     'planned',
-    waiting.length ? t('waitingFor', { list: waiting.map(path => byPath.get(path) || '?').join(', ') }) : t('planned'),
+    waiting.length ? t('waitingFor', { list: waiting.map(path => map.get(path)?.n || '?').join(', ') }) : t('planned'),
   ];
 }
 
-function blockedLabel(ticket, f) {
-  const byPath = new Map(f.tickets.map(x => [x.path, x.n]));
-  const waiting = (ticket.blockedBy || []).filter(path => f.tickets.find(x => x.path === path)?.status !== 'done');
-  return waiting.map(p => byPath.get(p) || p).join(', ');
+function blockedLabel(ticket, f, ticketByPath = null) {
+  const map = ticketByPath || new Map((f.tickets || []).map(x => [x.path, x]));
+  const waiting = (ticket.blockedBy || []).filter(path => map.get(path)?.status !== 'done');
+  return waiting.map(p => map.get(p)?.n || p).join(', ');
 }
 
 function renderTickets(f) {
   const allTickets = f.tickets || [];
-  const open = state.ticket && allTickets.find(x => x.path === state.ticket);
+  const ticketByPath = new Map(allTickets.map(x => [x.path, x]));
+  const open = state.ticket && ticketByPath.get(state.ticket);
   $('tickets').hidden = Boolean(open);
   $('ticket-open').hidden = !open;
   const featureImplBusy = hasFeatureImplementBusy(f.id);
   const ticketImplBusy = hasAnyTicketImplementInFlight(f.id);
 
   if (open) {
-    const [kind, label] = ticketState(open, f);
+    const [kind, label] = ticketState(open, f, ticketByPath);
     $('ticket-back').replaceChildren(
       '← ',
       el('span', { class: `dot ${kind}` }),
@@ -1555,7 +1713,7 @@ function renderTickets(f) {
       class: 'act sm primary-soft',
       onclick: () => void runImplementTicket(f, open),
     });
-    const waitList = blockedLabel(open, f);
+    const waitList = blockedLabel(open, f, ticketByPath);
     applyRunButtonState(implOneBtn, {
       slotKey: slotTicketImplement(f.id, open.path),
       idleLabel: t('implementOneAct'),
@@ -1713,85 +1871,92 @@ function renderTickets(f) {
   );
 
   const rows = (filterGroups.find(([key]) => key === state.filter) || filterGroups[0])[2];
-  $('rows').replaceChildren(
-    ...(rows.length
-      ? rows.map(row => {
-          const [kind, label] = ticketState(row, f);
-          const waitList = blockedLabel(row, f);
-          const archived = isTicketArchived(row.path);
+  const rowsContainer = $('rows');
+  if (!rows.length) {
+    disconnectListObserver(rowsContainer);
+    rowsContainer.replaceChildren(el('div', { class: 'empty' }, t('noTicketsInFilter')));
+  } else {
+    mountIncrementalList(
+      rowsContainer,
+      rows,
+      row => {
+        const [kind, label] = ticketState(row, f, ticketByPath);
+        const waitList = blockedLabel(row, f, ticketByPath);
+        const archived = isTicketArchived(row.path);
 
-          const implBtn = el('button', {
+        const implBtn = el('button', {
+          type: 'button',
+          class: 'act sm primary-soft',
+          onclick: () => void runImplementTicket(f, row),
+        });
+        applyRunButtonState(implBtn, {
+          slotKey: slotTicketImplement(f.id, row.path),
+          idleLabel: t('implementOneAct'),
+          idleTitle: featureImplBusy
+            ? t('implementBatchBusy')
+            : waitList
+              ? t('blockedCannotImplement', { list: waitList })
+              : t('implementOneHint'),
+          disabled: row.status === 'done' || Boolean(waitList) || featureImplBusy,
+        });
+
+        const revBtn = el('button', {
+          type: 'button',
+          class: 'act sm',
+          onclick: () => void runReviewTicket(f, row),
+        });
+        applyRunButtonState(revBtn, {
+          slotKey: slotTicketReview(f.id, row.path),
+          idleLabel: t('reviewTicketAct'),
+          idleTitle: t('reviewTicketHint'),
+        });
+
+        const doneToggle = el(
+          'button',
+          {
             type: 'button',
-            class: 'act sm primary-soft',
-            onclick: () => void runImplementTicket(f, row),
-          });
-          applyRunButtonState(implBtn, {
-            slotKey: slotTicketImplement(f.id, row.path),
-            idleLabel: t('implementOneAct'),
-            idleTitle: featureImplBusy
-              ? t('implementBatchBusy')
-              : waitList
-                ? t('blockedCannotImplement', { list: waitList })
-                : t('implementOneHint'),
-            disabled: row.status === 'done' || Boolean(waitList) || featureImplBusy,
-          });
+            class: `act sm${row.status === 'done' ? ' done-active' : ''}`,
+            title: row.status === 'done' ? t('reopenTicket') : t('markDone'),
+            onclick: () => void toggleTicketDone(f, row),
+          },
+          row.status === 'done' ? t('reopenTicket') : t('markDone'),
+        );
 
-          const revBtn = el('button', {
+        const moreRowBtn = el(
+          'button',
+          {
             type: 'button',
-            class: 'act sm',
-            onclick: () => void runReviewTicket(f, row),
-          });
-          applyRunButtonState(revBtn, {
-            slotKey: slotTicketReview(f.id, row.path),
-            idleLabel: t('reviewTicketAct'),
-            idleTitle: t('reviewTicketHint'),
-          });
+            class: 'ico more-btn sm',
+            title: t('moreActions'),
+            'aria-label': t('moreActions'),
+            onclick: e => {
+              e.stopPropagation();
+              openTicketContextMenuFromButton(e.currentTarget, f, row);
+            },
+          },
+          '⋯',
+        );
 
-          const doneToggle = el(
+        return el(
+          'div',
+          {
+            class: `req${archived ? ' archived' : ''}`,
+            oncontextmenu: e => openTicketContextMenu(e, f, row),
+          },
+          el(
             'button',
-            {
-              type: 'button',
-              class: `act sm${row.status === 'done' ? ' done-active' : ''}`,
-              title: row.status === 'done' ? t('reopenTicket') : t('markDone'),
-              onclick: () => void toggleTicketDone(f, row),
-            },
-            row.status === 'done' ? t('reopenTicket') : t('markDone'),
-          );
-
-          const moreRowBtn = el(
-            'button',
-            {
-              type: 'button',
-              class: 'ico more-btn sm',
-              title: t('moreActions'),
-              'aria-label': t('moreActions'),
-              onclick: e => {
-                e.stopPropagation();
-                openTicketContextMenuFromButton(e.currentTarget, f, row);
-              },
-            },
-            '⋯',
-          );
-
-          return el(
-            'div',
-            {
-              class: `req${archived ? ' archived' : ''}`,
-              oncontextmenu: e => openTicketContextMenu(e, f, row),
-            },
-            el(
-              'button',
-              { type: 'button', class: 'req-main', title: row.path, onclick: () => openTicket(row.path) },
-              el('span', { class: `dot ${kind}`, title: statusLabel(row.status) }),
-              el('span', { class: 't' }, el('span', { class: 'mono' }, row.n), row.title.replace(/^\d+\s+/, '')),
-              archived ? el('span', { class: 'pill archived-pill' }, t('archivedPill')) : null,
-              el('span', { class: `state ${kind}` }, label),
-            ),
-            el('div', { class: 'req-actions' }, implBtn, revBtn, doneToggle, moreRowBtn),
-          );
-        })
-      : [el('div', { class: 'empty' }, t('noTicketsInFilter'))]),
-  );
+            { type: 'button', class: 'req-main', title: row.path, onclick: () => openTicket(row.path) },
+            el('span', { class: `dot ${kind}`, title: statusLabel(row.status) }),
+            el('span', { class: 't' }, el('span', { class: 'mono' }, row.n), row.title.replace(/^\d+\s+/, '')),
+            archived ? el('span', { class: 'pill archived-pill' }, t('archivedPill')) : null,
+            el('span', { class: `state ${kind}` }, label),
+          ),
+          el('div', { class: 'req-actions' }, implBtn, revBtn, doneToggle, moreRowBtn),
+        );
+      },
+      { batchSize: LIST_BATCH_SIZE, root: ticketsEl },
+    );
+  }
   restoreContainerScrollTop(ticketsEl, f.id, prevTicketsScrollTop);
 }
 
@@ -1897,6 +2062,10 @@ function openFeature(id) {
   state.ticket = '';
   state.filter = 'all';
   state.screen = '';
+  if (isNarrowViewport() && !state.railCollapsed) {
+    state.railCollapsed = true;
+    syncRailToggle();
+  }
   if (changed) {
     state.protoLinking = false;
     state.pendingDesignNode = '';
@@ -1925,16 +2094,70 @@ function openTicket(path) {
 
 let loading = null;
 let lastLoad = 0;
+let hydrateSeq = 0;
 let defaultsSubscribed = false;
 let paramsSubscribed = false;
 let themeSubscribed = false;
 
-function applyDeckTheme(nextTheme) {
-  const theme = nextTheme === 'dark' ? 'dark' : 'light';
-  if (theme === state.theme) return;
+function readRootInlineTokens() {
+  const tokens = {};
+  const style = document.documentElement?.style;
+  if (!style) return tokens;
+  for (let i = 0; i < style.length; i += 1) {
+    const prop = style[i];
+    if (prop && prop.startsWith('--')) {
+      const val = style.getPropertyValue(prop).trim();
+      if (val) tokens[prop] = val;
+    }
+  }
+  return tokens;
+}
+
+function normalizeTokenMap(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [k, v] of Object.entries(raw)) {
+    if (typeof k === 'string' && k.startsWith('--') && typeof v === 'string' && v.trim()) {
+      out[k] = v.trim();
+    }
+  }
+  return out;
+}
+
+function tokenMapsEqual(a, b) {
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (const k of keysA) {
+    if (a[k] !== b[k]) return false;
+  }
+  return true;
+}
+
+function currentThemeTokens() {
+  return { ...readRootInlineTokens(), ...state.themeTokens };
+}
+
+function forwardTokensToFrame(win) {
+  if (!win) return;
+  const tokens = currentThemeTokens();
+  post(win, 'tokens', { theme: state.theme, tokens });
+  post(win, 'theme', { theme: state.theme });
+}
+
+function applyDeckTheme(nextTheme, nextTokens = null) {
+  const theme = nextTheme === 'dark' ? 'dark' : nextTheme === 'light' ? 'light' : state.theme;
+  const incoming = nextTokens ? normalizeTokenMap(nextTokens) : null;
+  const mergedTokens = { ...readRootInlineTokens(), ...state.themeTokens, ...(incoming || {}) };
+  const themeChanged = theme !== state.theme || document.documentElement.dataset.theme !== theme;
+  const tokensChanged = !tokenMapsEqual(state.themeTokens, mergedTokens);
+  if (!themeChanged && !tokensChanged) return;
   state.theme = theme;
+  state.themeTokens = mergedTokens;
   document.documentElement.dataset.theme = theme;
-  for (const frame of frames.values()) post(frame.contentWindow, 'theme', { theme });
+  for (const frame of frames.values()) {
+    forwardTokensToFrame(frame.contentWindow);
+  }
 }
 
 function applyParamsValues(values) {
@@ -2046,7 +2269,7 @@ async function syncStoreFromDisk(diskFeatures, docMetaMap = {}) {
     }
   }
 
-  if (railPref && typeof railPref === 'object' && 'collapsed' in railPref) {
+  if (!isNarrowViewport() && railPref && typeof railPref === 'object' && 'collapsed' in railPref) {
     state.railCollapsed = Boolean(railPref.collapsed);
   }
   if (sortPref && typeof sortPref === 'object' && (sortPref.sortBy === 'created' || sortPref.sortBy === 'updated')) {
@@ -2171,9 +2394,180 @@ async function syncStoreFromDisk(diskFeatures, docMetaMap = {}) {
   state.sessions = sessMap;
 }
 
+function applyPendingReconciliation(diskFeatures, metaMap, docMetaMap, sessMap) {
+  const pendingMatches = reconcilePendingFeatureMatches({
+    diskFeatures,
+    metaMap,
+    docMetaMap,
+    sessMap,
+  });
+  for (const { pendingId, finalId } of pendingMatches) {
+    const prevMeta = metaMap[pendingId];
+    if (prevMeta) {
+      metaMap[finalId] = { ...prevMeta, id: finalId, pending: false, updatedAt: Date.now() };
+      delete metaMap[pendingId];
+      if (canUseStore()) {
+        void window.deck.store.put('features', finalId, metaMap[finalId]).catch(() => {});
+        if (typeof window.deck?.store?.delete === 'function') {
+          void window.deck.store.delete('features', pendingId).catch(() => {});
+        }
+      }
+    }
+    for (const [oldSlotKey, rec] of Object.entries(sessMap)) {
+      if (!rec || rec.featureId !== pendingId) continue;
+      const nextSlotKey =
+        rec.kind === 'design' ? slotDesign(finalId) : oldSlotKey.replace(`:${pendingId}`, `:${finalId}`);
+      const migratedRec = { ...rec, slotKey: nextSlotKey, featureId: finalId };
+      if (!sessMap[nextSlotKey]) {
+        sessMap[nextSlotKey] = migratedRec;
+        if (canUseStore()) void window.deck.store.put('sessions', nextSlotKey, migratedRec).catch(() => {});
+      }
+      if (oldSlotKey !== nextSlotKey) {
+        delete sessMap[oldSlotKey];
+        if (canUseStore() && typeof window.deck?.store?.delete === 'function') {
+          void window.deck.store.delete('sessions', oldSlotKey).catch(() => {});
+        }
+      }
+    }
+    if (inFlightSlots.has(slotDesign(pendingId))) {
+      inFlightSlots.delete(slotDesign(pendingId));
+      inFlightSlots.add(slotDesign(finalId));
+    }
+    for (const suffix of [':design', ':tickets']) {
+      if (`${pendingId}${suffix}` in state.qaCollapsed) {
+        state.qaCollapsed[`${finalId}${suffix}`] = state.qaCollapsed[`${pendingId}${suffix}`];
+        delete state.qaCollapsed[`${pendingId}${suffix}`];
+      }
+    }
+    for (const kind of ['design', 'tickets']) {
+      const draftMap = getDraftMap(kind);
+      if (draftMap[pendingId]) {
+        if (!hasQaDraftContent(draftMap[finalId]) && hasQaDraftContent(draftMap[pendingId])) {
+          draftMap[finalId] = draftMap[pendingId];
+          scheduleQaDraftSave(kind, finalId, { immediate: true });
+        }
+        void clearQaDraft(kind, pendingId, { removeKey: true });
+      }
+    }
+    if (state.featureId === pendingId) {
+      state.featureId = finalId;
+      saveUiView();
+    }
+  }
+  return pendingMatches;
+}
+
+function buildSortedFeatures(diskFeatures) {
+  const diskIds = new Set(diskFeatures.map(f => f.id));
+  const pendingFeatures = Object.values(state.featureMeta)
+    .filter(m => m.pending && !diskIds.has(m.id))
+    .map(m => ({
+      id: m.id,
+      title: m.title || m.id,
+      summary: m.brief || '',
+      status: 'pending',
+      updated: todayIsoDate(new Date(m.createdAt || Date.now())),
+      design: `docs/features/${m.id}/design.html`,
+      prototype: null,
+      screens: [],
+      tickets: [],
+      nodeTickets: {},
+      pending: true,
+    }));
+  return sortFeaturesDesc([...diskFeatures, ...pendingFeatures], state.featureMeta, state.fileMtimeMap, {
+    sortBy: state.sortBy,
+    docCreatedMap: state.docCreatedMap,
+  });
+}
+
+async function hydrateFeatureMetadata(diskFeatures, seq) {
+  try {
+    const nextMtimeMap = state.preview ? state.fileMtimeMap : await fetchFeatureMtimes(diskFeatures);
+    if (seq !== hydrateSeq) return;
+    const docMetaMap = await fetchFeatureDocMeta(diskFeatures, nextMtimeMap);
+    if (seq !== hydrateSeq) return;
+
+    const nextDocCreatedMap = {};
+    for (const [id, meta] of Object.entries(docMetaMap)) {
+      if (meta.created) nextDocCreatedMap[id] = meta.created;
+    }
+    for (const [id, meta] of Object.entries(state.featureMeta)) {
+      if (!nextDocCreatedMap[id] && meta?.docCreated) {
+        nextDocCreatedMap[id] = meta.docCreated;
+      }
+    }
+
+    let changed = false;
+    const prevMtimeKeys = Object.keys(state.fileMtimeMap);
+    const nextMtimeKeys = Object.keys(nextMtimeMap);
+    if (
+      prevMtimeKeys.length !== nextMtimeKeys.length ||
+      nextMtimeKeys.some(k => state.fileMtimeMap[k] !== nextMtimeMap[k])
+    ) {
+      state.fileMtimeMap = nextMtimeMap;
+      changed = true;
+    }
+
+    const prevCreatedKeys = Object.keys(state.docCreatedMap);
+    const nextCreatedKeys = Object.keys(nextDocCreatedMap);
+    if (
+      prevCreatedKeys.length !== nextCreatedKeys.length ||
+      nextCreatedKeys.some(k => state.docCreatedMap[k] !== nextDocCreatedMap[k])
+    ) {
+      state.docCreatedMap = nextDocCreatedMap;
+      changed = true;
+    }
+
+    const reconciled = applyPendingReconciliation(diskFeatures, state.featureMeta, docMetaMap, state.sessions);
+    if (reconciled.length > 0) {
+      changed = true;
+    }
+
+    if (!changed) return;
+
+    state.features = buildSortedFeatures(diskFeatures);
+    if (!state.features.some(f => f.id === state.featureId)) {
+      const activeFeatures = state.features.filter(f => f.pending || !isFeatureArchived(f.id));
+      state.featureId = activeFeatures[0]?.id || '';
+      state.tab = 'design';
+      state.ticket = '';
+    }
+
+    renderRail();
+    const cur = feature();
+    if (cur?.pending) {
+      renderPendingPane();
+    } else if (cur) {
+      const meta = state.featureMeta[cur.id];
+      const mtime = state.fileMtimeMap[cur.id] || 0;
+      const docCreated = state.docCreatedMap[cur.id] || '';
+      const curTime = featureTimeInfo(cur, meta, mtime, { sortBy: state.sortBy, docCreated });
+      const createdInfo = featureTimeInfo(cur, meta, mtime, { sortBy: 'created', docCreated });
+      const updatedInfo = featureTimeInfo(cur, meta, mtime, { sortBy: 'updated', docCreated });
+      $('f-time').textContent = formatShortTime(curTime.ms, cur.updated, { hasTime: curTime.hasTime });
+      const createdLabel = formatShortTime(createdInfo.ms, cur.updated, { hasTime: createdInfo.hasTime });
+      const updatedLabel = formatShortTime(updatedInfo.ms, cur.updated, { hasTime: updatedInfo.hasTime });
+      $('f-time').title = [
+        createdLabel ? `${t('sortCreatedLabel')}: ${createdLabel}` : '',
+        updatedLabel ? `${t('sortUpdatedLabel')}: ${updatedLabel}` : '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      if (reconciled.length > 0) {
+        render();
+        void refreshFeatureQaData(cur);
+        void refreshFeatureSessionHints(cur);
+      }
+    }
+  } catch {
+    // non-fatal background hydration failure
+  }
+}
+
 async function load({ reload = false } = {}) {
   if (loading) return loading;
   $('refresh').classList.add('spin');
+  const seq = ++hydrateSeq;
   loading = (async () => {
     try {
       const [ctx, listed, catalogRes, paramsRes] = await Promise.all([
@@ -2191,10 +2585,16 @@ async function load({ reload = false } = {}) {
         }
       }
       const index = state.preview ? getSampleData(getLocale()).index : listed;
-      applyDeckTheme(ctx.theme);
+      applyDeckTheme(ctx.theme, ctx.themeTokens || readRootInlineTokens());
       if (!themeSubscribed && typeof deck.ui?.onThemeChange === 'function') {
         themeSubscribed = true;
-        deck.ui.onThemeChange(applyDeckTheme);
+        deck.ui.onThemeChange(next => {
+          if (next && typeof next === 'object') {
+            applyDeckTheme(next.theme, next.tokens || next.themeTokens || readRootInlineTokens());
+          } else {
+            applyDeckTheme(next, readRootInlineTokens());
+          }
+        });
       }
       if (!state.preview) {
         ensureAgentSubscriptions();
@@ -2226,16 +2626,11 @@ async function load({ reload = false } = {}) {
             if (evt?.values) applyParamsValues(evt.values);
           });
         }
-        state.fileMtimeMap = await fetchFeatureMtimes(index.features || []);
       }
-      const docMetaMap = await fetchFeatureDocMeta(index.features || [], state.fileMtimeMap);
-      state.docCreatedMap = Object.fromEntries(
-        Object.entries(docMetaMap)
-          .filter(([, meta]) => meta.created)
-          .map(([id, meta]) => [id, meta.created]),
-      );
+
+      const diskFeatures = index.features || [];
       if (!state.preview) {
-        await syncStoreFromDisk(index.features || [], docMetaMap);
+        await syncStoreFromDisk(diskFeatures, {});
       }
       for (const [id, meta] of Object.entries(state.featureMeta)) {
         if (!state.docCreatedMap[id] && meta?.docCreated) {
@@ -2243,29 +2638,8 @@ async function load({ reload = false } = {}) {
         }
       }
 
-      const diskFeatures = index.features || [];
-      const diskIds = new Set(diskFeatures.map(f => f.id));
-      const pendingFeatures = Object.values(state.featureMeta)
-        .filter(m => m.pending && !diskIds.has(m.id))
-        .map(m => ({
-          id: m.id,
-          title: m.title || m.id,
-          summary: m.brief || '',
-          status: 'pending',
-          updated: todayIsoDate(new Date(m.createdAt || Date.now())),
-          design: `docs/features/${m.id}/design.html`,
-          prototype: null,
-          screens: [],
-          tickets: [],
-          nodeTickets: {},
-          pending: true,
-        }));
-
       state.index = index;
-      state.features = sortFeaturesDesc([...diskFeatures, ...pendingFeatures], state.featureMeta, state.fileMtimeMap, {
-        sortBy: state.sortBy,
-        docCreatedMap: state.docCreatedMap,
-      });
+      state.features = buildSortedFeatures(diskFeatures);
 
       if (!state.features.some(f => f.id === state.featureId)) {
         const activeFeatures = state.features.filter(f => f.pending || !isFeatureArchived(f.id));
@@ -2289,6 +2663,9 @@ async function load({ reload = false } = {}) {
         void refreshFeatureSessionHints(cur);
       }
       if (reload) reloadFrames();
+
+      // Hydrate mtimes & doc-created metadata asynchronously without blocking initial paint
+      void hydrateFeatureMetadata(diskFeatures, seq);
     } catch (error) {
       app.dataset.state = 'error';
       note(t('loadFailed', { reason: error.message }), true);
@@ -2342,6 +2719,12 @@ function jumpToDesignNode(node) {
 
 window.addEventListener('message', event => {
   const data = event.data;
+  if (data && typeof data === 'object' && (data.event === 'theme.tokens' || data.type === 'theme.tokens')) {
+    const incomingTokens = data.tokens || data.payload?.tokens || data.payload || readRootInlineTokens();
+    const incomingTheme = data.theme || data.payload?.theme || state.theme;
+    applyDeckTheme(incomingTheme, incomingTokens);
+    return;
+  }
   const kind = kindOf(data?.type);
   if (!kind) return;
   const entry = [...frames.entries()].find(([, frame]) => frame.contentWindow === event.source);
@@ -2350,6 +2733,7 @@ window.addEventListener('message', event => {
   const f = feature();
   if (kind === 'ready') {
     frame.dataset.ready = '1';
+    forwardTokensToFrame(event.source);
     if (slot === 'design' && f && !f.pending) {
       const nodes = Object.fromEntries(Object.entries(f.nodeTickets || {}).map(([id, list]) => [id, { t: list }]));
       const tickets = Object.fromEntries((f.tickets || []).map(x => [x.path, { n: x.n, title: x.title }]));
@@ -3269,6 +3653,16 @@ $('empty-new').addEventListener('click', openNew);
 
 $('sort-toggle')?.addEventListener('click', () => void setSortBy(state.sortBy === 'created' ? 'updated' : 'created'));
 $('rail-toggle').addEventListener('click', () => void setRailCollapsed(!state.railCollapsed));
+$('rail-scrim')?.addEventListener('click', () => {
+  state.railCollapsed = true;
+  syncRailToggle();
+});
+narrowMq?.addEventListener?.('change', e => {
+  if (e.matches && !state.railCollapsed) {
+    state.railCollapsed = true;
+  }
+  syncRailToggle();
+});
 $('f-more').addEventListener('click', e => {
   e.stopPropagation();
   const f = feature();
@@ -3409,6 +3803,10 @@ document.addEventListener('keydown', e => {
     if (confirmDialog && !confirmDialog.hidden) closeConfirmDialog();
     const pop = $('agent-pop');
     if (pop && !pop.hidden) setAgentPopOpen(false);
+    if (isNarrowViewport() && !state.railCollapsed) {
+      state.railCollapsed = true;
+      syncRailToggle();
+    }
   }
 });
 $('agent-select').addEventListener('change', () => {

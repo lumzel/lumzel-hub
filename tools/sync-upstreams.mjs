@@ -1606,9 +1606,19 @@ const DECK_FIELDS = new Set([
   'version',
 ]);
 const DECK_USES_KEYS = new Set(['skills', 'mcp', 'agents', 'hooks', 'rules']);
-const DECK_PERMISSIONS = new Set(['agent', 'db', 'files', 'upload', 'exec', 'fetch', 'open', 'workflow']);
+const DECK_PERMISSIONS = new Set(['agent', 'db', 'files', 'upload', 'exec', 'fetch', 'open', 'workflow', 'lumzel']);
 const DECK_AGENT_KEYS = new Set(['provider', 'model', 'effort', 'permissions', 'loadout', 'plan']);
-const DECK_CAPABILITY_KEYS = new Set(['files', 'exec', 'fetch', 'open']);
+const DECK_CAPABILITY_KEYS = new Set(['files', 'exec', 'fetch', 'open', 'lumzel']);
+const DECK_LUMZEL_TOOLS = new Set([
+  'worktree_list',
+  'worktree_create',
+  'app_preview_list',
+  'app_preview_start',
+  'app_preview_stop',
+  'app_preview_restart',
+  'run_command_list',
+  'terminal_run',
+]);
 const DECK_STORE_KEYS = new Set(['scope', 'migrations']);
 const DECK_I18N_KEYS = new Set(['title', 'description']);
 const DECK_PARAM_KEYS = new Set([
@@ -2230,6 +2240,12 @@ function verifyDeckManifest(entry, deckDir, deckJsonPath, errors) {
           for (const origin of v) {
             if (!validOriginPattern(origin)) {
               errors.push(`[deck:${entry.id}] invalid capabilities.${k} origin ${JSON.stringify(origin)}`);
+            }
+          }
+        } else if (k === 'lumzel') {
+          for (const tool of v) {
+            if (!DECK_LUMZEL_TOOLS.has(tool)) {
+              errors.push(`[deck:${entry.id}] unknown capabilities.lumzel tool ${JSON.stringify(tool)}`);
             }
           }
         }

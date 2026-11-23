@@ -72,6 +72,8 @@ async function boot() {
       const agentBtn = document.getElementById('agent-btn');
       const checksPop = document.getElementById('checks-pop');
       const demoPop = document.getElementById('demo-pop');
+      const hdEl = document.getElementById('hd');
+      const hdMenuBtn = document.getElementById('hd-menu-btn');
       if (agentPop && !agentPop.hidden) {
         agentPop.hidden = true;
         if (agentBtn) agentBtn.setAttribute('aria-expanded', 'false');
@@ -83,6 +85,18 @@ async function boot() {
       }
       if (demoPop && !demoPop.hidden) {
         demoPop.hidden = true;
+        return;
+      }
+      if (hdEl && hdEl.dataset.menuOpen === 'true') {
+        hdEl.dataset.menuOpen = 'false';
+        if (hdMenuBtn) {
+          hdMenuBtn.setAttribute('aria-expanded', 'false');
+          hdMenuBtn.classList.remove('active');
+        }
+        return;
+      }
+      if (!isWideViewport() && store.get().ui.inspectorOpen) {
+        host.savePrefs({ inspectorOpen: false });
         return;
       }
       store.set({ selection: null });

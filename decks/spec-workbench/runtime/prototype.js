@@ -27,8 +27,20 @@
     new URLSearchParams(location.search).get('theme') ||
     saved ||
     (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const applyTokens = (theme, tokens) => {
+    if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+    if (tokens && typeof tokens === 'object') {
+      for (const [k, v] of Object.entries(tokens)) {
+        if (typeof k === 'string' && k.startsWith('--') && typeof v === 'string') {
+          document.documentElement.style.setProperty(k, v);
+        }
+      }
+    }
+  };
   window.addEventListener('message', e => {
-    if (e.data && e.data.type === 'doc:theme') document.documentElement.dataset.theme = e.data.theme;
+    if (!e.data || typeof e.data !== 'object') return;
+    if (e.data.type === 'doc:theme' || e.data.type === 'lumzel:theme') document.documentElement.dataset.theme = e.data.theme;
+    if (e.data.type === 'doc:tokens' || e.data.type === 'lumzel:tokens') applyTokens(e.data.theme, e.data.tokens);
   });
   // Inside the Lumzel page's frame: tell it the current screen, and let it open design Nodes in the whole window.
   const parent = window.parent !== window ? window.parent : null;
@@ -59,20 +71,20 @@
     /* tokens from DESIGN.md; the prototype does not load lumzel.css */
     ::-webkit-scrollbar { width: 10px; height: 10px; }
     ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(9,9,11,.14); border: 3px solid transparent; border-radius: 999px; background-clip: content-box; min-height: 32px; min-width: 32px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(9,9,11,.30); background-clip: content-box; }
-    :root[data-theme="dark"]::-webkit-scrollbar-thumb, :root[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(250,250,250,.14); background-clip: content-box; }
-    :root[data-theme="dark"]::-webkit-scrollbar-thumb:hover, :root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(250,250,250,.30); background-clip: content-box; }
-    .lumzel-proto-bar { position: fixed; right: 14px; bottom: 14px; z-index: 2147483647; display: flex; gap: 6px; font: 500 12px/1 "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }
-    .lumzel-proto-bar a, .lumzel-proto-bar button { height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid #e4e4e7; background: #fff; color: #09090b; text-decoration: none; cursor: pointer; font: inherit; box-shadow: 0 16px 40px rgba(15,23,42,.14), 0 3px 10px rgba(15,23,42,.08); }
-    .lumzel-proto-bar button[aria-pressed="true"] { background: #18181b; border-color: #18181b; color: #fafafa; }
-    html.lumzel-linking [data-doc-node] { outline: 2px dashed #0070e3; outline-offset: 2px; cursor: alias; }
-    html.lumzel-linking [data-doc-node]:hover { outline-style: solid; background-color: rgba(0,112,227,.06); }
-    .lumzel-proto-tip { position: fixed; z-index: 2147483647; pointer-events: none; padding: 4px 7px; border-radius: 4px; background: #18181b; color: #fafafa; font: 11px/1.3 "Geist Mono", ui-monospace, monospace; box-shadow: 0 8px 24px rgba(15,23,42,.08), 0 2px 6px rgba(15,23,42,.05); }
-    :root[data-theme="dark"] .lumzel-proto-bar a, :root[data-theme="dark"] .lumzel-proto-bar button { background: #18181b; border-color: rgba(255,255,255,.10); color: #fafafa; }
-    :root[data-theme="dark"] .lumzel-proto-bar button[aria-pressed="true"] { background: #e4e4e7; border-color: #e4e4e7; color: #18181b; }
-    @keyframes lumzel-flash { 0%, 100% { outline-color: transparent; } 50% { outline-color: #0070e3; } }
-    .lumzel-proto-flash { outline: 3px solid #0070e3; outline-offset: 3px; animation: lumzel-flash .5s 3; }${
+    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--fg, #09090b) 14%, transparent); border: 3px solid transparent; border-radius: 999px; background-clip: content-box; min-height: 32px; min-width: 32px; }
+    ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--fg, #09090b) 30%, transparent); background-clip: content-box; }
+    :root[data-theme="dark"]::-webkit-scrollbar-thumb, :root[data-theme="dark"] ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--fg, #fafafa) 14%, transparent); background-clip: content-box; }
+    :root[data-theme="dark"]::-webkit-scrollbar-thumb:hover, :root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--fg, #fafafa) 30%, transparent); background-clip: content-box; }
+    .lumzel-proto-bar { position: fixed; right: 14px; bottom: 14px; z-index: 2147483647; display: flex; gap: 6px; font: 500 12px/1 var(--sans, "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif); }
+    .lumzel-proto-bar a, .lumzel-proto-bar button { height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border-strong, var(--border, #e4e4e7)); background: var(--surface, #fff); color: var(--fg, #09090b); text-decoration: none; cursor: pointer; font: inherit; box-shadow: var(--shadow-floating, var(--deck-shadow-lg, 0 16px 40px rgba(15,23,42,.14), 0 3px 10px rgba(15,23,42,.08))); }
+    .lumzel-proto-bar button[aria-pressed="true"] { background: var(--primary, #18181b); border-color: var(--primary, #18181b); color: var(--primary-fg, #fafafa); }
+    html.lumzel-linking [data-doc-node] { outline: 2px dashed var(--brand, #0070e3); outline-offset: 2px; cursor: alias; }
+    html.lumzel-linking [data-doc-node]:hover { outline-style: solid; background-color: color-mix(in srgb, var(--brand, #0070e3) 8%, transparent); }
+    .lumzel-proto-tip { position: fixed; z-index: 2147483647; pointer-events: none; padding: 4px 7px; border-radius: 4px; background: var(--primary, #18181b); color: var(--primary-fg, #fafafa); font: 11px/1.3 var(--mono, "Geist Mono", ui-monospace, monospace); box-shadow: var(--shadow-menu, var(--deck-shadow, 0 8px 24px rgba(15,23,42,.08), 0 2px 6px rgba(15,23,42,.05))); }
+    :root[data-theme="dark"] .lumzel-proto-bar a, :root[data-theme="dark"] .lumzel-proto-bar button { background: var(--surface, #18181b); border-color: var(--border-strong, var(--border, rgba(255,255,255,.10))); color: var(--fg, #fafafa); }
+    :root[data-theme="dark"] .lumzel-proto-bar button[aria-pressed="true"] { background: var(--primary, #e4e4e7); border-color: var(--primary, #e4e4e7); color: var(--primary-fg, #18181b); }
+    @keyframes lumzel-flash { 0%, 100% { outline-color: transparent; } 50% { outline-color: var(--brand, #0070e3); } }
+    .lumzel-proto-flash { outline: 3px solid var(--brand, #0070e3); outline-offset: 3px; animation: lumzel-flash .5s 3; }${
       bare
         ? `
     .lumzel-proto-bar, [data-doc-intro] { display: none !important; }`

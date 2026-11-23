@@ -62,17 +62,29 @@
         {
           "value": "strict",
           "label": "Strict (test-first required)",
-          "i18n": { "zh-CN": { "label": "严格（必须先写失败测试）" } }
+          "i18n": {
+            "zh-CN": {
+              "label": "严格（必须先写失败测试）"
+            }
+          }
         },
         {
           "value": "balanced",
           "label": "Balanced (default)",
-          "i18n": { "zh-CN": { "label": "均衡（默认）" } }
+          "i18n": {
+            "zh-CN": {
+              "label": "均衡（默认）"
+            }
+          }
         },
         {
           "value": "relaxed",
           "label": "Relaxed (verify after)",
-          "i18n": { "zh-CN": { "label": "宽松（实现后补验证）" } }
+          "i18n": {
+            "zh-CN": {
+              "label": "宽松（实现后补验证）"
+            }
+          }
         }
       ],
       "i18n": {
@@ -111,5 +123,5 @@
       }
     }
   ],
-  "version": "2.2.2"
+  "version": "2.3.0"
 }

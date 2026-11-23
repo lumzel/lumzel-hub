@@ -8,6 +8,11 @@
       "preserveLocalSkills": true,
       "skills": [
         {
+          "name": "answer-me-with-html",
+          "repo": "qingyuna/answer-me-with-html",
+          "path": "skills/answer-me-with-html"
+        },
+        {
           "name": "show-me",
           "repo": "humanlayer/skills",
           "path": "plugins/show-me/skills/show-me"
@@ -1565,6 +1570,10 @@
     "alchaincyf/huashu-design": {
       "branch": "master",
       "sha": "937113133ae446a69ea19d4ceed6cbd2ed3c7735"
+    },
+    "qingyuna/answer-me-with-html": {
+      "branch": "main",
+      "sha": "edccab07c012e2141585f8ddb18a62e01664fa2b"
     }
   }
 }

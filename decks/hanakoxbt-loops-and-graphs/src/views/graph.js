@@ -650,6 +650,7 @@ export function mountGraph(store, host) {
   );
 
   let prevViewState = null;
+  let prevSlice = null;
 
   store.subscribe(
     s => ({
@@ -670,6 +671,38 @@ export function mountGraph(store, host) {
       const st = store.get();
       const nowSec = st.ui.tick || Math.floor(Date.now() / 1000);
       const view = derive(slice.run, slice.preset, slice.telemetryRev, st.telemetry.byUnit, nowSec);
+
+      const isTickOnly =
+        Boolean(builtTopoKey) &&
+        prevSlice !== null &&
+        prevSlice.run === slice.run &&
+        prevSlice.mode === slice.mode &&
+        prevSlice.preset === slice.preset &&
+        prevSlice.pending === slice.pending &&
+        prevSlice.telemetryRev === slice.telemetryRev &&
+        prevSlice.lessonsRev === slice.lessonsRev &&
+        prevSlice.selection === slice.selection &&
+        prevSlice.locale === slice.locale &&
+        prevSlice.banner === slice.banner &&
+        prevSlice.wf === slice.wf &&
+        prevSlice.inspectorOpen === slice.inspectorOpen;
+
+      prevSlice = slice;
+
+      if (isTickOnly) {
+        // Fast path on 1Hz tick: patch only elapsed duration text nodes in place
+        for (const [nid, nr] of nodeRefs.entries()) {
+          if (!nr.meterEl) continue;
+          const nv = view.nodes[nid];
+          if (!nv || nv.startedAt === null || nv.finishedAt !== null) continue;
+          const iterPart = nv.iteration > 0 ? `${nv.iteration}/${nv.max}` : '';
+          const durPart = nv.durationSec !== null ? fmtDuration(nv.durationSec) : '';
+          setText(nr.meterEl, [iterPart, durPart].filter(Boolean).join(' · '));
+        }
+        lanesRenderer.patchTick(view);
+        return;
+      }
+
       const unknownNodes = (slice.wf && slice.wf.unknownNodes) || [];
       const topoKey = `${view.preset}|${view.lanes.length}|${unknownNodes.join(',')}|${slice.locale}`;
 

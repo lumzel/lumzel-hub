@@ -150,10 +150,29 @@ export function createHost(store, demo) {
     }, ms);
   }
 
+  function applyTheme(input) {
+    const mode =
+      typeof input === 'string'
+        ? input
+        : input && typeof input === 'object'
+          ? input.theme || input.mode || ''
+          : '';
+    const theme = mode === 'dark' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = theme;
+    if (input && typeof input === 'object' && input.tokens && typeof input.tokens === 'object') {
+      const rootStyle = document.documentElement.style;
+      for (const [k, v] of Object.entries(input.tokens)) {
+        if (k.startsWith('--') && typeof v === 'string') {
+          rootStyle.setProperty(k, v);
+        }
+      }
+    }
+    return theme;
+  }
+
   function applyContext(ctx) {
     if (!ctx) return;
-    const theme = ctx.theme === 'dark' ? 'dark' : 'light';
-    document.documentElement.dataset.theme = theme;
+    const theme = applyTheme(ctx.themeTokens ? { theme: ctx.theme, tokens: ctx.themeTokens } : ctx.theme);
     setLocale(ctx.locale || 'zh-CN');
     store.set(s => ({
       ...s,
@@ -536,8 +555,7 @@ export function createHost(store, demo) {
 
     if (!themeUnsub && typeof window.deck?.ui?.onThemeChange === 'function') {
       themeUnsub = window.deck.ui.onThemeChange(nextTheme => {
-        const theme = nextTheme === 'dark' ? 'dark' : 'light';
-        document.documentElement.dataset.theme = theme;
+        const theme = applyTheme(nextTheme);
         store.set(s => ({ ...s, ctx: { ...s.ctx, theme } }));
       });
     }

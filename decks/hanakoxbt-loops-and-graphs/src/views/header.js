@@ -4,6 +4,8 @@ import { t } from '../i18n.js';
 import { derive } from '../runModel.js';
 
 export function mountHeader(store, host) {
+  const hdEl = document.getElementById('hd');
+  const hdMenuBtn = document.getElementById('hd-menu-btn');
   const ctxEl = document.getElementById('ctx');
   const presetEl = document.getElementById('preset');
   const demoTagEl = document.getElementById('demo-tag');
@@ -65,12 +67,29 @@ export function mountHeader(store, host) {
     });
   }
 
+  function setHdMenuOpen(open) {
+    if (!hdEl || !hdMenuBtn) return;
+    hdEl.dataset.menuOpen = open ? 'true' : 'false';
+    hdMenuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    hdMenuBtn.classList.toggle('active', open);
+  }
+
+  if (hdMenuBtn && hdEl) {
+    hdMenuBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      setHdMenuOpen(hdEl.dataset.menuOpen !== 'true');
+    });
+  }
+
   document.addEventListener('click', e => {
     if (!demoPop.hidden && !demoMenuWrap.contains(e.target) && e.target !== demoTagEl) {
       demoPop.hidden = true;
     }
     if (agentPop && !agentPop.hidden && agentWrap && !agentWrap.contains(e.target)) {
       setAgentPopOpen(false);
+    }
+    if (hdEl && hdEl.dataset.menuOpen === 'true' && !hdEl.contains(e.target)) {
+      setHdMenuOpen(false);
     }
   });
 

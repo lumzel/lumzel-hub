@@ -27,7 +27,8 @@
     "exec",
     "agent",
     "db",
-    "open"
+    "open",
+    "lumzel"
   ],
   "capabilities": {
     "exec": [
@@ -37,9 +38,15 @@
     ],
     "open": [
       "https://github.com/*",
+      "https://cli.github.com/*",
       "https://user-images.githubusercontent.com/*",
       "https://private-user-images.githubusercontent.com/*",
       "https://raw.githubusercontent.com/*"
+    ],
+    "lumzel": [
+      "worktree_list",
+      "worktree_create",
+      "terminal_run"
     ]
   },
   "store": {
@@ -147,5 +154,5 @@
       }
     }
   ],
-  "version": "2.0.0"
+  "version": "3.0.0"
 }

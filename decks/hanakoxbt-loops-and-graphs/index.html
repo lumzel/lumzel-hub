@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -26,7 +26,10 @@
       <button type="button" role="tab" aria-selected="true" data-preset="feature-ship" data-i18n="presetShip">Feature Ship</button>
       <button type="button" role="tab" aria-selected="false" data-preset="code-review" data-i18n="presetReview">Code Review</button>
     </div>
-    <div class="hd-r">
+    <button type="button" class="ghost ico hd-menu-btn" id="hd-menu-btn" aria-expanded="false" aria-controls="hd-r" data-i18n-title="menu" aria-label="Menu">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.2h11M2.5 8h11M2.5 11.8h11" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></svg>
+    </button>
+    <div class="hd-r" id="hd-r">
       <span class="demo-tag" id="demo-tag" hidden data-i18n="demoTag">DEMO · 样例数据</span>
       <div class="demo-menu-wrap" id="demo-menu-wrap" hidden>
         <div class="pop demo-pop" id="demo-pop" hidden></div>
@@ -114,6 +117,7 @@
     <div class="banner" id="banner" hidden></div>
   </main>
 
+  <div class="insp-scrim" id="insp-scrim" hidden></div>
   <aside class="inspector" id="insp">
     <div class="insp-grip" id="grip" role="separator" aria-orientation="vertical" tabindex="-1"></div>
     <nav class="tabs" role="tablist">
@@ -121,6 +125,9 @@
       <button type="button" role="tab" data-tab="gate" data-i18n="tabGate">Gate</button>
       <button type="button" role="tab" data-tab="vault" data-i18n="tabVault">Vault</button>
       <button type="button" role="tab" data-tab="history" data-i18n="tabHistory">History</button>
+      <button type="button" class="ghost ico insp-close" id="insp-close-btn" data-i18n-title="close" aria-label="Close">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      </button>
     </nav>
     <div class="insp-body" id="insp-body"></div>
   </aside>

@@ -361,5 +361,25 @@ export function createLanesRenderer(layerEl, store, host) {
     });
   }
 
-  return { update };
+  function patchTick(view) {
+    if (!refs) return;
+    const lanes = view.lanes || [];
+    const isReview = view.preset === 'code-review';
+    const maxSq = isReview ? 2 : 3;
+    lanes.forEach((lane, idx) => {
+      if (lane.startedAt === null || lane.startedAt === undefined) return;
+      if (lane.finishedAt !== null && lane.finishedAt !== undefined) return;
+      const lr = refs.laneRefs[idx];
+      if (!lr) return;
+      const sqList = isReview
+        ? lane.attempts.evidence || []
+        : (lane.attempts.green && lane.attempts.green.length ? lane.attempts.green : lane.attempts.red) || [];
+      const dur = fmtDuration(Math.max(0, view.nowSec - lane.startedAt));
+      const countTxt = sqList.length ? `${sqList.length}/${maxSq}` : '';
+      const meterStr = [countTxt, dur].filter(Boolean).join('  ');
+      setText(lr.meterEl, meterStr || (lane.blueprint ? '' : '0/' + maxSq));
+    });
+  }
+
+  return { update, patchTick };
 }

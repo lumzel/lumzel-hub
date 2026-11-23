@@ -3,6 +3,7 @@ import { imeGuard } from '../lib/ime.js';
 import { t } from '../i18n.js';
 
 const SCOPES = ['split', 'check', 'impl', 'review', 'general'];
+const BATCH_SIZE = 30;
 
 export function createVaultRenderer(store, host) {
   let editingId = null;
@@ -11,8 +12,70 @@ export function createVaultRenderer(store, host) {
   let confirmDeleteId = null;
   let addDraft = '';
   let addScope = 'general';
+  let activeObservers = [];
+
+  function disconnectObservers() {
+    for (const obs of activeObservers) obs.disconnect();
+    activeObservers = [];
+  }
+
+  function appendLazyBatch(parentEl, scrollRoot, items, renderItem) {
+    let rendered = 0;
+    let sentinel = null;
+    let obs = null;
+
+    function loadNext() {
+      const nextEnd = Math.min(items.length, rendered + BATCH_SIZE);
+      const frag = document.createDocumentFragment();
+      for (let i = rendered; i < nextEnd; i++) {
+        frag.appendChild(renderItem(items[i]));
+      }
+      if (sentinel && sentinel.parentNode === parentEl) {
+        parentEl.insertBefore(frag, sentinel);
+      } else {
+        parentEl.appendChild(frag);
+      }
+      rendered = nextEnd;
+      const remaining = items.length - rendered;
+      if (remaining <= 0) {
+        if (sentinel && sentinel.parentNode) sentinel.remove();
+        if (obs) {
+          obs.disconnect();
+          obs = null;
+        }
+      } else if (sentinel) {
+        const btn = sentinel.querySelector('button');
+        if (btn) btn.textContent = t('loadMore', { n: remaining });
+      }
+    }
+
+    loadNext();
+
+    if (rendered < items.length) {
+      const moreBtn = h(
+        'button',
+        { type: 'button', class: 'ghost', onClick: loadNext },
+        t('loadMore', { n: items.length - rendered }),
+      );
+      sentinel = h('div', { class: 'lazy-sentinel' }, moreBtn);
+      parentEl.appendChild(sentinel);
+      if (typeof IntersectionObserver !== 'undefined') {
+        obs = new IntersectionObserver(
+          entries => {
+            if (entries.some(e => e.isIntersecting)) {
+              loadNext();
+            }
+          },
+          { root: scrollRoot, rootMargin: '160px' },
+        );
+        obs.observe(sentinel);
+        activeObservers.push(obs);
+      }
+    }
+  }
 
   return function renderVault(container) {
+    disconnectObservers();
     clear(container);
     const st = store.get();
     const lessons = st.lessons.list || [];
@@ -192,13 +255,14 @@ export function createVaultRenderer(store, host) {
 
     if (active.length) {
       const sec = h('div', { class: 'sec' }, h('div', { class: 'sec-hd' }, `${t('vaultActive')} (${active.length})`));
-      for (const item of active) sec.appendChild(renderLessonRow(item, false));
       container.appendChild(sec);
+      appendLazyBatch(sec, container, active, item => renderLessonRow(item, false));
     }
 
     if (proposed.length) {
       const sec = h('div', { class: 'sec' }, h('div', { class: 'sec-hd' }, `${t('vaultProposed')} (${proposed.length})`));
-      for (const item of proposed) {
+      container.appendChild(sec);
+      appendLazyBatch(sec, container, proposed, item => {
         const body = h(
           'div',
           { class: 'lesson-main' },
@@ -234,44 +298,41 @@ export function createVaultRenderer(store, host) {
             ),
           ),
         );
-        sec.appendChild(h('div', { class: 'lesson-row' }, body));
-      }
-      container.appendChild(sec);
+        return h('div', { class: 'lesson-row' }, body);
+      });
     }
 
     if (fromFile.length) {
       const sec = h('div', { class: 'sec' }, h('div', { class: 'sec-hd' }, `${t('vaultFromFile')} (${fromFile.length})`));
-      for (const fl of fromFile) {
-        sec.appendChild(
+      container.appendChild(sec);
+      appendLazyBatch(sec, container, fromFile, fl =>
+        h(
+          'div',
+          { class: 'lesson-row' },
           h(
             'div',
-            { class: 'lesson-row' },
-            h(
-              'div',
-              { class: 'lesson-main' },
-              h('div', { class: 'lesson-text' }, fl.text),
-              h('div', { class: 'lesson-meta' }, h('span', { class: 'chip', style: { height: '18px', fontSize: '10px' } }, fl.scope)),
-            ),
-            h(
-              'button',
-              {
-                type: 'button',
-                class: 'secondary',
-                style: { height: '24px', padding: '0 8px' },
-                onClick: () => host.lessons.importFromFile(fl),
-              },
-              t('importBtn'),
-            ),
+            { class: 'lesson-main' },
+            h('div', { class: 'lesson-text' }, fl.text),
+            h('div', { class: 'lesson-meta' }, h('span', { class: 'chip', style: { height: '18px', fontSize: '10px' } }, fl.scope)),
           ),
-        );
-      }
-      container.appendChild(sec);
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'secondary',
+              style: { height: '24px', padding: '0 8px' },
+              onClick: () => host.lessons.importFromFile(fl),
+            },
+            t('importBtn'),
+          ),
+        ),
+      );
     }
 
     if (muted.length) {
       const sec = h('div', { class: 'sec' }, h('div', { class: 'sec-hd' }, `${t('vaultMuted')} (${muted.length})`));
-      for (const item of muted) sec.appendChild(renderLessonRow(item, true));
       container.appendChild(sec);
+      appendLazyBatch(sec, container, muted, item => renderLessonRow(item, true));
     }
 
     // Add manual constraint row

@@ -29,6 +29,95 @@ const VIEW = { width: 800, height: 500 };
 const SCALE = 2;
 const QUALITY = '80';
 const THEMES = ['light', 'dark'];
+const DEFAULT_THEME_PRESET = 'lumzel';
+// Matches Lumzel's default `lumzel` theme (`buildHostThemeTokens` in apps/desktop/src/lib/theme.ts).
+const DEFAULT_THEME_TOKENS = {
+  light: {
+    '--deck-bg': '#fbf9f6',
+    '--deck-surface': '#ffffff',
+    '--deck-surface-subtle': '#f3efe9',
+    '--deck-surface-hover': '#f6f3ee',
+    '--deck-border': 'rgba(42, 32, 22, 0.075)',
+    '--deck-border-strong': 'rgba(42, 32, 22, 0.12)',
+    '--deck-text': '#1b1714',
+    '--deck-text-secondary': '#5c554e',
+    '--deck-muted': '#8a837b',
+    '--deck-accent': '#1b1714',
+    '--deck-accent-hover': '#000000',
+    '--deck-accent-soft': 'rgba(199, 78, 36, 0.1)',
+    '--deck-accent-contrast': '#fbf8f3',
+    '--deck-ok': '#15803d',
+    '--deck-err': '#b91c1c',
+    '--deck-warn': '#b45309',
+    '--deck-shadow': '0 1px 2px rgba(42, 32, 22, 0.04), 0 2px 8px -2px rgba(42, 32, 22, 0.05)',
+    '--deck-shadow-lg':
+      '0 0 0 1px rgba(42, 32, 22, 0.05), 0 8px 24px -6px rgba(42, 32, 22, 0.12), 0 32px 72px -16px rgba(42, 32, 22, 0.22)',
+    '--shell': '#f3efe9',
+    '--canvas': '#fbf9f6',
+    '--surface': '#ffffff',
+    '--surface-hover': '#f6f3ee',
+    '--surface-selected': '#efebe5',
+    '--border': 'rgba(42, 32, 22, 0.075)',
+    '--border-strong': 'rgba(42, 32, 22, 0.12)',
+    '--fg': '#1b1714',
+    '--muted': '#5c554e',
+    '--faint': '#8a837b',
+    '--primary': '#1b1714',
+    '--primary-fg': '#fbf8f3',
+    '--primary-hover': '#000000',
+    '--brand': '#c74e24',
+    '--brand-soft': 'rgba(199, 78, 36, 0.1)',
+    '--ring': '#c74e24',
+    '--planned': '#8a837b',
+    '--in-progress': '#c74e24',
+    '--done': '#15803d',
+    '--gate': '#b45309',
+    '--changed': '#2563eb',
+    '--drift': '#b91c1c',
+  },
+  dark: {
+    '--deck-bg': '#141210',
+    '--deck-surface': '#1a1715',
+    '--deck-surface-subtle': '#0e0d0c',
+    '--deck-surface-hover': '#211d1a',
+    '--deck-border': 'rgba(243, 234, 219, 0.08)',
+    '--deck-border-strong': 'rgba(243, 234, 219, 0.14)',
+    '--deck-text': '#f3eadb',
+    '--deck-text-secondary': '#a89e93',
+    '--deck-muted': '#766d64',
+    '--deck-accent': '#f3eadb',
+    '--deck-accent-hover': '#ffffff',
+    '--deck-accent-soft': 'rgba(232, 105, 59, 0.14)',
+    '--deck-accent-contrast': '#12100e',
+    '--deck-ok': '#34d399',
+    '--deck-err': '#f87171',
+    '--deck-warn': '#fbbf24',
+    '--deck-shadow': '0 1px 2px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(243, 234, 219, 0.045)',
+    '--deck-shadow-lg': '0 24px 64px rgba(0, 0, 0, 0.72), 0 4px 16px rgba(0, 0, 0, 0.46)',
+    '--shell': '#0e0d0c',
+    '--canvas': '#141210',
+    '--surface': '#1a1715',
+    '--surface-hover': '#211d1a',
+    '--surface-selected': '#292420',
+    '--border': 'rgba(243, 234, 219, 0.08)',
+    '--border-strong': 'rgba(243, 234, 219, 0.14)',
+    '--fg': '#f3eadb',
+    '--muted': '#a89e93',
+    '--faint': '#766d64',
+    '--primary': '#f3eadb',
+    '--primary-fg': '#12100e',
+    '--primary-hover': '#ffffff',
+    '--brand': '#e8693b',
+    '--brand-soft': 'rgba(232, 105, 59, 0.14)',
+    '--ring': '#e8693b',
+    '--planned': '#766d64',
+    '--in-progress': '#e8693b',
+    '--done': '#34d399',
+    '--gate': '#fbbf24',
+    '--changed': '#60a5fa',
+    '--drift': '#f87171',
+  },
+};
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -42,12 +131,25 @@ const TYPES = {
 };
 
 // The page that stands in for Lumzel: one sandboxed frame and the preview bridge.
-const hostPage = (theme, title) => `<!doctype html><meta charset="utf-8">
+const hostPage = (theme, title) => {
+  const polarity = theme === 'dark' ? 'dark' : 'light';
+  const themeTokens = DEFAULT_THEME_TOKENS[polarity];
+  return `<!doctype html><meta charset="utf-8">
 <style>html,body,iframe{margin:0;border:0;width:100%;height:100%;display:block}</style>
 <iframe id="deck" sandbox="allow-scripts"></iframe>
 <script>
   const frame = document.getElementById('deck');
-  const context = { project: 'Sample project', branch: 'main', theme: ${JSON.stringify(theme)}, deck: ${JSON.stringify(title)}, locale: 'zh-CN', preview: true };
+  const themeTokens = ${JSON.stringify(themeTokens)};
+  const context = {
+    project: 'Sample project',
+    branch: 'main',
+    theme: ${JSON.stringify(polarity)},
+    themePreset: ${JSON.stringify(DEFAULT_THEME_PRESET)},
+    themeTokens,
+    deck: ${JSON.stringify(title)},
+    locale: 'zh-CN',
+    preview: true,
+  };
   addEventListener('message', event => {
     const message = event.data;
     if (event.source !== frame.contentWindow || !message || message.v !== 1) return;
@@ -56,9 +158,18 @@ const hostPage = (theme, title) => `<!doctype html><meta charset="utf-8">
       ? { ok: true, result: context }
       : { ok: false, error: 'PermissionDenied: preview' };
     frame.contentWindow.postMessage({ id: message.id, ...reply }, '*');
+    if (message.op === 'ui.context') {
+      frame.contentWindow.postMessage({
+        event: 'theme.tokens',
+        theme: context.theme,
+        presetId: context.themePreset,
+        tokens: themeTokens,
+      }, '*');
+    }
   });
   frame.src = new URLSearchParams(location.search).get('src');
 </script>`;
+};
 
 // What Lumzel sends with every file of a previewed Deck (MARKET_PREVIEW_CSP in docserve.rs), with this
 // server's origin in place of lumzel://market-preview: a Deck that needs more than this has no preview.

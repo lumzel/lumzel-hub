@@ -7,10 +7,18 @@
   "homepage": "https://agent-layers.vercel.app",
   "icon": "branch",
   "entry": "index.html",
-  "version": "1.5.0",
-  "permissions": ["workflow", "db", "files", "agent", "open"],
+  "version": "1.6.0",
+  "permissions": [
+    "workflow",
+    "db",
+    "files",
+    "agent",
+    "open"
+  ],
   "capabilities": {
-    "files": [".lumzel/hanakoxbt-loops-and-graphs/**"]
+    "files": [
+      ".lumzel/hanakoxbt-loops-and-graphs/**"
+    ]
   },
   "store": {
     "scope": "project"
@@ -75,9 +83,14 @@
       }
     }
   ],
-  "workflows": ["feature-ship", "code-review"],
+  "workflows": [
+    "feature-ship",
+    "code-review"
+  ],
   "uses": {
-    "skills": ["hanakoxbt-loops-and-graphs-guide"]
+    "skills": [
+      "hanakoxbt-loops-and-graphs-guide"
+    ]
   },
   "i18n": {
     "en": {

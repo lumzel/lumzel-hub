@@ -31,6 +31,21 @@
     return theme;
   }
 
+  function applyThemeTokens(tokens, presetId) {
+    var root = window.document && window.document.documentElement;
+    if (!root) return;
+    if (presetId && typeof root.setAttribute === 'function') {
+      root.setAttribute('data-theme-preset', String(presetId));
+    }
+    if (tokens && root.style && typeof root.style.setProperty === 'function') {
+      var keys = Object.keys(tokens);
+      for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        root.style.setProperty(key, String(tokens[key]));
+      }
+    }
+  }
+
   function emitDomEvent(el, name, detail) {
     if (!el || typeof el.dispatchEvent !== 'function' || typeof window.CustomEvent !== 'function') return;
     try {
@@ -41,6 +56,11 @@
   }
 
   function handlePushEvent(msg) {
+    if (msg.event === 'theme.tokens') {
+      if (msg.theme) applyTheme(msg.theme);
+      applyThemeTokens(msg.tokens, msg.presetId);
+      return;
+    }
     if (msg.event === 'theme.changed') {
       var nextTheme = applyTheme(msg.theme);
       if (!nextTheme) return;
@@ -106,10 +126,7 @@
     if (msg.event === 'host.edit') {
       var action = msg.action === 'redo' ? 'redo' : 'undo';
       var activeEl = window.document && window.document.activeElement;
-      if (
-        activeEl &&
-        (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)
-      ) {
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
         try {
           window.document.execCommand(action);
         } catch {
@@ -421,6 +438,9 @@
     context: function () {
       return call('ui.context').then(function (ctx) {
         if (ctx && ctx.theme) applyTheme(ctx.theme);
+        if (ctx && (ctx.themeTokens || ctx.themePreset)) {
+          applyThemeTokens(ctx.themeTokens, ctx.themePreset);
+        }
         return ctx;
       });
     },
@@ -580,9 +600,60 @@
         return call('files.write', args);
       },
       upload: uploadFile,
+      uploadFile: uploadFile,
       pick: function (options) {
         return call('files.pick', options || {}).then(function (res) {
           return res && Array.isArray(res.files) ? res.files : [];
+        });
+      },
+      delete: function (path) {
+        return call('files.delete', { path: path ? String(path) : '' });
+      },
+      rename: function (from, to, options) {
+        var args = {
+          from: from ? String(from) : '',
+          to: to ? String(to) : '',
+        };
+        if (options && typeof options.overwrite === 'boolean') args.overwrite = options.overwrite;
+        return call('files.rename', args);
+      },
+      saveAs: function (filename, sourceOrOptions, options) {
+        var opts = {};
+        var source = sourceOrOptions;
+        if (
+          sourceOrOptions &&
+          typeof sourceOrOptions === 'object' &&
+          !(sourceOrOptions instanceof Uint8Array) &&
+          !(typeof ArrayBuffer !== 'undefined' && sourceOrOptions instanceof ArrayBuffer) &&
+          typeof sourceOrOptions.arrayBuffer !== 'function'
+        ) {
+          opts = sourceOrOptions;
+          source = opts.content;
+        } else if (options && typeof options === 'object') {
+          opts = options;
+        }
+        var baseArgs = {};
+        if (filename) baseArgs.filename = String(filename);
+        if (Array.isArray(opts.accept)) baseArgs.accept = opts.accept;
+        if (typeof opts.fromPath === 'string' && opts.fromPath.trim()) {
+          baseArgs.fromPath = opts.fromPath.trim();
+          return call('files.saveAs', baseArgs);
+        }
+        if (source === undefined || source === null) {
+          return Promise.reject(new Error('files.saveAs expects content or fromPath'));
+        }
+        if (typeof source === 'string') {
+          baseArgs.content = source;
+          if (opts.encoding === 'utf8' || opts.encoding === 'base64') baseArgs.encoding = opts.encoding;
+          return call('files.saveAs', baseArgs);
+        }
+        return toUint8Array(source).then(function (bytes) {
+          if (!bytes) {
+            throw new Error('files.saveAs expects a string, Blob, Uint8Array, ArrayBuffer, or { fromPath }');
+          }
+          baseArgs.content = bytesToBase64(bytes);
+          baseArgs.encoding = 'base64';
+          return call('files.saveAs', baseArgs);
         });
       },
     },
@@ -597,6 +668,39 @@
         if (options && typeof options.stdin === 'string') payload.stdin = options.stdin;
         if (options && typeof options.timeoutMs === 'number') payload.timeoutMs = options.timeoutMs;
         return call('exec.run', payload);
+      },
+    },
+    // Allowlisted Lumzel workbench control tools (`permissions: ["lumzel"]` + `capabilities.lumzel`).
+    lumzel: {
+      call: function (tool, args) {
+        return call('lumzel.call', {
+          tool: tool ? String(tool) : '',
+          args: args && typeof args === 'object' ? args : {},
+        });
+      },
+    },
+    // Convenience Worktree helpers backed by `lumzel.call` (`capabilities.lumzel`: worktree_list / worktree_create).
+    worktree: {
+      list: function (args) {
+        return call('lumzel.call', { tool: 'worktree_list', args: args && typeof args === 'object' ? args : {} });
+      },
+      create: function (args) {
+        return call('lumzel.call', { tool: 'worktree_create', args: args && typeof args === 'object' ? args : {} });
+      },
+    },
+    // Convenience Terminal helper backed by `lumzel.call` (`capabilities.lumzel`: terminal_run).
+    // Opens Lumzel's built-in terminal after user confirmation, runs `command`, and closes the Deck by default.
+    terminal: {
+      run: function (command, options) {
+        var opts = options && typeof options === 'object' ? options : {};
+        var payload = {
+          command: command ? String(command) : '',
+          appendEnter: opts.appendEnter !== false,
+          autoClose: opts.autoClose === true,
+          closeDeck: opts.closeDeck !== false,
+        };
+        if (typeof opts.label === 'string' && opts.label.trim()) payload.label = opts.label.trim();
+        return call('lumzel.call', { tool: 'terminal_run', args: payload });
       },
     },
     // Read-only index of the open Worktree's docs: { features, docs }. Needs the files permission.
@@ -661,6 +765,11 @@
       },
       getRun: function (runId) {
         return call('workflow.getRun', { runId: runId ? String(runId) : '' });
+      },
+      retry: function (runId, nodeId) {
+        var args = { runId: runId ? String(runId) : '' };
+        if (typeof nodeId === 'string' && nodeId.trim()) args.nodeId = nodeId.trim();
+        return call('workflow.retry', args);
       },
       retryNode: function (runId, nodeId) {
         return call('workflow.retryNode', {
@@ -796,4 +905,100 @@
       );
     });
   }
+
+  // Guard every input/textarea inside Deck iframes against macOS WKWebView PUA function/arrow keys (\uF700-\uF8FF).
+  (function installPuaInputGuard() {
+    var doc = window.document;
+    if (!doc || typeof doc.addEventListener !== 'function') return;
+    var puaTest = /[\uF700-\uF8FF]/;
+    var puaStrip = /[\uF700-\uF8FF]/g;
+
+    function isTextControl(target) {
+      if (!target || !target.tagName) return false;
+      var tag = target.tagName.toUpperCase();
+      return tag === 'INPUT' || tag === 'TEXTAREA';
+    }
+
+    function moveCaret(target, data) {
+      if (typeof target.selectionStart !== 'number' || typeof target.selectionEnd !== 'number') return;
+      var start = target.selectionStart;
+      var end = target.selectionEnd;
+      var val = target.value || '';
+      var next;
+      if (data === '\uF702') {
+        next = Math.max(0, start - 1);
+      } else if (data === '\uF703') {
+        next = Math.min(val.length, end + 1);
+      } else if (data === '\uF700') {
+        var prevNl = val.lastIndexOf('\n', Math.max(0, start - 1));
+        next = prevNl === -1 ? 0 : prevNl;
+      } else if (data === '\uF701') {
+        var nextNl = val.indexOf('\n', end);
+        next = nextNl === -1 ? val.length : nextNl + 1;
+      } else if (data === '\uF729') {
+        var lineStart = val.lastIndexOf('\n', Math.max(0, start - 1));
+        next = lineStart === -1 ? 0 : lineStart + 1;
+      } else if (data === '\uF72B') {
+        var lineEnd = val.indexOf('\n', end);
+        next = lineEnd === -1 ? val.length : lineEnd;
+      } else {
+        return;
+      }
+      target.setSelectionRange(next, next);
+    }
+
+    function sanitizeValue(target) {
+      var raw = target.value;
+      if (!raw || !puaTest.test(raw)) return;
+      var start = target.selectionStart;
+      var end = target.selectionEnd;
+      var clean = raw.replace(puaStrip, '');
+      if (clean === raw) return;
+      target.value = clean;
+      if (typeof start === 'number' && typeof end === 'number') {
+        var nextStart = raw.slice(0, start).replace(puaStrip, '').length;
+        var nextEnd = raw.slice(0, end).replace(puaStrip, '').length;
+        target.setSelectionRange(nextStart, nextEnd);
+      }
+    }
+
+    doc.addEventListener(
+      'keydown',
+      function (event) {
+        if (event.defaultPrevented || !isTextControl(event.target)) return;
+        if (event.key && event.key.length === 1 && puaTest.test(event.key)) {
+          event.preventDefault();
+          moveCaret(event.target, event.key);
+        }
+      },
+      true,
+    );
+    doc.addEventListener(
+      'beforeinput',
+      function (event) {
+        if (event.defaultPrevented || !isTextControl(event.target)) return;
+        var data = event.data;
+        if (!data || !puaTest.test(data)) return;
+        if (event.cancelable) event.preventDefault();
+        moveCaret(event.target, data);
+      },
+      true,
+    );
+    doc.addEventListener(
+      'input',
+      function (event) {
+        if (!isTextControl(event.target) || event.isComposing) return;
+        sanitizeValue(event.target);
+      },
+      true,
+    );
+    doc.addEventListener(
+      'compositionend',
+      function (event) {
+        if (!isTextControl(event.target)) return;
+        sanitizeValue(event.target);
+      },
+      true,
+    );
+  })();
 })(window);

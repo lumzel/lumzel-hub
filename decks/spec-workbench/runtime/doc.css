@@ -23,7 +23,7 @@
   --in-progress: #0070e3;
   --done: #1c882d;
   --gate: #d08700;
-  --gate-soft: #fffbeb;
+  --gate-soft: color-mix(in srgb, var(--gate) 14%, transparent);
   --changed: #7f22fe;
   --drift: #e7000b;
   --dropped: #a1a1aa;
@@ -32,9 +32,9 @@
   --r-md: 6px;
   --radius: 8px;
   --r-xl: 12px;
-  --shadow-surface: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.03);
-  --shadow-menu: 0 8px 24px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.05);
-  --shadow-floating: 0 16px 40px rgba(15, 23, 42, 0.14), 0 3px 10px rgba(15, 23, 42, 0.08);
+  --shadow-surface: var(--deck-shadow, 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.03));
+  --shadow-menu: var(--deck-shadow, 0 8px 24px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.05));
+  --shadow-floating: var(--deck-shadow-lg, 0 16px 40px rgba(15, 23, 42, 0.14), 0 3px 10px rgba(15, 23, 42, 0.08));
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --sans:
     'Inter', 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
@@ -69,13 +69,12 @@
   --in-progress: #4390ee;
   --done: #4aa651;
   --gate: #cb9400;
-  --gate-soft: rgba(203, 148, 0, 0.12);
   --changed: #a684ff;
   --drift: #ff6467;
   --dropped: #6b6b75;
-  --shadow-surface: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.16);
-  --shadow-menu: 0 10px 28px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.18);
-  --shadow-floating: 0 20px 48px rgba(0, 0, 0, 0.46), 0 4px 12px rgba(0, 0, 0, 0.28);
+  --shadow-surface: var(--deck-shadow, 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.16));
+  --shadow-menu: var(--deck-shadow, 0 10px 28px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.18));
+  --shadow-floating: var(--deck-shadow-lg, 0 20px 48px rgba(0, 0, 0, 0.46), 0 4px 12px rgba(0, 0, 0, 0.28));
   color-scheme: dark;
 }
 * {
@@ -848,7 +847,7 @@ iframe.sandbox {
   width: 100%;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--surface);
 }
 
 /* inspector: select-to-edit */
@@ -1527,6 +1526,18 @@ html.pt-full .pt-exit {
   }
   .arch .layer {
     grid-template-columns: 1fr;
+  }
+  .inspector {
+    width: min(380px, calc(100vw - 24px));
+    right: 12px;
+    bottom: 12px;
+  }
+  table.grid,
+  :where(section[data-doc-block]) > table:not([class]) {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
   }
 }
 @media print {

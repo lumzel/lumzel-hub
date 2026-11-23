@@ -1,88 +1,147 @@
 :root {
   color-scheme: light;
-  /* Warm Architectural Crisp — surfaces */
-  --bg: #f5f4f0;            /* canvas paper */
-  --bg-sunken: #eeede8;     /* terminal / code wells */
-  --surface: #ffffff;       /* panels, nodes */
-  --surface-2: #faf9f6;     /* map frame, header */
+  /* Lumzel theme token fallbacks (overridden by Lumzel inline theme.tokens on <html>) */
+  --surface: #ffffff;
   --surface-hover: #f2f1ec;
-  --line: #e3e0d8;
-  --line-strong: #d1cdc2;
-  --grid-dot: rgba(22, 22, 26, 0.11);
-  --grid-major: rgba(22, 22, 26, 0.045);
-  --ink: #16161a;
-  --ink-2: #45444a;
   --muted: #75736d;
   --faint: #a29f98;
-  --focus: #16161a;
-  --scrim: rgba(22, 22, 26, 0.14);
-  /* roles */
-  --split: #2f55d4;   --split-soft: #eaeffc;
-  --worker: #0b7a6b;  --worker-soft: #e2f2ee;
-  --code: #5e5d66;    --code-soft: #eeedf0;
-  --gate: #a46800;    --gate-soft: #fbf0db;
-  --correct: #c2410c; --correct-soft: #fcebe2;
-  --learn: #4f7a12;   --learn-soft: #edf4e1;
-  /* status */
-  --ok: #17803d;      --ok-soft: #e6f4ea;
-  --fail: #d92d20;    --fail-soft: #fdecea;
+  --gate: #b45309;
+
+  /* Deck semantic surfaces & inks mapped to Lumzel theme tokens */
+  --bg: var(--canvas, #f5f4f0);
+  --bg-sunken: var(--shell, #eeede8);
+  --surface-2: var(--shell, #faf9f6);
+  --line: var(--border, #e3e0d8);
+  --line-strong: var(--border-strong, #d1cdc2);
+  --ink: var(--fg, #16161a);
+  --ink-2: color-mix(in srgb, var(--ink) 78%, var(--bg));
+  --focus: var(--ring, var(--ink));
+  --grid-dot: color-mix(in srgb, var(--ink) 11%, transparent);
+  --grid-major: color-mix(in srgb, var(--ink) 4.5%, transparent);
+  --scrim: rgba(22, 22, 26, 0.24);
+
+  /* Semantic accents & status mapped to Lumzel theme tokens */
+  --ok: var(--done, #17803d);
+  --fail: var(--drift, #d92d20);
+  --warn: var(--gate, #b45309);
+  --accent: var(--brand, #2563eb);
   --wait: var(--gate);
-  --queued: #a29f98;
-  --skip: #cfcbc1;
-  /* type */
+  --queued: var(--faint);
+  --skip: var(--line-strong);
+
+  /* Roles */
+  --split: var(--accent, #2f55d4);
+  --worker: #0b7a6b;
+  --code: #5e5d66;
+  --correct: #c2410c;
+  --learn: #4f7a12;
+
+  /* Soft tints derived dynamically for any theme preset */
+  --split-soft: color-mix(in srgb, var(--split) 12%, transparent);
+  --worker-soft: color-mix(in srgb, var(--worker) 12%, transparent);
+  --code-soft: color-mix(in srgb, var(--code) 10%, transparent);
+  --gate-soft: color-mix(in srgb, var(--gate) 14%, transparent);
+  --correct-soft: color-mix(in srgb, var(--correct) 13%, transparent);
+  --learn-soft: color-mix(in srgb, var(--learn) 13%, transparent);
+  --ok-soft: color-mix(in srgb, var(--ok) 13%, transparent);
+  --fail-soft: color-mix(in srgb, var(--fail) 13%, transparent);
+
+  /* Type */
   --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
   --mono: 'SF Mono', ui-monospace, 'JetBrains Mono', 'Geist Mono', SFMono-Regular, Menlo, Consolas, monospace;
   --fs-10: 10px; --fs-11: 11px; --fs-12: 12px; --fs-13: 13px; --fs-15: 15px; --fs-20: 20px; --fs-28: 28px;
   --lh: 1.38;
   --tracking-caps: 0.07em;
-  /* space (4px grid) */
+
+  /* Space (4px grid) */
   --s1: 2px; --s2: 4px; --s3: 6px; --s4: 8px; --s5: 12px; --s6: 16px; --s7: 20px; --s8: 24px; --s9: 32px;
-  /* radius — sharp */
+
+  /* Radius — sharp */
   --r-chip: 3px; --r-node: 5px; --r-card: 7px; --r-pop: 10px;
-  /* elevation — neutral only */
+
+  /* Elevation — neutral only */
   --sh-1: 0 1px 0 rgba(22, 22, 26, 0.04);
   --sh-node: 0 1px 2px rgba(22, 22, 26, 0.06);
   --sh-pop: 0 14px 36px -10px rgba(22, 22, 26, 0.22), 0 2px 6px rgba(22, 22, 26, 0.06);
-  /* motion */
+
+  /* Motion */
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --t-fast: 120ms; --t-mid: 180ms; --t-slow: 260ms;
   --pulse: 1.8s; --flow: 900ms;
-  /* layout */
+
+  /* Layout */
   --header-h: 48px; --cmd-h: 56px; --strip-h: 30px; --timeline-h: 28px; --timeline-open-h: 168px;
   --insp-w: 380px;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  /* Obsidian Studio */
-  --bg: #0a0b0d;
-  --bg-sunken: #060708;
+  /* Dark fallbacks for Lumzel token names (inline styles on <html> take precedence when injected) */
   --surface: #111215;
-  --surface-2: #15161a;
   --surface-hover: #1b1c21;
-  --line: rgba(255, 255, 255, 0.07);
-  --line-strong: rgba(255, 255, 255, 0.13);
-  --grid-dot: rgba(255, 255, 255, 0.075);
-  --grid-major: rgba(255, 255, 255, 0.028);
-  --ink: #ededef;
-  --ink-2: #c4c4c9;
   --muted: #8b8b94;
   --faint: #6c6c76;
-  --focus: #ededef;
-  --scrim: rgba(0, 0, 0, 0.5);
-  --split: #7d96f4;   --split-soft: rgba(125, 150, 244, 0.12);
-  --worker: #36c4a9;  --worker-soft: rgba(54, 196, 169, 0.11);
-  --code: #a7a7b0;    --code-soft: rgba(167, 167, 176, 0.09);
-  --gate: #e3a63b;    --gate-soft: rgba(227, 166, 59, 0.12);
-  --correct: #f07b4b; --correct-soft: rgba(240, 123, 75, 0.12);
-  --learn: #9ccc57;   --learn-soft: rgba(156, 204, 87, 0.11);
-  --ok: #4cc777;      --ok-soft: rgba(76, 199, 119, 0.12);
-  --fail: #f2695d;    --fail-soft: rgba(242, 105, 93, 0.12);
-  --queued: #6c6c76;
-  --skip: #34343a;
+  --gate: #e3a63b;
+
+  /* Deck semantic aliases with dark fallbacks */
+  --bg: var(--canvas, #0a0b0d);
+  --bg-sunken: var(--shell, #060708);
+  --surface-2: var(--shell, #15161a);
+  --line: var(--border, rgba(255, 255, 255, 0.07));
+  --line-strong: var(--border-strong, rgba(255, 255, 255, 0.13));
+  --ink: var(--fg, #ededef);
+  --focus: var(--ring, var(--ink));
+  --grid-dot: color-mix(in srgb, var(--ink) 8%, transparent);
+  --grid-major: color-mix(in srgb, var(--ink) 3%, transparent);
+  --scrim: rgba(0, 0, 0, 0.55);
+
+  --ok: var(--done, #4cc777);
+  --fail: var(--drift, #f2695d);
+  --warn: var(--gate, #e3a63b);
+  --accent: var(--brand, #7d96f4);
+  --worker: #36c4a9;
+  --code: #a7a7b0;
+  --correct: #f07b4b;
+  --learn: #9ccc57;
+
   --sh-1: 0 0 0 1px rgba(255, 255, 255, 0.03);
   --sh-node: 0 1px 0 rgba(0, 0, 0, 0.5);
   --sh-pop: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 18px 44px -12px rgba(0, 0, 0, 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --surface: #111215;
+    --surface-hover: #1b1c21;
+    --muted: #8b8b94;
+    --faint: #6c6c76;
+    --gate: #e3a63b;
+
+    --bg: var(--canvas, #0a0b0d);
+    --bg-sunken: var(--shell, #060708);
+    --surface-2: var(--shell, #15161a);
+    --line: var(--border, rgba(255, 255, 255, 0.07));
+    --line-strong: var(--border-strong, rgba(255, 255, 255, 0.13));
+    --ink: var(--fg, #ededef);
+    --focus: var(--ring, var(--ink));
+    --grid-dot: color-mix(in srgb, var(--ink) 8%, transparent);
+    --grid-major: color-mix(in srgb, var(--ink) 3%, transparent);
+    --scrim: rgba(0, 0, 0, 0.55);
+
+    --ok: var(--done, #4cc777);
+    --fail: var(--drift, #f2695d);
+    --warn: var(--gate, #e3a63b);
+    --accent: var(--brand, #7d96f4);
+    --worker: #36c4a9;
+    --code: #a7a7b0;
+    --correct: #f07b4b;
+    --learn: #9ccc57;
+
+    --sh-1: 0 0 0 1px rgba(255, 255, 255, 0.03);
+    --sh-node: 0 1px 0 rgba(0, 0, 0, 0.5);
+    --sh-pop: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 18px 44px -12px rgba(0, 0, 0, 0.7);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

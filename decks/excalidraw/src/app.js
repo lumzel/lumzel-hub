@@ -85,6 +85,45 @@ const SAMPLE_AGENT_CATALOG = {
   },
 };
 
+const CACHE_MAX_ENTRIES = 40;
+const RAIL_BATCH_SIZE = 40;
+const GALLERY_BATCH_SIZE = 24;
+const GALLERY_MAX_CONCURRENCY = 2;
+
+function createLruCache(maxSize = CACHE_MAX_ENTRIES) {
+  const map = new Map();
+  return {
+    has(key) {
+      return map.has(key);
+    },
+    get(key) {
+      if (!map.has(key)) return undefined;
+      const value = map.get(key);
+      map.delete(key);
+      map.set(key, value);
+      return value;
+    },
+    set(key, value) {
+      if (map.has(key)) map.delete(key);
+      map.set(key, value);
+      while (map.size > maxSize) {
+        const oldestKey = map.keys().next().value;
+        map.delete(oldestKey);
+      }
+      return this;
+    },
+    delete(key) {
+      return map.delete(key);
+    },
+    clear() {
+      map.clear();
+    },
+    get size() {
+      return map.size;
+    },
+  };
+}
+
 const state = {
   preview: false,
   hasProject: true,
@@ -94,8 +133,8 @@ const state = {
   files: [], // [{ path, name, title, size, modifiedAt, scene? }]
   activePath: '',
   activeScene: null,
-  sceneCache: new Map(), // path -> parsed scene
-  thumbCache: new Map(), // path -> { key, svgMarkup, stats }
+  sceneCache: createLruCache(CACHE_MAX_ENTRIES), // path -> parsed scene
+  thumbCache: createLruCache(CACHE_MAX_ENTRIES), // path -> { key, svgMarkup, stats }
   filterText: '',
   dirty: false,
   saving: false,
@@ -115,6 +154,7 @@ const state = {
   agentMenuOpen: false,
   runs: [], // [{ sessionId, targetPath, mode, diagramType, status, updatedAt }]
   narrowDrawer: '',
+  railCollapsed: false,
   previewModalPath: '',
   renameTargetPath: '',
   deleteTargetPath: '',
@@ -123,9 +163,25 @@ const state = {
 let autoSaveTimer = 0;
 let toastTimer = 0;
 let pollRunsTimer = 0;
+let filterDebounceTimer = 0;
 let agentSubscribed = false;
 let galleryRenderToken = 0;
+let previewModalToken = 0;
 let mountToken = 0;
+
+let railRenderItems = [];
+let railRenderedCount = 0;
+let railSentinelObserver = null;
+let railSentinelEl = null;
+
+let galleryItems = [];
+let galleryRenderedCount = 0;
+let galleryPageObserver = null;
+let galleryThumbObserver = null;
+let gallerySentinelEl = null;
+let galleryThumbQueue = [];
+let galleryActiveWorkers = 0;
+const galleryCardJobs = new WeakMap();
 
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -328,6 +384,9 @@ function applyTheme(next) {
   if (state.view === 'files') {
     renderGallery();
   }
+  if (!$('modal-preview').hidden && state.previewModalPath) {
+    void renderPreviewModal(state.previewModalPath);
+  }
 }
 
 function syncActiveFileHeader() {
@@ -364,20 +423,44 @@ function updateSaveBadge() {
   }
 }
 
+const narrowViewportMql = window.matchMedia('(max-width: 960px)');
+
+function isNarrowViewport() {
+  return narrowViewportMql.matches;
+}
+
+function syncRailToggleAria() {
+  const toggleBtn = $('btn-toggle-rail');
+  if (!toggleBtn) return;
+  const expanded = isNarrowViewport() ? state.narrowDrawer === 'rail' : !state.railCollapsed;
+  toggleBtn.setAttribute('aria-expanded', String(expanded));
+}
+
 function setNarrowDrawer(drawer) {
   state.narrowDrawer = drawer || '';
   const pane = $('view-canvas');
   const scrim = $('drawer-scrim');
-  const toggleBtn = $('btn-toggle-rail');
   if (state.narrowDrawer) {
     pane.dataset.drawer = state.narrowDrawer;
     scrim.hidden = false;
-    toggleBtn?.setAttribute('aria-expanded', 'true');
   } else {
     delete pane.dataset.drawer;
     scrim.hidden = true;
-    toggleBtn?.setAttribute('aria-expanded', 'false');
   }
+  syncRailToggleAria();
+}
+
+function toggleRail() {
+  if (isNarrowViewport()) {
+    setNarrowDrawer(state.narrowDrawer === 'rail' ? '' : 'rail');
+    return;
+  }
+  state.railCollapsed = !state.railCollapsed;
+  $('view-canvas').classList.toggle('rail-collapsed', state.railCollapsed);
+  syncRailToggleAria();
+  requestAnimationFrame(() => {
+    state.excalidrawApi?.refresh?.();
+  });
 }
 
 function switchView(nextView) {
@@ -389,6 +472,11 @@ function switchView(nextView) {
   $('view-files').hidden = nextView !== 'files';
   $('view-json').hidden = nextView !== 'json';
   setNarrowDrawer('');
+
+  if (nextView !== 'files') {
+    galleryRenderToken += 1;
+    teardownGalleryObservers();
+  }
 
   if (nextView === 'canvas') {
     requestAnimationFrame(() => {
@@ -554,7 +642,7 @@ async function openFile(filePath, { forceReload = false, switchToCanvas = false,
     $('btn-ai-revise').disabled = false;
 
     await mountOrUpdateCanvas(scene);
-    renderRail();
+    syncRailActiveItem();
     if (state.view === 'json') void syncJsonEditorFromCanvas();
     if (switchToCanvas && state.view !== 'canvas') switchView('canvas');
 
@@ -591,7 +679,17 @@ async function saveActiveFile({ silent = false } = {}) {
     const res = await window.deck.files.write(state.activePath, jsonText, { encoding: 'utf8' });
     state.lastSavedSignature = sig;
     state.dirty = false;
-    state.activeScene = await parseDiagramJson(jsonText);
+    state.activeScene = {
+      type: 'excalidraw',
+      version: 2,
+      source: state.activeScene?.source || 'https://excalidraw.com',
+      elements: Array.isArray(elements) ? elements.slice() : [],
+      appState: {
+        viewBackgroundColor: appState?.viewBackgroundColor || '#ffffff',
+        gridSize: appState?.gridSize ?? 20,
+      },
+      files: files ? { ...files } : {},
+    };
     state.sceneCache.set(state.activePath, state.activeScene);
     state.thumbCache.delete(state.activePath);
 
@@ -744,41 +842,106 @@ function filteredFiles() {
   return state.files.filter(f => f.path.toLowerCase().includes(q) || f.title.toLowerCase().includes(q));
 }
 
+function teardownRailObserver() {
+  if (railSentinelObserver) {
+    railSentinelObserver.disconnect();
+    railSentinelObserver = null;
+  }
+  if (railSentinelEl) {
+    railSentinelEl.remove();
+    railSentinelEl = null;
+  }
+}
+
+function createRailFileItem(file) {
+  const active = file.path === state.activePath;
+  const folder = file.path.includes('/') ? file.path.slice(0, file.path.lastIndexOf('/')) : '.';
+  return el(
+    'button',
+    {
+      type: 'button',
+      class: `file-item${active ? ' on' : ''}`,
+      dataset: { path: file.path },
+      onclick: () => {
+        setNarrowDrawer('');
+        void openFile(file.path);
+      },
+    },
+    el('span', { class: 'file-item-title' }, file.title),
+    el(
+      'span',
+      { class: 'file-item-sub' },
+      el('span', { class: 'file-item-path mono' }, folder),
+      el('span', {}, formatRelativeTime(file.modifiedAt)),
+    ),
+  );
+}
+
+function appendRailBatch() {
+  const list = $('rail-file-list');
+  if (!list || railRenderedCount >= railRenderItems.length) {
+    teardownRailObserver();
+    return;
+  }
+  const end = Math.min(railRenderedCount + RAIL_BATCH_SIZE, railRenderItems.length);
+  const frag = document.createDocumentFragment();
+  for (let i = railRenderedCount; i < end; i += 1) {
+    frag.append(createRailFileItem(railRenderItems[i]));
+  }
+  railRenderedCount = end;
+  if (railSentinelEl && railSentinelEl.parentNode === list) {
+    list.insertBefore(frag, railSentinelEl);
+  } else {
+    list.append(frag);
+  }
+  if (railRenderedCount >= railRenderItems.length) {
+    teardownRailObserver();
+  }
+}
+
+function syncRailActiveItem() {
+  const list = $('rail-file-list');
+  if (!list) return;
+  for (const node of list.querySelectorAll('.file-item')) {
+    node.classList.toggle('on', node.dataset.path === state.activePath);
+  }
+}
+
 function renderRail() {
   const list = $('rail-file-list');
   const items = filteredFiles();
   $('file-count').textContent = String(state.files.length);
   $('toolbar-file-count').textContent = String(state.files.length);
+  teardownRailObserver();
 
   if (!items.length) {
+    railRenderItems = [];
+    railRenderedCount = 0;
     list.replaceChildren(
       el('div', { class: 'hint-sm', style: 'padding: 12px 6px;' }, t('emptyFiles')),
     );
   } else {
-    list.replaceChildren(
-      ...items.map(file => {
-        const active = file.path === state.activePath;
-        const folder = file.path.includes('/') ? file.path.slice(0, file.path.lastIndexOf('/')) : '.';
-        return el(
-          'button',
-          {
-            type: 'button',
-            class: `file-item${active ? ' on' : ''}`,
-            onclick: () => {
-              setNarrowDrawer('');
-              void openFile(file.path);
-            },
-          },
-          el('span', { class: 'file-item-title' }, file.title),
-          el(
-            'span',
-            { class: 'file-item-sub' },
-            el('span', { class: 'file-item-path mono' }, folder),
-            el('span', {}, formatRelativeTime(file.modifiedAt)),
-          ),
-        );
-      }),
-    );
+    railRenderItems = items;
+    railRenderedCount = 0;
+    list.replaceChildren();
+    if (items.length > RAIL_BATCH_SIZE) {
+      railSentinelEl = el('div', { class: 'list-sentinel', 'aria-hidden': 'true' });
+      list.append(railSentinelEl);
+      railSentinelObserver = new IntersectionObserver(
+        entries => {
+          if (entries.some(entry => entry.isIntersecting)) {
+            appendRailBatch();
+          }
+        },
+        { root: list, rootMargin: '120px' },
+      );
+      appendRailBatch();
+      if (railSentinelEl && railSentinelObserver) {
+        railSentinelObserver.observe(railSentinelEl);
+      }
+    } else {
+      appendRailBatch();
+    }
   }
 
   renderRecentRuns();
@@ -904,142 +1067,248 @@ async function hydrateGalleryCardThumb(file, thumbBox, countEl, token) {
   }
 }
 
+function teardownGalleryObservers() {
+  if (galleryPageObserver) {
+    galleryPageObserver.disconnect();
+    galleryPageObserver = null;
+  }
+  if (galleryThumbObserver) {
+    galleryThumbObserver.disconnect();
+    galleryThumbObserver = null;
+  }
+  if (gallerySentinelEl) {
+    gallerySentinelEl.remove();
+    gallerySentinelEl = null;
+  }
+  galleryThumbQueue = [];
+}
+
+function drainGalleryThumbQueue() {
+  while (galleryActiveWorkers < GALLERY_MAX_CONCURRENCY && galleryThumbQueue.length > 0) {
+    const job = galleryThumbQueue.shift();
+    if (!job || job.token !== galleryRenderToken) continue;
+    galleryActiveWorkers += 1;
+    void hydrateGalleryCardThumb(job.file, job.thumbBox, job.countPill, job.token).finally(() => {
+      galleryActiveWorkers -= 1;
+      drainGalleryThumbQueue();
+    });
+  }
+}
+
+function createGalleryCard(file, token) {
+  const active = file.path === state.activePath;
+  const thumbBox = el('div', {
+    class: 'card-thumb',
+    onclick: () => void openPreviewModal(file.path),
+  }, el('span', { class: 'card-thumb-empty' }, '...'));
+  const countPill = el('span', { class: 'count-pill' }, '…');
+
+  const card = el(
+    'article',
+    { class: `diagram-card${active ? ' active' : ''}` },
+    thumbBox,
+    el(
+      'div',
+      { class: 'card-body' },
+      el(
+        'div',
+        { class: 'card-title-row' },
+        el('span', { class: 'card-title', title: file.path }, file.title),
+        countPill,
+      ),
+      el('div', { class: 'card-path mono', title: file.path }, file.path),
+      el(
+        'div',
+        { class: 'card-actions' },
+        el(
+          'button',
+          {
+            type: 'button',
+            class: 'btn sm primary',
+            onclick: () => void openFile(file.path, { switchToCanvas: true }),
+          },
+          t('openOnCanvas'),
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            class: 'btn sm',
+            onclick: () => void openPreviewModal(file.path),
+          },
+          t('readOnlyPreview'),
+        ),
+        !state.preview && state.hasProject
+          ? el(
+              'button',
+              {
+                type: 'button',
+                class: 'btn sm',
+                onclick: () => openRenameModal(file.path),
+              },
+              t('renameFile'),
+            )
+          : null,
+        !state.preview && state.hasProject
+          ? el(
+              'button',
+              {
+                type: 'button',
+                class: 'btn sm',
+                onclick: () => void duplicateFile(file.path),
+              },
+              t('duplicateFile'),
+            )
+          : null,
+        !state.preview && state.hasProject
+          ? el(
+              'button',
+              {
+                type: 'button',
+                class: 'btn sm subtle',
+                onclick: () => openDeleteModal(file.path),
+              },
+              t('deleteFile'),
+            )
+          : null,
+      ),
+    ),
+  );
+
+  galleryCardJobs.set(card, { file, thumbBox, countPill, token });
+  return card;
+}
+
+function appendGalleryBatch(token) {
+  if (token !== galleryRenderToken) return;
+  const grid = $('gallery-grid');
+  if (!grid || galleryRenderedCount >= galleryItems.length) {
+    if (galleryPageObserver) {
+      galleryPageObserver.disconnect();
+      galleryPageObserver = null;
+    }
+    if (gallerySentinelEl) {
+      gallerySentinelEl.remove();
+      gallerySentinelEl = null;
+    }
+    return;
+  }
+  const end = Math.min(galleryRenderedCount + GALLERY_BATCH_SIZE, galleryItems.length);
+  const frag = document.createDocumentFragment();
+  const addedCards = [];
+  for (let i = galleryRenderedCount; i < end; i += 1) {
+    const card = createGalleryCard(galleryItems[i], token);
+    addedCards.push(card);
+    frag.append(card);
+  }
+  galleryRenderedCount = end;
+  if (gallerySentinelEl && gallerySentinelEl.parentNode === grid) {
+    grid.insertBefore(frag, gallerySentinelEl);
+  } else {
+    grid.append(frag);
+  }
+  if (galleryThumbObserver) {
+    for (const card of addedCards) {
+      galleryThumbObserver.observe(card);
+    }
+  }
+  if (galleryRenderedCount >= galleryItems.length) {
+    if (galleryPageObserver) {
+      galleryPageObserver.disconnect();
+      galleryPageObserver = null;
+    }
+    if (gallerySentinelEl) {
+      gallerySentinelEl.remove();
+      gallerySentinelEl = null;
+    }
+  }
+}
+
 function renderGallery() {
   const token = ++galleryRenderToken;
+  teardownGalleryObservers();
   const grid = $('gallery-grid');
   const emptyEl = $('gallery-empty');
   const items = filteredFiles();
   if (!items.length) {
+    galleryItems = [];
+    galleryRenderedCount = 0;
     grid.replaceChildren();
     emptyEl.hidden = false;
     return;
   }
   emptyEl.hidden = true;
+  galleryItems = items;
+  galleryRenderedCount = 0;
+  grid.replaceChildren();
 
-  const jobs = [];
-  const cards = items.map(file => {
-    const active = file.path === state.activePath;
-    const thumbBox = el('div', {
-      class: 'card-thumb',
-      onclick: () => void openPreviewModal(file.path),
-    }, el('span', { class: 'card-thumb-empty' }, '...'));
-    const countPill = el('span', { class: 'count-pill' }, '…');
+  const scrollRoot = grid.closest('.gallery-wrap') || null;
+  galleryThumbObserver = new IntersectionObserver(
+    entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        galleryThumbObserver?.unobserve(entry.target);
+        const job = galleryCardJobs.get(entry.target);
+        if (job && job.token === galleryRenderToken) {
+          galleryThumbQueue.push(job);
+        }
+      }
+      drainGalleryThumbQueue();
+    },
+    { root: scrollRoot, rootMargin: '200px' },
+  );
 
-    const card = el(
-      'article',
-      { class: `diagram-card${active ? ' active' : ''}` },
-      thumbBox,
-      el(
-        'div',
-        { class: 'card-body' },
-        el(
-          'div',
-          { class: 'card-title-row' },
-          el('span', { class: 'card-title', title: file.path }, file.title),
-          countPill,
-        ),
-        el('div', { class: 'card-path mono', title: file.path }, file.path),
-        el(
-          'div',
-          { class: 'card-actions' },
-          el(
-            'button',
-            {
-              type: 'button',
-              class: 'btn sm primary',
-              onclick: () => void openFile(file.path, { switchToCanvas: true }),
-            },
-            t('openOnCanvas'),
-          ),
-          el(
-            'button',
-            {
-              type: 'button',
-              class: 'btn sm',
-              onclick: () => void openPreviewModal(file.path),
-            },
-            t('readOnlyPreview'),
-          ),
-          !state.preview && state.hasProject
-            ? el(
-                'button',
-                {
-                  type: 'button',
-                  class: 'btn sm',
-                  onclick: () => openRenameModal(file.path),
-                },
-                t('renameFile'),
-              )
-            : null,
-          !state.preview && state.hasProject
-            ? el(
-                'button',
-                {
-                  type: 'button',
-                  class: 'btn sm',
-                  onclick: () => void duplicateFile(file.path),
-                },
-                t('duplicateFile'),
-              )
-            : null,
-          !state.preview && state.hasProject
-            ? el(
-                'button',
-                {
-                  type: 'button',
-                  class: 'btn sm subtle',
-                  onclick: () => openDeleteModal(file.path),
-                },
-                t('deleteFile'),
-              )
-            : null,
-        ),
-      ),
+  if (items.length > GALLERY_BATCH_SIZE) {
+    gallerySentinelEl = el('div', { class: 'list-sentinel gallery-sentinel', 'aria-hidden': 'true' });
+    grid.append(gallerySentinelEl);
+    galleryPageObserver = new IntersectionObserver(
+      entries => {
+        if (entries.some(entry => entry.isIntersecting)) {
+          appendGalleryBatch(token);
+        }
+      },
+      { root: scrollRoot, rootMargin: '300px' },
     );
+  }
 
-    jobs.push({ file, thumbBox, countPill });
-    return card;
-  });
+  appendGalleryBatch(token);
+  if (gallerySentinelEl && galleryPageObserver) {
+    galleryPageObserver.observe(gallerySentinelEl);
+  }
+}
 
-  grid.replaceChildren(...cards);
-
-  let nextIdx = 0;
-  const worker = async () => {
-    while (nextIdx < jobs.length && token === galleryRenderToken) {
-      const job = jobs[nextIdx++];
-      await hydrateGalleryCardThumb(job.file, job.thumbBox, job.countPill, token);
+async function renderPreviewModal(filePath) {
+  const token = ++previewModalToken;
+  const stage = $('preview-modal-stage');
+  stage.replaceChildren(el('span', { class: 'hint-sm' }, '...'));
+  try {
+    const scene = await loadSceneForPath(filePath);
+    if (token !== previewModalToken || $('modal-preview').hidden) return;
+    const stats = computeSceneStats(scene);
+    $('preview-modal-stats').textContent = t('jsonStats', stats);
+    if (stats.elements > 0) {
+      const svgEl = await renderSvgForScene(scene);
+      if (token !== previewModalToken || $('modal-preview').hidden) return;
+      stage.replaceChildren(svgEl);
+    } else {
+      stage.replaceChildren(el('span', { class: 'hint-sm' }, t('tplBlank')));
     }
-  };
-  const workers = Math.min(2, jobs.length);
-  for (let i = 0; i < workers; i += 1) {
-    void worker();
+  } catch (err) {
+    if (token !== previewModalToken || $('modal-preview').hidden) return;
+    stage.replaceChildren(el('span', { class: 'err' }, err.message || String(err)));
   }
 }
 
 async function openPreviewModal(filePath) {
   state.previewModalPath = filePath;
   $('preview-modal-path').textContent = filePath;
-  const stage = $('preview-modal-stage');
-  stage.replaceChildren(el('span', { class: 'hint-sm' }, '...'));
   $('preview-modal-stats').textContent = '';
   $('modal-preview').hidden = false;
-
-  try {
-    const scene = await loadSceneForPath(filePath);
-    const stats = computeSceneStats(scene);
-    $('preview-modal-stats').textContent = t('jsonStats', stats);
-    if (stats.elements > 0) {
-      const svgEl = await renderSvgForScene(scene);
-      stage.replaceChildren(svgEl);
-    } else {
-      stage.replaceChildren(el('span', { class: 'hint-sm' }, t('tplBlank')));
-    }
-  } catch (err) {
-    stage.replaceChildren(el('span', { class: 'err' }, err.message || String(err)));
-  }
+  await renderPreviewModal(filePath);
 }
 
 function closePreviewModal() {
+  previewModalToken += 1;
   $('modal-preview').hidden = true;
   state.previewModalPath = '';
 }
@@ -1081,6 +1350,7 @@ async function handleCreateNewDiagram() {
   if (!state.hasProject) {
     upsertFileEntry(targetPath, { size: jsonText.length, modifiedAt: Date.now(), scene });
     $('modal-new').hidden = true;
+    renderRail();
     await openFile(targetPath, { forceReload: true, switchToCanvas: true });
     return;
   }
@@ -1089,6 +1359,7 @@ async function handleCreateNewDiagram() {
     const res = await window.deck.files.write(targetPath, jsonText, { encoding: 'utf8' });
     $('modal-new').hidden = true;
     upsertFileEntry(targetPath, { size: res?.size ?? jsonText.length, modifiedAt: Date.now() });
+    renderRail();
     await openFile(targetPath, { forceReload: true, switchToCanvas: true });
     toast(t('savedMsg', { path: targetPath }));
   } catch (err) {
@@ -1211,6 +1482,7 @@ async function handleImportFiles() {
     const picked = Array.isArray(res) ? res : res?.files || [];
     if (!picked.length) return;
     await scanWorkspaceDiagrams();
+    renderRail();
     await openFile(picked[0].path, { forceReload: true, switchToCanvas: true });
     toast(t('importedMsg', { n: picked.length }));
   } catch (err) {
@@ -1582,6 +1854,7 @@ async function handleRunStateUpdate(sessionId, nextStatus) {
     if (run.targetPath && state.files.some(f => f.path === run.targetPath)) {
       state.sceneCache.delete(run.targetPath);
       state.thumbCache.delete(run.targetPath);
+      renderRail();
       await openFile(run.targetPath, { forceReload: true, switchToCanvas: true });
       toast(t('aiDoneMsg', { path: run.targetPath }));
     }
@@ -1815,21 +2088,34 @@ function wireEvents() {
     if (state.view === 'files') renderGallery();
   });
 
-  $('btn-toggle-rail').addEventListener('click', () => {
-    setNarrowDrawer(state.narrowDrawer === 'rail' ? '' : 'rail');
-  });
+  $('btn-toggle-rail').addEventListener('click', toggleRail);
   $('btn-close-rail').addEventListener('click', () => setNarrowDrawer(''));
   $('drawer-scrim').addEventListener('click', () => setNarrowDrawer(''));
+  narrowViewportMql.addEventListener('change', () => {
+    if (!isNarrowViewport() && state.narrowDrawer) {
+      setNarrowDrawer('');
+    } else {
+      syncRailToggleAria();
+    }
+  });
+  syncRailToggleAria();
 
-  const syncFilter = val => {
-    state.filterText = val;
-    $('rail-search').value = val;
-    $('gallery-search').value = val;
-    renderRail();
-    if (state.view === 'files') renderGallery();
+  const syncFilter = (val, sourceId) => {
+    if (sourceId !== 'rail-search' && $('rail-search').value !== val) {
+      $('rail-search').value = val;
+    }
+    if (sourceId !== 'gallery-search' && $('gallery-search').value !== val) {
+      $('gallery-search').value = val;
+    }
+    clearTimeout(filterDebounceTimer);
+    filterDebounceTimer = setTimeout(() => {
+      state.filterText = val;
+      renderRail();
+      if (state.view === 'files') renderGallery();
+    }, 120);
   };
-  $('rail-search').addEventListener('input', e => syncFilter(e.target.value));
-  $('gallery-search').addEventListener('input', e => syncFilter(e.target.value));
+  $('rail-search').addEventListener('input', e => syncFilter(e.target.value, 'rail-search'));
+  $('gallery-search').addEventListener('input', e => syncFilter(e.target.value, 'gallery-search'));
 
   $('btn-copy-json').addEventListener('click', async () => {
     try {
@@ -1864,6 +2150,14 @@ function wireEvents() {
     e.stopPropagation();
     const pop = $('agent-popover');
     const next = pop.hidden;
+    if (next) {
+      if (window.matchMedia('(max-width: 680px)').matches) {
+        const rect = $('agent-override-pill').getBoundingClientRect();
+        pop.style.top = `${Math.min(Math.round(rect.bottom + 6), Math.max(48, window.innerHeight - 180))}px`;
+      } else {
+        pop.style.top = '';
+      }
+    }
     pop.hidden = !next;
     state.agentMenuOpen = next;
     $('agent-override-pill').setAttribute('aria-expanded', String(next));
@@ -1953,7 +2247,8 @@ function wireEvents() {
       return;
     }
     if (e.key === 'Escape') {
-      for (const id of ['modal-preview', 'modal-new', 'modal-ai', 'modal-rename', 'modal-confirm']) {
+      if (!$('modal-preview').hidden) closePreviewModal();
+      for (const id of ['modal-new', 'modal-ai', 'modal-rename', 'modal-confirm']) {
         if (!$(id).hidden) $(id).hidden = true;
       }
       if (!$('agent-popover').hidden) {

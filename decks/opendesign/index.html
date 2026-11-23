@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <title>OpenDesign</title>
     <link rel="stylesheet" href="styles/app.css" />
@@ -222,9 +223,13 @@
 
       <!-- VIEW 2: DESIGN SYSTEMS -->
       <section class="view-pane view-systems" id="view-systems" hidden>
-        <aside class="rail sys-rail">
+        <aside class="rail sys-rail" id="sys-rail">
           <div class="rail-head">
-            <span data-i18n="systemsHead">Design Systems</span>
+            <button type="button" class="rail-collapse-btn" id="btn-toggle-sys-rail" aria-expanded="false">
+              <span class="rail-collapse-caret" aria-hidden="true">▾</span>
+              <span data-i18n="systemsHead">Design Systems</span>
+              <span class="count-pill" id="sys-count">0</span>
+            </button>
             <button type="button" class="btn subtle sm" id="btn-open-extract" data-i18n="extractSystemPlus">+ Extract</button>
           </div>
           <div class="system-list" id="system-list"></div>
@@ -269,9 +274,13 @@
 
       <!-- VIEW 3: WORKFLOWS -->
       <section class="view-pane view-workflows" id="view-workflows" hidden>
-        <aside class="rail wf-rail">
+        <aside class="rail wf-rail" id="wf-rail">
           <div class="rail-head">
-            <span data-i18n="workflowsHead">Workflow Runs</span>
+            <button type="button" class="rail-collapse-btn" id="btn-toggle-wf-rail" aria-expanded="false">
+              <span class="rail-collapse-caret" aria-hidden="true">▾</span>
+              <span data-i18n="workflowsHead">Workflow Runs</span>
+              <span class="count-pill" id="run-count">0</span>
+            </button>
           </div>
           <div class="wf-quick">
             <button type="button" class="btn primary full" id="btn-wf-new-design" data-i18n="startDesignRun">New Design Pipeline</button>

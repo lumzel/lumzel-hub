@@ -6,10 +6,73 @@ import { t } from '../i18n.js';
 
 const TERM_LINE_CAP = 400;
 const AGENT_TEXT_LINE_CAP = 120;
+const LIST_BATCH_SIZE = 30;
+
+let activePanelObservers = [];
+
+function disconnectPanelObservers() {
+  for (const obs of activePanelObservers) obs.disconnect();
+  activePanelObservers = [];
+}
+
+function appendLazyList(listEl, scrollRoot, items, renderItem) {
+  let rendered = 0;
+  let sentinel = null;
+  let obs = null;
+
+  function loadNext() {
+    const nextEnd = Math.min(items.length, rendered + LIST_BATCH_SIZE);
+    const frag = document.createDocumentFragment();
+    for (let i = rendered; i < nextEnd; i++) {
+      frag.appendChild(renderItem(items[i], i));
+    }
+    if (sentinel && sentinel.parentNode === listEl) {
+      listEl.insertBefore(frag, sentinel);
+    } else {
+      listEl.appendChild(frag);
+    }
+    rendered = nextEnd;
+    const remaining = items.length - rendered;
+    if (remaining <= 0) {
+      if (sentinel && sentinel.parentNode) sentinel.remove();
+      if (obs) {
+        obs.disconnect();
+        obs = null;
+      }
+    } else if (sentinel) {
+      const btn = sentinel.querySelector('button');
+      if (btn) btn.textContent = t('loadMore', { n: remaining });
+    }
+  }
+
+  loadNext();
+
+  if (rendered < items.length) {
+    const moreBtn = h(
+      'button',
+      { type: 'button', class: 'ghost', onClick: loadNext },
+      t('loadMore', { n: items.length - rendered }),
+    );
+    sentinel = h('div', { class: 'lazy-sentinel' }, moreBtn);
+    listEl.appendChild(sentinel);
+    if (typeof IntersectionObserver !== 'undefined') {
+      obs = new IntersectionObserver(
+        entries => {
+          if (entries.some(e => e.isIntersecting)) {
+            loadNext();
+          }
+        },
+        { root: scrollRoot, rootMargin: '160px' },
+      );
+      obs.observe(sentinel);
+      activePanelObservers.push(obs);
+    }
+  }
+}
 
 export function renderTerminal(stdoutRaw, stderrRaw, exitCode) {
   let stream = stderrRaw && !stdoutRaw ? 'stderr' : 'stdout';
-  let showAll = false;
+  let visibleLines = TERM_LINE_CAP;
   const wrap = h('div', { class: 'term', 'data-stream': stream });
   const pre = h('pre', { class: 'term-pre' });
   const tabsWrap = h('div', { class: 'term-tabs' });
@@ -27,7 +90,7 @@ export function renderTerminal(stdoutRaw, stderrRaw, exitCode) {
             'aria-selected': stream === sName ? 'true' : 'false',
             onClick: () => {
               stream = sName;
-              showAll = false;
+              visibleLines = TERM_LINE_CAP;
               redraw();
             },
           },
@@ -38,15 +101,16 @@ export function renderTerminal(stdoutRaw, stderrRaw, exitCode) {
 
     const raw = stripAnsi(stream === 'stderr' ? stderrRaw || '' : stdoutRaw || '');
     const lines = raw.split('\n');
-    const truncated = !showAll && lines.length > TERM_LINE_CAP;
-    const shown = truncated ? lines.slice(0, TERM_LINE_CAP).join('\n') : raw;
+    const hasMore = lines.length > visibleLines;
+    const shown = hasMore ? lines.slice(0, visibleLines).join('\n') : raw;
     pre.textContent = shown || '(empty)';
 
-    moreBtn.hidden = !truncated;
-    if (truncated) {
-      moreBtn.textContent = `${t('showAll')} (${lines.length})`;
+    moreBtn.hidden = !hasMore;
+    if (hasMore) {
+      const nextStep = Math.min(TERM_LINE_CAP, lines.length - visibleLines);
+      moreBtn.textContent = `+${nextStep} (${visibleLines}/${lines.length})`;
       moreBtn.onclick = () => {
-        showAll = true;
+        visibleLines += TERM_LINE_CAP;
         redraw();
       };
     }
@@ -88,6 +152,7 @@ function copyText(host, text) {
 }
 
 export function renderNodePanel(container, store, host, view) {
+  disconnectPanelObservers();
   clear(container);
   const st = store.get();
   const sel = st.selection;
@@ -250,31 +315,32 @@ export function renderNodePanel(container, store, host, view) {
     const outSec = h('div', { class: 'sec' }, h('div', { class: 'sec-hd' }, t('outputSec')));
     const out = node.output;
 
-    // Code-review findings block on merge node
+    // Code-review findings block on merge node (incremental batch rendering)
     if (node.id === 'merge' && Array.isArray(out.findings) && out.findings.length) {
       const fList = h('div', { class: 'attempts-list', style: { marginBottom: '10px' } });
-      for (const f of out.findings) {
-        const tagCls = f.severity === 'high' ? 'tag-fail' : f.severity === 'medium' ? '' : '';
-        fList.appendChild(
+      outSec.appendChild(fList);
+      container.appendChild(outSec);
+      appendLazyList(fList, container, out.findings, f => {
+        const tagCls = f.severity === 'high' ? 'tag-fail' : '';
+        return h(
+          'div',
+          { class: 'attempt-row', style: { flexDirection: 'column', gap: '3px' } },
           h(
             'div',
-            { class: 'attempt-row', style: { flexDirection: 'column', gap: '3px' } },
+            { style: { display: 'flex', gap: '6px', width: '100%' } },
             h(
-              'div',
-              { style: { display: 'flex', gap: '6px', width: '100%' } },
-              h(
-                'span',
-                { class: tagCls, style: { textTransform: 'uppercase', color: f.severity === 'medium' ? 'var(--gate)' : undefined } },
-                f.severity,
-              ),
-              h('span', { style: { color: 'var(--ink)' } }, `${f.file}:${f.line || ''}`),
+              'span',
+              { class: tagCls, style: { textTransform: 'uppercase', color: f.severity === 'medium' ? 'var(--gate)' : undefined } },
+              f.severity,
             ),
-            h('div', { style: { color: 'var(--ink-2)', fontFamily: 'var(--sans)' } }, f.title),
-            f.evidence ? h('div', { style: { color: 'var(--muted)', fontSize: '10.5px' } }, f.evidence) : null,
+            h('span', { style: { color: 'var(--ink)' } }, `${f.file}:${f.line || ''}`),
           ),
+          h('div', { style: { color: 'var(--ink-2)', fontFamily: 'var(--sans)' } }, f.title),
+          f.evidence ? h('div', { style: { color: 'var(--muted)', fontSize: '10.5px' } }, f.evidence) : null,
         );
-      }
-      outSec.appendChild(fList);
+      });
+    } else {
+      container.appendChild(outSec);
     }
 
     if (out && typeof out === 'object' && ('stdout' in out || 'stderr' in out)) {
@@ -289,7 +355,6 @@ export function renderNodePanel(container, store, host, view) {
     } else {
       outSec.appendChild(renderJsonTree(out, { showAllLabel: t('showAll') }));
     }
-    container.appendChild(outSec);
   }
 }
 
@@ -375,43 +440,48 @@ function renderLaneDetail(container, store, host, view, lane) {
     container.appendChild(specSec);
   }
 
-  // Attempts timeline
-  const attList = h('div', { class: 'attempts-list' });
+  // Attempts timeline (incremental batch rendering)
+  const attItems = [];
   if (lane.events && lane.events.length) {
     for (const ev of lane.events) {
-      const okCls = ev.s === 'pass' ? 'tag-pass' : ev.s === 'fail' ? 'tag-fail' : '';
-      const mark = ev.s === 'pass' ? '✓' : ev.s === 'fail' ? '✗' : '•';
-      attList.appendChild(
-        h(
+      attItems.push({ kind: 'event', ev });
+    }
+  } else if (isReview) {
+    (lane.attempts.evidence || []).forEach((sVal, i) => {
+      attItems.push({ kind: 'simple', label: `EVIDENCE ${sVal === 'pass' ? '✓' : '✗'} a${i + 1}`, pass: sVal === 'pass' });
+    });
+  } else {
+    (lane.attempts.red || []).forEach((sVal, i) => {
+      attItems.push({ kind: 'simple', label: `RED ${sVal === 'pass' ? '✓' : '✗'} a${i + 1}`, pass: sVal === 'pass' });
+    });
+    (lane.attempts.green || []).forEach((sVal, i) => {
+      attItems.push({ kind: 'simple', label: `GREEN ${sVal === 'pass' ? '✓' : '✗'} a${i + 1}`, pass: sVal === 'pass' });
+    });
+  }
+
+  if (attItems.length) {
+    const attList = h('div', { class: 'attempts-list' });
+    const attSec = h('div', { class: 'sec' }, h('div', { class: 'sec-hd' }, t('attemptsSec')), attList);
+    container.appendChild(attSec);
+    appendLazyList(attList, container, attItems, item => {
+      if (item.kind === 'event') {
+        const ev = item.ev;
+        const okCls = ev.s === 'pass' ? 'tag-pass' : ev.s === 'fail' ? 'tag-fail' : '';
+        const mark = ev.s === 'pass' ? '✓' : ev.s === 'fail' ? '✗' : '•';
+        return h(
           'div',
           { class: 'attempt-row' },
           h('span', { class: okCls }, `${ev.p.toUpperCase()} ${mark}`),
           ev.a ? h('span', { style: { color: 'var(--muted)' } }, `a${ev.a}`) : null,
           ev.m ? h('span', { style: { color: 'var(--ink-2)', overflow: 'hidden', textOverflow: 'ellipsis' } }, ev.m) : null,
-        ),
-      );
-    }
-  } else if (isReview) {
-    (lane.attempts.evidence || []).forEach((sVal, i) => {
-      attList.appendChild(
-        h('div', { class: 'attempt-row' }, h('span', { class: sVal === 'pass' ? 'tag-pass' : 'tag-fail' }, `EVIDENCE ${sVal === 'pass' ? '✓' : '✗'} a${i + 1}`)),
-      );
-    });
-  } else {
-    (lane.attempts.red || []).forEach((sVal, i) => {
-      attList.appendChild(
-        h('div', { class: 'attempt-row' }, h('span', { class: sVal === 'pass' ? 'tag-pass' : 'tag-fail' }, `RED ${sVal === 'pass' ? '✓' : '✗'} a${i + 1}`)),
+        );
+      }
+      return h(
+        'div',
+        { class: 'attempt-row' },
+        h('span', { class: item.pass ? 'tag-pass' : 'tag-fail' }, item.label),
       );
     });
-    (lane.attempts.green || []).forEach((sVal, i) => {
-      attList.appendChild(
-        h('div', { class: 'attempt-row' }, h('span', { class: sVal === 'pass' ? 'tag-pass' : 'tag-fail' }, `GREEN ${sVal === 'pass' ? '✓' : '✗'} a${i + 1}`)),
-      );
-    });
-  }
-
-  if (attList.children.length) {
-    container.appendChild(h('div', { class: 'sec' }, h('div', { class: 'sec-hd' }, t('attemptsSec')), attList));
   }
 
   // Final outputs

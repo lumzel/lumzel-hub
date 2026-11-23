@@ -9,9 +9,22 @@ import { createHistoryRenderer } from './history.js';
 export function mountInspector(store, host) {
   const appEl = document.getElementById('app');
   const inspEl = document.getElementById('insp');
+  const scrimEl = document.getElementById('insp-scrim');
+  const closeBtn = document.getElementById('insp-close-btn');
   const gripEl = document.getElementById('grip');
   const tabsEl = inspEl.querySelector('.tabs');
   const bodyEl = document.getElementById('insp-body');
+
+  if (scrimEl) {
+    scrimEl.addEventListener('click', () => {
+      host.savePrefs({ inspectorOpen: false });
+    });
+  }
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      host.savePrefs({ inspectorOpen: false });
+    });
+  }
 
   const renderGatePanel = createGatePanelRenderer(store, host);
   const renderVault = createVaultRenderer(store, host);
@@ -75,6 +88,7 @@ export function mountInspector(store, host) {
     }),
     ({ open, width, tab, run }) => {
       setAttr(appEl, 'data-insp', open ? 'open' : 'closed');
+      if (scrimEl) scrimEl.hidden = !open;
       if (width && isWideViewport()) {
         document.documentElement.style.setProperty('--insp-w', `${width}px`);
       }
