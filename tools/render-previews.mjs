@@ -29,6 +29,10 @@ const VIEW = { width: 800, height: 500 };
 const SCALE = 2;
 const QUALITY = '80';
 const THEMES = ['light', 'dark'];
+const LOCALES = [
+  { id: 'en', suffix: '' },
+  { id: 'zh-CN', suffix: '.zh-CN' },
+];
 const DEFAULT_THEME_PRESET = 'lumzel';
 // Matches Lumzel's default `lumzel` theme (`buildHostThemeTokens` in apps/desktop/src/lib/theme.ts).
 const DEFAULT_THEME_TOKENS = {
@@ -131,8 +135,9 @@ const TYPES = {
 };
 
 // The page that stands in for Lumzel: one sandboxed frame and the preview bridge.
-const hostPage = (theme, title) => {
+const hostPage = (theme, title, locale) => {
   const polarity = theme === 'dark' ? 'dark' : 'light';
+  const activeLocale = locale || 'en';
   const themeTokens = DEFAULT_THEME_TOKENS[polarity];
   return `<!doctype html><meta charset="utf-8">
 <style>html,body,iframe{margin:0;border:0;width:100%;height:100%;display:block}</style>
@@ -147,7 +152,7 @@ const hostPage = (theme, title) => {
     themePreset: ${JSON.stringify(DEFAULT_THEME_PRESET)},
     themeTokens,
     deck: ${JSON.stringify(title)},
-    locale: 'zh-CN',
+    locale: ${JSON.stringify(activeLocale)},
     preview: true,
   };
   addEventListener('message', event => {
@@ -193,7 +198,9 @@ const server = http.createServer(async (request, response) => {
   if (url.pathname === '/favicon.ico') return response.writeHead(204).end();
   if (url.pathname === '/__host') {
     response.setHeader('Content-Type', TYPES['.html']);
-    return response.end(hostPage(url.searchParams.get('theme'), url.searchParams.get('title') ?? ''));
+    return response.end(
+      hostPage(url.searchParams.get('theme'), url.searchParams.get('title') ?? '', url.searchParams.get('locale') ?? 'en'),
+    );
   }
   const relative = path.normalize(decodeURIComponent(url.pathname)).replace(/^[/\\]+/, '');
   const file =
@@ -289,33 +296,35 @@ for (const id of ids) {
     continue; // not a Deck folder
   }
   await mkdir(path.join(folder, 'preview'), { recursive: true });
-  const pngBuffers = {};
-  for (const theme of THEMES) {
-    const page = await browser.newPage({ viewport: viewportOf(id), deviceScaleFactor: SCALE, colorScheme: theme });
-    const errors = [];
-    page.on('console', message => message.type() === 'error' && errors.push(message.text()));
-    const src = `/${id}/${manifest.entry ?? 'index.html'}`;
-    const query = new URLSearchParams({ theme, title: manifest.title ?? id, src });
-    await page.goto(`${origin}/__host?${query}`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(600); // module scripts and the first context() round trip
-    const png = path.join(scratch, `${id}-${theme}.png`);
-    pngBuffers[theme] = await page.screenshot({ path: png });
-    await page.close();
-    const out = path.join(folder, 'preview', `cover-${theme}.webp`);
-    execFileSync('cwebp', ['-quiet', '-q', QUALITY, png, '-o', out]);
-    const kb = ((await stat(out)).size / 1024).toFixed(1);
-    console.log(`${path.relative(root, out)}  ${kb} KB${errors.length ? `  (${errors.length} page error)` : ''}`);
-    for (const error of errors) console.log(`  ! ${error}`);
-    failed ||= errors.length > 0;
-  }
-  if (pngBuffers.light && pngBuffers.dark) {
-    const { lightLum, darkLum, changedRatio } = await measureThemeContrast(browser, pngBuffers.light, pngBuffers.dark);
-    const themeOk = changedRatio >= 0.05 && darkLum < lightLum && darkLum < 0.55;
-    if (!themeOk) {
-      console.log(
-        `  ! [${id}] light/dark theme contrast check failed (lightLum=${lightLum.toFixed(3)}, darkLum=${darkLum.toFixed(3)}, diff=${(changedRatio * 100).toFixed(1)}%)`,
-      );
-      failed = true;
+  for (const loc of LOCALES) {
+    const pngBuffers = {};
+    for (const theme of THEMES) {
+      const page = await browser.newPage({ viewport: viewportOf(id), deviceScaleFactor: SCALE, colorScheme: theme });
+      const errors = [];
+      page.on('console', message => message.type() === 'error' && errors.push(message.text()));
+      const src = `/${id}/${manifest.entry ?? 'index.html'}`;
+      const query = new URLSearchParams({ theme, title: manifest.title ?? id, locale: loc.id, src });
+      await page.goto(`${origin}/__host?${query}`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(600); // module scripts and the first context() round trip
+      const png = path.join(scratch, `${id}-${theme}${loc.suffix}.png`);
+      pngBuffers[theme] = await page.screenshot({ path: png });
+      await page.close();
+      const out = path.join(folder, 'preview', `cover-${theme}${loc.suffix}.webp`);
+      execFileSync('cwebp', ['-quiet', '-q', QUALITY, png, '-o', out]);
+      const kb = ((await stat(out)).size / 1024).toFixed(1);
+      console.log(`${path.relative(root, out)}  ${kb} KB${errors.length ? `  (${errors.length} page error)` : ''}`);
+      for (const error of errors) console.log(`  ! ${error}`);
+      failed ||= errors.length > 0;
+    }
+    if (pngBuffers.light && pngBuffers.dark) {
+      const { lightLum, darkLum, changedRatio } = await measureThemeContrast(browser, pngBuffers.light, pngBuffers.dark);
+      const themeOk = changedRatio >= 0.05 && darkLum < lightLum && darkLum < 0.55;
+      if (!themeOk) {
+        console.log(
+          `  ! [${id}:${loc.id}] light/dark theme contrast check failed (lightLum=${lightLum.toFixed(3)}, darkLum=${darkLum.toFixed(3)}, diff=${(changedRatio * 100).toFixed(1)}%)`,
+        );
+        failed = true;
+      }
     }
   }
 }

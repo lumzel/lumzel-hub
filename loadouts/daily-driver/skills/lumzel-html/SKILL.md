@@ -5,7 +5,7 @@ description: "Author standalone HTML pages (reports, architecture visuals, diagr
 
 # Lumzel HTML: Theme-Adaptive & Interactive Standalone Pages
 
-Apply this contract whenever you author a standalone HTML page directly (including `improve-codebase-architecture`, `show-me`, or ad-hoc visual reports, diagrams, and interactive decision pages). Do not override CLI-rendered HTML tools that manage their own build pipeline (such as `answer-me-with-html`).
+Apply this contract whenever you author a standalone HTML page directly (reports, architecture visuals, diagrams, or interactive decision pages) intended for preview in Lumzel. Do not modify or override external CLI tools that manage their own HTML build pipeline.
 
 ## 1. Automatic Lumzel Theme Adaptation
 
@@ -202,16 +202,6 @@ When a generated HTML page presents choices, candidates, review findings, or fee
 
 ### When to Add Interactive Controls
 
-- **Candidate / option cards** (e.g. `improve-codebase-architecture`): Add an inline action button on each card (e.g. "Explore this candidate") that calls `sendToLumzel(...)` with a concise prompt naming the chosen candidate and its files.
+- **Candidate / option cards**: Add an inline action button on each card (e.g. "Explore this candidate") that calls `sendToLumzel(...)` with a concise prompt naming the chosen option and relevant files.
 - **Decision / review pages**: Include a compact floating or bottom action bar that summarizes checked choices and notes, calling `sendToLumzel(summary, document.title)` and updating button text based on the returned `status` (`sent` / `queued` / `draft` / `copied`).
 - **Purely informational diagrams**: Keep the page clean and skip reply controls unless there is a clear follow-up action the user might take.
-
-## 3. Bridging CLI-Rendered HTML Pages (e.g. `answer-me-with-html`)
-
-For CLI-rendered HTML tools that stay synced with upstream (such as `answer-me-with-html`), do **not** modify the upstream CLI script or hand-edit the generated markup. Instead, run the bundled post-render bridge script on the output HTML file before opening it in Lumzel's file preview:
-
-```bash
-node "<lumzel-html-skill-dir>/scripts/bridge-reply.mjs" "<path/to/rendered.html>"
-```
-
-The script is idempotent and appends a lightweight `<script data-lumzel-reply-bridge>` before `</body>` that routes `# Re:` replies directly to Lumzel's native reply confirmation dialog (`lumzel:html-reply`) while preserving clipboard copy outside Lumzel.
