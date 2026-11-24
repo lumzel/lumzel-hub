@@ -21,9 +21,9 @@
   --drift: #e7000b;
   --gate: #d08700;
   --changed: #7f22fe;
-  --brand-solid: var(--primary, var(--brand));
-  --brand-solid-hover: var(--primary-hover, color-mix(in srgb, var(--brand) 86%, var(--fg)));
-  --brand-solid-fg: var(--primary-fg, #ffffff);
+  --brand-solid: var(--brand);
+  --brand-solid-hover: color-mix(in srgb, var(--brand-solid) 88%, #000000);
+  --brand-solid-fg: #ffffff;
   --done-soft: color-mix(in srgb, var(--done) 11%, transparent);
   --drift-soft: color-mix(in srgb, var(--drift) 10%, transparent);
   --gate-soft: color-mix(in srgb, var(--gate) 13%, transparent);
@@ -69,9 +69,9 @@
   --drift: #f87171;
   --gate: #eab308;
   --changed: #a78bfa;
-  --brand-solid: var(--primary, var(--brand));
-  --brand-solid-hover: var(--primary-hover, color-mix(in srgb, var(--brand) 86%, var(--fg)));
-  --brand-solid-fg: var(--primary-fg, #18181b);
+  --brand-solid: var(--brand);
+  --brand-solid-hover: color-mix(in srgb, var(--brand-solid) 88%, #ffffff);
+  --brand-solid-fg: #ffffff;
   --done-soft: color-mix(in srgb, var(--done) 14%, transparent);
   --drift-soft: color-mix(in srgb, var(--drift) 14%, transparent);
   --gate-soft: color-mix(in srgb, var(--gate) 14%, transparent);
@@ -109,9 +109,9 @@
     --drift: #f87171;
     --gate: #eab308;
     --changed: #a78bfa;
-    --brand-solid: var(--primary, var(--brand));
-    --brand-solid-hover: var(--primary-hover, color-mix(in srgb, var(--brand) 86%, var(--fg)));
-    --brand-solid-fg: var(--primary-fg, #18181b);
+    --brand-solid: var(--brand);
+    --brand-solid-hover: color-mix(in srgb, var(--brand-solid) 88%, #ffffff);
+    --brand-solid-fg: #ffffff;
     --done-soft: color-mix(in srgb, var(--done) 14%, transparent);
     --drift-soft: color-mix(in srgb, var(--drift) 14%, transparent);
     --gate-soft: color-mix(in srgb, var(--gate) 14%, transparent);
