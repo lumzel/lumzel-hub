@@ -43,7 +43,24 @@ export function createLessonsController(store, safe) {
       store.set(s => ({ ...s, fileSyncStatus: 'off' }));
       return;
     }
-    const md = formatLessonsMd(st.lessons.list);
+    const activeFromStore = (st.lessons.list || []).filter(l => l && l.status === 'active' && l.text);
+    const seenIds = new Set(activeFromStore.map(l => l.id || lessonId(l.text)));
+    const seenNorms = new Set(activeFromStore.map(l => normText(l.text)));
+    const preservedFile = (st.fileLessons || [])
+      .filter(
+        fl =>
+          fl &&
+          fl.text &&
+          !seenIds.has(fl.id || lessonId(fl.text)) &&
+          !seenNorms.has(normText(fl.text)),
+      )
+      .map(fl => ({
+        id: fl.id || lessonId(fl.text),
+        text: fl.text,
+        scope: SCOPES.includes(fl.scope) ? fl.scope : 'general',
+        status: 'active',
+      }));
+    const md = formatLessonsMd([...activeFromStore, ...preservedFile]);
     const r = await safe(() => window.deck.files.write(LESSONS_FILE, md), 'files');
     store.set(s => ({
       ...s,
@@ -103,6 +120,31 @@ export function createLessonsController(store, safe) {
             : ''
         : '';
     const parsedFileEntries = rawFile ? parseLessonsMd(rawFile) : [];
+    const recoveredFromFile = [];
+    if (items.length === 0 && parsedFileEntries.length > 0) {
+      const now = Math.floor(Date.now() / 1000);
+      const seen = new Set();
+      for (const fl of parsedFileEntries) {
+        const text = String(fl.text || '').trim().slice(0, 280);
+        if (!text) continue;
+        const id = lessonId(text);
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const item = {
+          id,
+          text,
+          scope: SCOPES.includes(fl.scope) ? fl.scope : 'general',
+          status: 'active',
+          evidence: '',
+          source: null,
+          hits: 0,
+          createdAt: now,
+          updatedAt: now,
+        };
+        items.push(item);
+        recoveredFromFile.push(item);
+      }
+    }
     const fileOnly = computeFileOnly(items, parsedFileEntries);
     store.set(s => ({
       ...s,
@@ -111,6 +153,9 @@ export function createLessonsController(store, safe) {
       fileLessons: fileOnly,
       fileSyncStatus: fileRes && fileRes.ok ? 'synced' : s.caps.files === false ? 'off' : 'idle',
     }));
+    for (const item of recoveredFromFile) {
+      void persistItem(item);
+    }
   }
 
   async function add(rawText, scope = 'general', status = 'active', meta = {}) {

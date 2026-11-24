@@ -1931,8 +1931,12 @@ function renderAll() {
 // ---------- Actions (Persistence & Workflows)
 
 async function saveStore(collection, key, value) {
-  if (state.preview) return;
-  await window.deck.store.put(collection, key, value);
+  if (state.preview || !window.deck?.store?.put) return;
+  try {
+    await window.deck.store.put(collection, key, value);
+  } catch {
+    // Keep file writes and UI responsive even if local SQLite is unavailable
+  }
 }
 
 async function ensureSystemFiles(sys) {
@@ -2797,6 +2801,7 @@ async function loadWorkspace() {
     savedAgentOverride,
     paramsRes,
     customSystems,
+    diskSystemDirs,
     storedArts,
     diskFiles,
     commentEntries,
@@ -2808,6 +2813,7 @@ async function loadWorkspace() {
     window.deck.store.get('meta', 'agentOverride').catch(() => null),
     window.deck.params?.get?.().catch(() => null),
     window.deck.store.list({ collection: 'systems' }).catch(() => []),
+    window.deck.files.list('.lumzel/opendesign/design-systems').catch(() => []),
     window.deck.store.list({ collection: 'artifacts' }).catch(() => []),
     window.deck.files.list('docs/opendesign').catch(() => []),
     window.deck.store.list({ collection: 'comments' }).catch(() => []),
@@ -2819,7 +2825,48 @@ async function loadWorkspace() {
   if (paramsRes?.values && typeof paramsRes.values === 'object') {
     state.params = { ...state.params, ...paramsRes.values };
   }
+  const presetSlugs = new Set(PRESET_SYSTEMS.map(s => s.slug));
   const customMap = new Map(customSystems.map(e => [e.key, e.value]));
+  const missingDiskDirs = (diskSystemDirs || []).filter(
+    entry => entry?.isDir && entry.name && !presetSlugs.has(entry.name) && !customMap.has(entry.name),
+  );
+  if (missingDiskDirs.length > 0) {
+    const recovered = await Promise.all(
+      missingDiskDirs.map(async entry => {
+        const slug = entry.name;
+        const dir = `.lumzel/opendesign/design-systems/${slug}`;
+        const [md, css] = await Promise.all([
+          window.deck.files.read(`${dir}/DESIGN.md`).catch(() => null),
+          window.deck.files.read(`${dir}/tokens.css`).catch(() => null),
+        ]);
+        const designMd = md?.content || '';
+        const tokensCss = css?.content || '';
+        if (!designMd && !tokensCss) return null;
+        const headingMatch = /^\s*#\s+(.+?)\s*$/m.exec(designMd);
+        const parsed = parseTokensCss(tokensCss);
+        return {
+          slug,
+          name: headingMatch?.[1]?.trim() || slug,
+          tagline: 'Recovered from workspace files',
+          builtin: false,
+          swatches: [
+            parsed['--od-bg'] || '#f8fafc',
+            parsed['--od-surface'] || '#ffffff',
+            parsed['--od-fg'] || '#0f172a',
+            parsed['--od-accent'] || '#2563eb',
+            parsed['--od-border'] || '#e2e8f0',
+          ],
+          designMd,
+          tokensCss,
+        };
+      }),
+    );
+    for (const sys of recovered) {
+      if (!sys) continue;
+      customMap.set(sys.slug, sys);
+      void saveStore('systems', sys.slug, sys);
+    }
+  }
   state.systems = [
     ...PRESET_SYSTEMS.map(s => ({ ...s })),
     ...Array.from(customMap.values()),

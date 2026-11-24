@@ -50,6 +50,14 @@ Every Deck in `decks/<id>/` **must** keep interaction fast and avoid full-list e
 1. **Scroll Lazy Loading (No Full-List Dumps)**: Any scrollable list (issues, PRs, runs, files, docs, history, comments, logs, cards) must render incrementally in small batches (e.g. 20–40 items) and load/append more on scroll down via an `IntersectionObserver` sentinel or passive scroll-near-bottom handler (or viewport windowing). For paginated backends/CLI/DB queries, fetch page by page rather than pulling unbounded lists up front.
 2. **Bounded DOM Updates**: Avoid rebuilding whole list/graph/timeline DOM trees on periodic timers or single-item interactions; patch changed text/attributes in place and keep scroll/resize work `rAF`-throttled.
 
+## Deck Storage & SQLite Resilience Requirements (`decks/<id>/`)
+
+Every project-scoped Deck in `decks/<id>/` **must** remain fully usable and error-free even if its local SQLite database (`.lumzel/store/<id>.db`, gitignored) is deleted, empty, or absent on a new machine:
+
+1. **File-First Source of Truth for Deliverables**: Store user-created project deliverables (design docs, prototypes, tickets, diagrams, generated HTML/assets, shared configs) as real files in the repository via `deck.files.*` or Agent file writes, and always discover/rebuild the Deck's primary view from disk on boot (`deck.docs.index()`, `deck.files.list()`, etc.). Losing `.db` must never hide previously created work.
+2. **SQLite for Rebuildable/Auxiliary State Only**: Limit `deck.db` / `deck.store` in project Decks to caches, UI preferences, unsent drafts, run/session history, and auxiliary metadata (such as archive flags or local annotations). For standalone `store.scope: "user"` Decks without a repository, provide export/backup via `deck.files.saveAs`.
+3. **Graceful Empty-DB Degradation**: Guard every `deck.db.*` / `deck.store.*` call with safe defaults and error handling, keep `store.migrations` strictly idempotent (`CREATE TABLE IF NOT EXISTS`), and never throw uncaught errors or render a broken/empty screen when SQLite has no rows.
+
 ## Deck Multi-Language Requirements (`decks/<id>/`)
 
 Every Deck in `decks/<id>/` **must** support multiple languages (English default + localized translations such as `zh-CN`):
