@@ -1491,7 +1491,7 @@ function openCreatePrModal() {
       <div class="field">
         <div class="field-label">
           <span>${esc(t('fieldTitle'))}</span>
-          <button type="button" class="btn sm soft" id="btn-ai-draft-pr">✨ ${esc(t('btnAiDraftPr'))}</button>
+          <button type="button" class="btn sm soft" id="btn-ai-create-pr">✨ ${esc(t('btnAiCreatePr'))}</button>
         </div>
         <input type="text" class="input" id="pr-title-input" />
       </div>
@@ -1514,7 +1514,7 @@ function openCreatePrModal() {
     </div>
   `);
 
-  $('btn-ai-draft-pr')?.addEventListener('click', handleAiDraftPr);
+  $('btn-ai-create-pr')?.addEventListener('click', handleAiCreatePr);
   $('btn-confirm-create-pr')?.addEventListener('click', async () => {
     const title = $('pr-title-input').value.trim();
     const body = $('pr-body-input').value;
@@ -1535,42 +1535,26 @@ function openCreatePrModal() {
   });
 }
 
-async function handleAiDraftPr() {
-  const btn = $('btn-ai-draft-pr');
-  if (!btn || !window.deck?.agent?.run) return;
+async function handleAiCreatePr() {
+  if (!window.deck?.agent?.run) return;
   const base = $('pr-base-input')?.value.trim() || state.env?.defaultBranch || 'main';
-  const head = state.env?.branch || 'HEAD';
-  btn.disabled = true;
-  btn.textContent = t('btnAiDrafting');
+  const draft = Boolean($('pr-draft-check')?.checked);
+  const prompt = t('promptCreatePr', {
+    base,
+    draft: draft ? t('promptDraftModifier') : '',
+  });
+  closeModal();
+  showToast(t('toastSessionStarted'));
   try {
-    const { commits, stat } = await gh.getBranchDraftContext({ base });
-    const prompt = t('promptDraftPr', {
-      head,
-      base,
-      commits: commits || '(no commits ahead)',
-      stat: stat || '(no diff stat)',
-    });
-    const res = await window.deck.agent.run({
+    await window.deck.agent.run({
       prompt,
-      focus: false,
-      wait: true,
+      focus: true,
+      wait: false,
       dedupe: 'running',
       ...agentOverridesPayload(),
     });
-    const text = String(res?.text || '');
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      if (parsed.title && $('pr-title-input')) $('pr-title-input').value = String(parsed.title);
-      if (parsed.body && $('pr-body-input')) $('pr-body-input').value = String(parsed.body);
-    } else if (text.trim() && $('pr-body-input')) {
-      $('pr-body-input').value = text.trim();
-    }
   } catch (err) {
-    showToast(err?.message || 'AI draft failed');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = `✨ ${t('btnAiDraftPr')}`;
+    showToast(err?.message || 'Failed to launch Agent');
   }
 }
 

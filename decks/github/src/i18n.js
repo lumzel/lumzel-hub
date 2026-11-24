@@ -142,8 +142,7 @@ const STRINGS = {
     fieldDraft: 'Create as draft Pull Request',
     fieldMergeMethod: 'Merge strategy',
     fieldDeleteBranch: 'Delete head branch after merge',
-    btnAiDraftPr: 'AI Draft from Branch',
-    btnAiDrafting: 'Drafting…',
+    btnAiCreatePr: 'Submit PR with AI',
     btnCancel: 'Cancel',
     btnCreatePr: 'Create Pull Request',
     btnCreateIssue: 'Create Issue',
@@ -183,8 +182,9 @@ const STRINGS = {
       'Review feedback was left on Pull Request #{n} ("{title}") in {repo} (branch `{head}`). Read the PR reviews and comments via `gh pr view {n} --comments`, address each requested change cleanly in code, and verify with tests.',
     promptIssueSolve:
       'Analyze and solve GitHub Issue #{n} ("{title}") in repository {repo}. Use the github-issue-solve skill to inspect the full issue description and comments, explore the codebase, implement a clean verified fix with tests, and summarize the changes. Do not push or open a PR unless I ask.',
-    promptDraftPr:
-      'Generate a concise, high-signal Pull Request title and Markdown description for the current branch `{head}` targeting `{base}`.\n\nRecent commits:\n{commits}\n\nDiff stat:\n{stat}\n\nRespond ONLY with valid JSON: {"title": "...", "body": "..."} with no extra commentary.',
+    promptDraftModifier: ' draft',
+    promptCreatePr:
+      'Create a{draft} Pull Request from the current branch targeting `{base}` using `gh pr create`. Check the current changes, commit and push if needed, and write a clear title and description.',
   },
   'zh-CN': {
     deckTitle: 'GitHub 工作台',
@@ -325,8 +325,7 @@ const STRINGS = {
     fieldDraft: '创建为 Draft 草稿 PR',
     fieldMergeMethod: '合并策略',
     fieldDeleteBranch: '合并后删除源分支',
-    btnAiDraftPr: 'AI 总结当前分支生成',
-    btnAiDrafting: '生成中…',
+    btnAiCreatePr: 'AI 提交 PR',
     btnCancel: '取消',
     btnCreatePr: '创建 Pull Request',
     btnCreateIssue: '创建 Issue',
@@ -366,8 +365,9 @@ const STRINGS = {
       '仓库 {repo} 的 Pull Request #{n}（"{title}"，分支 `{head}`）收到了审查意见。请通过 `gh pr view {n} --comments` 阅读所有审查评论，在代码中逐项修复并补充验证。',
     promptIssueSolve:
       '请分析并解决仓库 {repo} 中的 GitHub Issue #{n}（"{title}"）。请使用 github-issue-solve 技能阅读完整 Issue 描述和评论，自主探索代码库并完成实现与测试验证。除非我明确要求，否则不要推送或创建 PR。',
-    promptDraftPr:
-      '请根据当前分支 `{head}` 相对 `{base}` 的提交与变更统计，生成简洁准确的 Pull Request 标题和 Markdown 正文。\n\n近期提交：\n{commits}\n\nDiff 统计：\n{stat}\n\n请只返回合法 JSON：{"title": "...", "body": "..."}，不要包含其他说明文字。',
+    promptDraftModifier: '草稿',
+    promptCreatePr:
+      '请将当前分支向 `{base}` 提交一个{draft} Pull Request（使用 `gh pr create`）。检查当前变更，如有需要请先提交并推送分支，再生成简洁清晰的标题和描述并创建 PR。',
   },
 };
 

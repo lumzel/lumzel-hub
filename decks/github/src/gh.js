@@ -469,42 +469,6 @@ export async function createPr({ repo = '', title, body = '', base = '', draft =
   return String(res.stdout || '').trim();
 }
 
-export async function getBranchDraftContext({ base = 'main' } = {}) {
-  const ref = base.trim() || 'main';
-  let commits = '';
-  let stat = '';
-  try {
-    const logRes = await execCli('git', ['log', `${ref}..HEAD`, '--oneline', '-n', '20'], {
-      timeoutMs: 8000,
-      allowNonZero: true,
-    });
-    commits = String(logRes.stdout || '').trim();
-  } catch {
-    // fallback below
-  }
-  if (!commits) {
-    try {
-      const logRes = await execCli('git', ['log', '-n', '8', '--oneline'], {
-        timeoutMs: 8000,
-        allowNonZero: true,
-      });
-      commits = String(logRes.stdout || '').trim();
-    } catch {
-      commits = '';
-    }
-  }
-  try {
-    const diffRes = await execCli('git', ['diff', '--stat', `${ref}...HEAD`], {
-      timeoutMs: 8000,
-      allowNonZero: true,
-    });
-    stat = String(diffRes.stdout || '').trim();
-  } catch {
-    stat = '';
-  }
-  return { commits, stat };
-}
-
 export async function listIssuesPage({
   repo = '',
   state = 'open',

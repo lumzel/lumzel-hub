@@ -962,15 +962,15 @@
       "id": "github",
       "title": "GitHub",
       "icon": "branch",
-      "description": "Local-first GitHub Pull Request and Issue workbench powered by the gh CLI: inspect diffs and CI checks, review, comment, merge, draft PRs from your branch with AI, and launch Agent sessions to review PRs, fix CI, or solve issues.",
+      "description": "Local-first GitHub Pull Request and Issue workbench powered by the gh CLI: inspect diffs and CI checks, review, comment, merge, submit PRs from your branch with AI, and launch Agent sessions to review PRs, fix CI, or solve issues.",
       "i18n": {
         "en": {
           "title": "GitHub",
-          "description": "Local-first GitHub Pull Request and Issue workbench powered by the gh CLI: inspect diffs and CI checks, review, comment, merge, draft PRs from your branch with AI, and launch Agent sessions to review PRs, fix CI, or solve issues."
+          "description": "Local-first GitHub Pull Request and Issue workbench powered by the gh CLI: inspect diffs and CI checks, review, comment, merge, submit PRs from your branch with AI, and launch Agent sessions to review PRs, fix CI, or solve issues."
         },
         "zh-CN": {
           "title": "GitHub 工作台",
-          "description": "基于本机 gh CLI 的本地优先 GitHub PR 与 Issue 工作台：查看 Diff 与 CI 检查、评审评论与合并、AI 一键从当前分支生成 PR，并联动 Lumzel Agent 执行代码审查、修复 CI 或实现 Issue。",
+          "description": "基于本机 gh CLI 的本地优先 GitHub PR 与 Issue 工作台：查看 Diff 与 CI 检查、评审评论与合并、AI 一键从当前分支提交 PR，并联动 Lumzel Agent 执行代码审查、修复 CI 或实现 Issue。",
           "cover": {
             "light": "preview/cover-light.zh-CN.webp",
             "dark": "preview/cover-dark.zh-CN.webp"
@@ -992,7 +992,7 @@
         1200,
         750
       ],
-      "version": "3.0.0"
+      "version": "3.0.1"
     }
   ]
 }

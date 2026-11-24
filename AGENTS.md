@@ -67,6 +67,7 @@ Workflow Agent nodes already execute inside the project worktree as their defaul
 2. **Let Agents Inspect Autonomously**: Instead of dumping partial repo excerpts via `code` nodes, explicitly instruct Agent nodes (when grounding in the current project) to explore the working directory on their own using their native file, search, and read tools before planning, generating, or critiquing.
 3. **Keep `code` Nodes Deterministic**: Restrict `code` nodes to deterministic contract/artifact checks (reading explicit input/contract paths such as `DESIGN.md`, `tokens.css`, or target artifact paths, linting, or validating outputs) and external network/URL fetches where needed.
 4. **Preserve Scope Opt-Out**: Always allow user briefs that explicitly specify a standalone or greenfield target outside the current repository to override repository grounding.
+5. **Plain-Text Agent Prompts**: For interactive Deck actions calling `window.deck.agent.run` or `window.deck.agent.compose`, keep prompts concise plain text that instructs the Agent to perform the task directly rather than asking it to return raw JSON payloads.
 
 ## Validation Before Commit
 
