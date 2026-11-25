@@ -1,0 +1,23 @@
+id: guizang-magi2
+name: Guizang MAGI-2
+icon: 🎞️
+category: Media
+description: 'MAGI-2 prompt optimization, LibTV MCP canvas orchestration, and bidirectional Video-to-Code / Code-to-Video workflows.'
+i18n:
+  en:
+    name: Guizang MAGI-2
+    description: 'MAGI-2 prompt optimization, LibTV MCP canvas orchestration, and bidirectional Video-to-Code / Code-to-Video workflows.'
+  zh-CN:
+    name: 歸藏 MAGI-2
+    description: 'MAGI-2 视频提示词优化、LibTV MCP 画布编排，以及 Video to Code（视频转交互网页）与 Code to Video（代码灰盒转风格化大片）双向工作流。'
+author: op7418 (歸藏)
+homepage: https://github.com/op7418/guizang-magi2-skill
+skills:
+- guizang-magi2-skill
+agents: {}
+mcp:
+- libtv
+hooks: []
+rules: []
+plugins: []
+env: {}

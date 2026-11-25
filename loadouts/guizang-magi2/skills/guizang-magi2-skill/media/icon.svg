@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <rect width="128" height="128" rx="28" fill="#111216"/>
+  <rect x="6" y="6" width="116" height="116" rx="23" stroke="#2A2D37" stroke-width="2"/>
+  <!-- Play triangle (Video) -->
+  <path d="M32 40.5C32 37.92 34.86 36.37 37.02 37.78L59.42 52.28C61.39 53.56 61.39 56.44 59.42 57.72L37.02 72.22C34.86 73.63 32 72.08 32 69.5V40.5Z" fill="#FF5A1F"/>
+  <!-- Code brackets (Code) -->
+  <path d="M80 42L69 55L80 68" stroke="#4F7BFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M88 42L99 55L88 68" stroke="#FFE135" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Bidirectional loop bar -->
+  <path d="M34 88H94" stroke="#F4F1EA" stroke-width="5" stroke-linecap="round"/>
+  <path d="M86 81L94 88L86 95" stroke="#FF5A1F" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M42 81L34 88L42 95" stroke="#4F7BFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

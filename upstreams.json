@@ -1348,6 +1348,34 @@
       "preserve": [
         "AGENTS.md"
       ]
+    },
+    {
+      "id": "guizang-magi2",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "guizang-magi2-skill",
+          "repo": "op7418/guizang-magi2-skill",
+          "skillFile": "SKILL.md",
+          "extraDirs": {
+            "LICENSE": "LICENSE",
+            "README.md": "README.md",
+            "README.en.md": "README.en.md",
+            "agents": "agents",
+            "media": "media",
+            "references": "references",
+            "scripts": "scripts"
+          }
+        }
+      ],
+      "license": {
+        "source": "LICENSE"
+      },
+      "preserve": [
+        "AGENTS.md",
+        "mcp"
+      ]
     }
   ],
   "repos": {
@@ -1554,6 +1582,10 @@
     "qingyuna/answer-me-with-html": {
       "branch": "main",
       "sha": "edccab07c012e2141585f8ddb18a62e01664fa2b"
+    },
+    "op7418/guizang-magi2-skill": {
+      "branch": "main",
+      "sha": "5d34522fb5adb68b8cc7244d452bc3d2123ebda8"
     }
   }
 }

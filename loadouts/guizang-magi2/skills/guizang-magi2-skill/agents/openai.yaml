@@ -1,0 +1,4 @@
+interface:
+  display_name: "歸藏 MAGI-2 Skill"
+  short_description: "MAGI-2 提示词优化、LibTV MCP 接入修复，以及 Video to Code 与 Code to Video 双向内容生产工作流"
+  default_prompt: "请使用 $guizang-magi2-skill，先检查我的 LibTV MCP 环境，然后带我用 MAGI-2 跑通 Video to Code 或 Code to Video 工作流。"
