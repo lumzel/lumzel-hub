@@ -1376,6 +1376,109 @@
         "AGENTS.md",
         "mcp"
       ]
+    },
+    {
+      "id": "alibaba-cloud-observability",
+      "mode": "curated",
+      "keepSkillOrder": true,
+      "skills": [
+        {
+          "name": "alibabacloud-cms-manage",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/middleware/cms/alibabacloud-cms-manage"
+        },
+        {
+          "name": "alibabacloud-cms-dataset",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/middleware/cms/alibabacloud-cms-dataset"
+        },
+        {
+          "name": "alibabacloud-cms-alert-rule-create",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/middleware/cms/alibabacloud-cms-alert-rule-create"
+        },
+        {
+          "name": "alibabacloud-sls",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/storage/sls/alibabacloud-sls"
+        },
+        {
+          "name": "alibabacloud-sls-data-agent",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/storage/sls/alibabacloud-sls-data-agent"
+        },
+        {
+          "name": "alibabacloud-sls-data-agent-qa",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/storage/sls/alibabacloud-sls-data-agent-qa"
+        },
+        {
+          "name": "alibabacloud-livedebug",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/middleware/arms/alibabacloud-livedebug"
+        },
+        {
+          "name": "alibabacloud-emas-apm-query",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/entcmc/emas/alibabacloud-emas-apm-query"
+        },
+        {
+          "name": "alibabacloud-emas-apm-remotelog",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/entcmc/emas/alibabacloud-emas-apm-remotelog"
+        },
+        {
+          "name": "alibabacloud-starops-chat",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/middleware/starops/alibabacloud-starops-chat"
+        },
+        {
+          "name": "alibabacloud-sre-toolkit",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/playbooks/trouboper/alibabacloud-sre-toolkit"
+        },
+        {
+          "name": "alibabacloud-agent-observability",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/playbooks/trouboper/alibabacloud-agent-observability"
+        },
+        {
+          "name": "alibabacloud-actiontrail-diagnosis",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/others/cseskillshub/alibabacloud-actiontrail-diagnosis"
+        },
+        {
+          "name": "alibabacloud-waf-security-monitor",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/security/waf/alibabacloud-waf-security-monitor"
+        },
+        {
+          "name": "alibabacloud-ddos-security-monitor",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/security/ddos/alibabacloud-ddos-security-monitor"
+        },
+        {
+          "name": "alibabacloud-sas-alert-handler",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/security/sas/alibabacloud-sas-alert-handler"
+        },
+        {
+          "name": "alibabacloud-ebs-disk-metric-analyzer",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/storage/disk/alibabacloud-ebs-disk-metric-analyzer"
+        },
+        {
+          "name": "alibabacloud-find-skills",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/developertools/solutions/alibabacloud-find-skills"
+        }
+      ],
+      "preserve": [
+        "AGENTS.md",
+        "mcp",
+        "rules",
+        "hooks"
+      ]
     }
   ],
   "repos": {
@@ -1586,6 +1689,10 @@
     "op7418/guizang-magi2-skill": {
       "branch": "main",
       "sha": "5d34522fb5adb68b8cc7244d452bc3d2123ebda8"
+    },
+    "aliyun/alibabacloud-aiops-skills": {
+      "branch": "master",
+      "sha": "499ba60185fe33ed06114f87321c45ca441374eb"
     }
   }
 }

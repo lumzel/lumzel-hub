@@ -1,0 +1,42 @@
+id: alibaba-cloud-observability
+name: Alibaba Cloud Observability
+icon: 📡
+category: Engineering
+description: 'OAuth-first Alibaba Cloud monitoring, log analytics, and AIOps suite: remote OpenAPI Core MCP (no static secrets) plus 18 latest official CMS 2.0, unified SLS, ARMS/EMAS, STAROps, SRE, ActionTrail, and security monitoring skills.'
+i18n:
+  en:
+    name: Alibaba Cloud Observability
+    description: 'OAuth-first Alibaba Cloud monitoring, log analytics, and AIOps suite: remote OpenAPI Core MCP (no static secrets) plus 18 latest official CMS 2.0, unified SLS, ARMS/EMAS, STAROps, SRE, ActionTrail, and security monitoring skills.'
+  zh-CN:
+    name: 阿里云全栈监控与可观测套件
+    description: 'OAuth 优先、零静态密钥的阿里云监控与日志可观测套件：集成官方远程 OpenAPI Core MCP（api.aliyun.com/mcp），以及 18 个最新官方云监控 CMS 2.0、统一日志服务 SLS、ARMS/EMAS、STAROps、SRE、操作审计与安全监控 Skill。'
+author: Alibaba Cloud (aliyun)
+homepage: https://github.com/aliyun/alibabacloud-aiops-skills
+skills:
+- alibabacloud-cms-manage
+- alibabacloud-cms-dataset
+- alibabacloud-cms-alert-rule-create
+- alibabacloud-sls
+- alibabacloud-sls-data-agent
+- alibabacloud-sls-data-agent-qa
+- alibabacloud-livedebug
+- alibabacloud-emas-apm-query
+- alibabacloud-emas-apm-remotelog
+- alibabacloud-starops-chat
+- alibabacloud-sre-toolkit
+- alibabacloud-agent-observability
+- alibabacloud-actiontrail-diagnosis
+- alibabacloud-waf-security-monitor
+- alibabacloud-ddos-security-monitor
+- alibabacloud-sas-alert-handler
+- alibabacloud-ebs-disk-metric-analyzer
+- alibabacloud-find-skills
+agents: {}
+mcp:
+- alibabacloud-api
+hooks:
+- aliyun-cli-check
+rules:
+- aliyun-observability-safety
+plugins: []
+env: {}
