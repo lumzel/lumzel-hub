@@ -1,6 +1,6 @@
 {
   "event": "SessionStart",
   "matcher": "",
-  "command": "if command -v aliyun >/dev/null 2>&1; then printf 'aliyun CLI %s detected\\n' \"$(aliyun version 2>/dev/null | head -n 1)\"; else printf '%s\\n' 'aliyun CLI not found; remote OAuth MCP (alibabacloud-api) still works, install aliyun-cli >= 3.3.15 for local CMS/SLS skills.' >&2; fi",
+  "command": "if command -v aliyun >/dev/null 2>&1; then printf 'aliyun CLI %s detected\\n' \"$(aliyun version 2>/dev/null | head -n 1)\"; else printf '%s\\n' 'aliyun CLI not found; install aliyun-cli >= 3.3.15 and configure a profile for CMS/SLS skills and MCP proxy.' >&2; fi; if ! command -v uvx >/dev/null 2>&1; then printf '%s\\n' 'uvx not found; install uv (brew install uv) to run alibabacloud.mcp-proxy.' >&2; fi",
   "timeout": 10
 }
