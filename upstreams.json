@@ -1468,6 +1468,11 @@
           "path": "skills/storage/disk/alibabacloud-ebs-disk-metric-analyzer"
         },
         {
+          "name": "alibabacloud-cli-guidance",
+          "repo": "aliyun/alibabacloud-aiops-skills",
+          "path": "skills/developertools/solutions/alibabacloud-cli-guidance"
+        },
+        {
           "name": "alibabacloud-find-skills",
           "repo": "aliyun/alibabacloud-aiops-skills",
           "path": "skills/developertools/solutions/alibabacloud-find-skills"
@@ -1475,7 +1480,6 @@
       ],
       "preserve": [
         "AGENTS.md",
-        "mcp",
         "rules",
         "hooks"
       ]
@@ -1692,7 +1696,7 @@
     },
     "aliyun/alibabacloud-aiops-skills": {
       "branch": "master",
-      "sha": "499ba60185fe33ed06114f87321c45ca441374eb"
+      "sha": "2a39333d93281c63cec3641c71ede5fbd6809027"
     }
   }
 }
